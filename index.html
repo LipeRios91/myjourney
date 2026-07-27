@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Passe do Mestre</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+.pdm-root {
+  --void: #0A0D18;
+  --void-2: #0E1226;
+  --panel: #131A34;
+  --panel-2: #1B2447;
+  --line: #33417A;
+  --line-soft: #232C54;
+  --gold: #D4AF37;
+  --gold-pale: #F0DFA0;
+  --gold-dim: #8A7530;
+  --fog: #E7E4D8;
+  --dim: #8B93BC;
+  --rose: #8C4A56;
+  --rose-pale: #C98B96;
+  --blue-pop: #5C7FE0;
+  font-family: 'Inter', sans-serif;
+  color: var(--fog);
+  background:
+    radial-gradient(ellipse at 20% -10%, #1a2456 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 110%, #171f42 0%, transparent 50%),
+    var(--void);
+  min-height: 100vh;
+  padding: 0;
+  box-sizing: border-box;
+  position: relative;
+  overflow-x: hidden;
+  isolation: isolate;
+}
+.pdm-root::before {
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background-image: radial-gradient(circle, rgba(212,175,55,.5) 1px, transparent 1.4px);
+  background-size: 14px 14px;
+  opacity: 0.08;
+  mix-blend-mode: screen;
+}
+.pdm-root *, .pdm-root *::before, .pdm-root *::after { box-sizing: border-box; }
+.pdm-root h1, .pdm-root h2, .pdm-root h3, .pdm-root .pdm-display {
+  font-family: 'Oswald', sans-serif;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.pdm-mono { font-family: 'Space Mono', monospace; }
+.pdm-poster {
+  font-family: 'Anton', 'Oswald', sans-serif;
+  text-transform: uppercase;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.pdm-container { max-width: 1440px; width:100%; margin: 0 auto; padding: 20px clamp(16px, 3.5vw, 56px) 70px; position:relative; z-index:1; }
+
+/* jagged torn-paper divider, used under the header */
+.pdm-torn {
+  height: 10px; margin: 0 0 20px;
+  background: repeating-linear-gradient(115deg, var(--gold) 0 10px, transparent 10px 20px);
+  clip-path: polygon(0 0,100% 0,100% 40%,96% 100%,92% 40%,88% 100%,84% 40%,80% 100%,76% 40%,72% 100%,68% 40%,64% 100%,60% 40%,56% 100%,52% 40%,48% 100%,44% 40%,40% 100%,36% 40%,32% 100%,28% 40%,24% 100%,20% 40%,16% 100%,12% 40%,8% 100%,4% 40%,0 100%);
+  opacity: 0.85;
+}
+
+/* ---------- HEADER ---------- */
+.pdm-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 14px 4px 14px; margin-bottom: 0; position: relative;
+}
+.pdm-brand { display:flex; align-items:center; gap:0; position:relative; }
+.pdm-brand-mark {
+  width: 40px; height: 40px; background: var(--gold);
+  clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-right:12px;
+  transform: rotate(-6deg);
+}
+.pdm-brand-mark span { color: var(--void); font-size: 17px; font-weight:700; font-family:'Anton',sans-serif; transform: rotate(6deg); }
+.pdm-brand-text { font-size: 10px; color: var(--dim); letter-spacing: 0.22em; line-height:1; }
+.pdm-brand-text b {
+  color: var(--fog); display:block; font-size:26px; letter-spacing:0.01em;
+  font-family:'Anton',sans-serif; line-height:1; margin-top:4px;
+  text-shadow: 3px 0 0 rgba(212,175,55,.55), -2px 0 0 rgba(92,127,224,.45);
+}
+
+.pdm-mini-profile { display:flex; align-items:center; gap:10px; cursor:pointer; }
+.pdm-mini-avatar {
+  width: 38px; height: 38px; border-radius: 50%; overflow:hidden;
+  border: 2px solid var(--gold-dim); flex-shrink:0; background: var(--panel-2);
+  display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--dim);
+}
+.pdm-mini-avatar img { width:100%; height:100%; object-fit:cover; }
+.pdm-mini-name { font-size: 11px; color: var(--dim); text-align:right; line-height:1.3; }
+.pdm-mini-name b { color: var(--gold-pale); display:block; font-size:12px; font-family:'Oswald',sans-serif; }
+
+/* ---------- NAV (command list) ---------- */
+.pdm-nav {
+  display:flex; gap:8px; margin-bottom: 22px;
+  overflow-x:auto; padding: 4px 2px 10px;
+}
+.pdm-nav-btn {
+  background: var(--void-2); border:1px solid var(--line-soft); color: var(--dim);
+  font-family:'Oswald',sans-serif; font-weight:600;
+  font-size: 12px; letter-spacing:0.08em; text-transform:uppercase; padding: 10px 16px;
+  cursor:pointer; white-space:nowrap;
+  display:flex; align-items:center; gap:7px; transition: all .15s;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.pdm-nav-btn:hover { color: var(--fog); border-color: var(--line); }
+.pdm-nav-btn.active {
+  color: var(--void); background: var(--gold); border-color: var(--gold);
+  box-shadow: 3px 3px 0 rgba(92,127,224,.4);
+}
+.pdm-nav-btn.pdm-nav-secret { margin-left: auto; opacity: 0.5; padding: 10px 12px; background:transparent; border-color:transparent; }
+.pdm-nav-btn.pdm-nav-secret:hover { opacity: 1; }
+.pdm-nav-btn.pdm-nav-secret.active { background: var(--void-2); color: var(--gold-pale); border-color: var(--line-soft); box-shadow:none; }
+.pdm-nav-btn svg { width:14px; height:14px; flex-shrink:0; }
+
+.pdm-view { display:none; animation: pdmFade .35s ease; }
+.pdm-view.active { display:block; }
+@keyframes pdmFade { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:translateY(0);} }
+
+/* ---------- PANEL (signature clipped card) ---------- */
+.pdm-panel {
+  background: linear-gradient(155deg, var(--panel) 0%, var(--panel-2) 100%);
+  border: 1px solid var(--line);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 24px), calc(100% - 24px) 100%, 0 100%);
+  padding: 22px 24px 26px;
+  position: relative;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.pdm-panel::before {
+  content:''; position:absolute; top:0; left:0; width:100%; height:3px;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--blue-pop) 60%, transparent 90%);
+}
+.pdm-panel::after {
+  content:''; position:absolute; top:-40px; right:-40px; width:130px; height:130px;
+  background: var(--gold); opacity:.06;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.pdm-eyebrow {
+  font-family:'Anton',sans-serif; font-size:20px; letter-spacing:0.01em;
+  color: var(--fog); text-transform:uppercase; display:inline-block; position:relative;
+  margin-bottom: 16px; line-height:1;
+  text-shadow: 2px 0 0 rgba(212,175,55,.5), -2px 0 0 rgba(92,127,224,.35);
+}
+.pdm-eyebrow::after {
+  content:''; position:absolute; left:0; bottom:-6px; width:38px; height:4px;
+  background: var(--gold); clip-path: polygon(0 0, 100% 0, 85% 100%, 0% 100%);
+}
+
+/* ---------- HERO / DASHBOARD ---------- */
+.pdm-hero {
+  display:flex; gap:22px; align-items:center; flex-wrap:wrap;
+  position: relative; z-index: 1;
+}
+.pdm-hero-wedge {
+  position:absolute; top:-22px; right:-24px; width:60%; height:calc(100% + 44px);
+  background: linear-gradient(140deg, var(--blue-pop) 0%, var(--gold) 130%);
+  opacity:.14; z-index:0; pointer-events:none;
+  clip-path: polygon(35% 0, 100% 0, 100% 100%, 0% 100%);
+}
+.pdm-frame-wrap { position:relative; width:104px; height:104px; flex-shrink:0; cursor:pointer; }
+.pdm-frame-ring {
+  position:absolute; inset:-8px; border-radius:50%;
+  border: 2px solid var(--gold-dim);
+}
+.pdm-frame-wrap[data-stage="1"] .pdm-frame-ring { border-color:#8a8f9e; }
+.pdm-frame-wrap[data-stage="2"] .pdm-frame-ring { border-color:#a7855a; }
+.pdm-frame-wrap[data-stage="3"] .pdm-frame-ring { border-color:#c2c6d6; }
+.pdm-frame-wrap[data-stage="4"] .pdm-frame-ring { border-color: var(--gold-dim); box-shadow: 0 0 10px rgba(212,175,55,.25); }
+.pdm-frame-wrap[data-stage="5"] .pdm-frame-ring { border-color: var(--gold); box-shadow: 0 0 16px rgba(212,175,55,.4); }
+.pdm-frame-wrap[data-stage="6"] .pdm-frame-ring { border-color: var(--gold); box-shadow: 0 0 20px rgba(212,175,55,.55); border-width:3px; }
+.pdm-frame-wrap[data-stage="7"] .pdm-frame-ring {
+  border: 3px solid var(--gold);
+  box-shadow: 0 0 24px rgba(212,175,55,.65), 0 0 44px rgba(212,175,55,.25);
+}
+.pdm-frame-wrap[data-stage="8"] .pdm-frame-ring::before,
+.pdm-frame-wrap[data-stage="8"] .pdm-frame-ring {
+  border: 3px solid transparent;
+  background: conic-gradient(from 0deg, var(--gold), #fff6d8, var(--gold-pale), var(--gold)) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: pdmSpin 6s linear infinite;
+  box-shadow: 0 0 30px rgba(240,223,160,.6);
+}
+@keyframes pdmSpin { to { transform: rotate(360deg); } }
+.pdm-avatar {
+  width:100%; height:100%; border-radius:50%; overflow:hidden;
+  background: var(--void-2); border: 1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  font-size: 30px; color: var(--dim);
+}
+.pdm-avatar img { width:100%; height:100%; object-fit:cover; }
+.pdm-avatar-hint {
+  position:absolute; bottom:-4px; right:-4px; width:24px; height:24px;
+  background: var(--gold); border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:12px; color: var(--void); border: 2px solid var(--void);
+}
+
+.pdm-hero-info { flex: 1; min-width: 220px; }
+.pdm-level-name {
+  font-family:'Anton',sans-serif; font-size: 38px; line-height:0.95; color: var(--fog);
+  margin-bottom: 4px; letter-spacing:0.005em;
+  text-shadow: 3px 0 0 rgba(212,175,55,.6), -3px 0 0 rgba(92,127,224,.4);
+}
+.pdm-level-sub { font-family:'Space Mono',monospace; font-size: 11px; color: var(--dim); margin-bottom: 12px; letter-spacing:0.03em; }
+.pdm-xpbar-row { display:flex; justify-content:space-between; font-size:11px; color:var(--dim); margin-bottom:4px; font-family:'Oswald',sans-serif; letter-spacing:0.03em; }
+.pdm-xpbar-row b { color: var(--gold-pale); }
+.pdm-xpbar {
+  height: 10px; background: var(--void-2); border:1px solid var(--line); position:relative; overflow:hidden;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+.pdm-xpbar-fill { height:100%; background: linear-gradient(90deg, var(--blue-pop), var(--gold)); transition: width .5s ease; }
+
+.pdm-streak-badge {
+  display:inline-flex; align-items:center; gap:9px; margin-top:14px;
+  font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; color: var(--void);
+  background: var(--fog); padding: 6px 14px 6px 10px;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  transform: rotate(-1.5deg);
+}
+.pdm-streak-flame { color: var(--rose); font-size:16px; }
+.pdm-streak-mult {
+  font-family:'Space Mono',monospace; font-size:11px; color: var(--fog);
+  background: var(--void); padding: 1px 7px; font-weight:700;
+}
+
+/* ---------- QUOTE CARD ---------- */
+.pdm-quote {
+  border-left: 3px solid var(--gold);
+  padding: 6px 14px 6px 18px; margin-top: 4px; position:relative;
+  background: linear-gradient(90deg, rgba(212,175,55,.06), transparent);
+}
+.pdm-quote p { font-family:'Oswald',sans-serif; font-weight:500; font-style: normal; font-size:15px; line-height:1.5; color: var(--fog); margin:0 0 8px; letter-spacing:0.01em; }
+.pdm-quote span { font-family:'Space Mono',monospace; font-size:10.5px; color: var(--gold); letter-spacing:0.08em; text-transform:uppercase; }
+
+/* ---------- SKILLS ---------- */
+.pdm-skills-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:14px; margin-top:6px; }
+.pdm-skill-card {
+  background: var(--void-2); border:1px solid var(--line-soft); padding: 16px 18px; position:relative;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+.pdm-skill-card::before {
+  content:''; position:absolute; top:0; left:0; width:26px; height:3px; background: var(--gold);
+}
+.pdm-skill-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.pdm-skill-icon { width:24px; height:24px; flex-shrink:0; color: var(--gold); }
+.pdm-skill-name { font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:var(--fog); }
+.pdm-skill-lvl { font-family:'Anton',sans-serif; font-size:15px; color: var(--gold-pale); margin-left:auto; }
+.pdm-skill-bar { height:6px; background: var(--void); border:1px solid var(--line-soft); overflow:hidden; margin-top:8px; clip-path: polygon(0 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
+.pdm-skill-bar-fill { height:100%; background: linear-gradient(90deg, var(--blue-pop), var(--gold)); }
+.pdm-skill-xp { font-size:10.5px; color: var(--dim); margin-top:5px; font-family:'Space Mono',monospace; }
+
+/* ---------- QUESTS ---------- */
+.pdm-quest-progress { font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:0.05em; text-transform:uppercase; color:var(--dim); margin-bottom:14px; }
+.pdm-quest-progress b { font-family:'Anton',sans-serif; font-size:16px; color: var(--gold-pale); }
+.pdm-quest {
+  display:flex; align-items:center; gap:14px; padding: 14px 16px;
+  background: var(--void-2); border:1px solid var(--line-soft); margin-bottom:10px;
+  transition: opacity .2s, border-color .2s;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+}
+.pdm-quest.done { opacity:0.5; border-color: var(--gold-dim); }
+.pdm-quest-icon { width:28px; height:28px; flex-shrink:0; color: var(--gold); }
+.pdm-quest-body { flex:1; min-width:0; }
+.pdm-quest-name { font-family:'Oswald',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.03em; color:var(--fog); text-transform:uppercase; }
+.pdm-quest.done .pdm-quest-name { text-decoration: line-through; text-decoration-color: var(--gold-dim); }
+.pdm-quest-meta { font-size:11px; color: var(--dim); margin-top:2px; }
+.pdm-quest-xp { font-family:'Anton',sans-serif; font-size:14px; color: var(--gold-pale); white-space:nowrap; }
+.pdm-quest-check {
+  width:28px; height:28px; border:2px solid var(--line); flex-shrink:0; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; background:transparent; color:transparent;
+  transition: all .15s; clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
+}
+.pdm-quest-check:hover { border-color: var(--gold); }
+.pdm-quest.done .pdm-quest-check { background: var(--gold); border-color: var(--gold); color: var(--void); }
+
+/* ---------- BATTLE PASS ---------- */
+.pdm-pass-header {
+  display:flex; align-items:center; gap:0; margin-bottom:4px; flex-wrap:wrap;
+}
+.pdm-pass-badge {
+  background: var(--gold); color: var(--void); font-family:'Anton',sans-serif;
+  font-size: clamp(15px, 1.6vw, 19px); padding: 12px 20px; white-space:nowrap; flex-shrink:0;
+  clip-path: polygon(0 0, 100% 0, 88% 100%, 0% 100%);
+  display:flex; align-items:center; gap:8px;
+}
+.pdm-pass-badge b { font-size: clamp(22px, 2.4vw, 28px); }
+.pdm-pass-barwrap { flex:1; min-width: 160px; background: var(--void-2); border:1px solid var(--line); height: 44px; position:relative; margin-left:-14px; padding: 0 16px 0 30px; display:flex; align-items:center; }
+.pdm-pass-barwrap .pdm-xpbar { flex:1; height:11px; }
+.pdm-pass-sub { font-family:'Space Mono',monospace; font-size:11px; color:var(--dim); position:absolute; top:4px; left:32px; }
+.pdm-pass-xpnum { font-family:'Space Mono',monospace; font-size:12px; color: var(--gold-pale); margin-left:12px; white-space:nowrap; }
+
+.pdm-pass-wrap { position:relative; margin: 0 -6px; }
+.pdm-pass-wrap::before, .pdm-pass-wrap::after {
+  content:''; position:absolute; top:0; bottom:0; width:36px; z-index:2; pointer-events:none;
+}
+.pdm-pass-wrap::before { left:0; background: linear-gradient(90deg, var(--panel) 10%, transparent); }
+.pdm-pass-wrap::after { right:0; background: linear-gradient(270deg, var(--panel-2) 10%, transparent); }
+.pdm-pass-arrow {
+  position:absolute; top:50%; transform:translateY(-50%); z-index:3; width:38px; height:56px;
+  background: var(--gold); color: var(--void); border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; transition: background .15s;
+}
+.pdm-pass-arrow:hover { background: var(--gold-pale); }
+.pdm-pass-arrow.prev { left:-4px; clip-path: polygon(30% 0,100% 0,100% 100%,30% 100%,0 50%); padding-right:8px; }
+.pdm-pass-arrow.next { right:-4px; clip-path: polygon(0 0,70% 0,100% 50%,70% 100%,0 100%); padding-left:8px; }
+.pdm-pass-arrow svg { width:16px; height:16px; }
+
+.pdm-pass-scroll {
+  display:flex; gap: clamp(6px, 0.8vw, 12px); overflow-x:auto; padding: 22px 8px 16px;
+  -webkit-overflow-scrolling: touch; scroll-behavior: smooth;
+  scroll-snap-type: x proximity; cursor: grab;
+}
+.pdm-pass-scroll.dragging { cursor: grabbing; scroll-snap-type: none; user-select:none; }
+.pdm-pass-scroll::-webkit-scrollbar { height: 7px; }
+.pdm-pass-scroll::-webkit-scrollbar-thumb { background: var(--gold-dim); }
+.pdm-pass-scroll::-webkit-scrollbar-track { background: var(--void-2); }
+.pdm-pass-col {
+  flex: 0 0 clamp(150px, 15vw, 220px); width: clamp(150px, 15vw, 220px);
+  background: var(--void-2); border:1px solid var(--line-soft);
+  cursor:pointer; position:relative; transition: transform .18s, box-shadow .18s;
+  scroll-snap-align: start;
+}
+.pdm-pass-col:hover { transform: translateY(-5px) scale(1.015); box-shadow: 0 8px 22px rgba(0,0,0,.35); z-index:1; }
+.pdm-pass-col:active { transform: translateY(-2px) scale(0.99); }
+.pdm-pass-col.locked { opacity: 0.42; }
+.pdm-pass-col.locked:hover { opacity: 0.7; }
+.pdm-pass-col.reached { border-color: var(--gold-dim); }
+.pdm-pass-col.current {
+  border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212,175,55,.35), 0 10px 26px rgba(212,175,55,.2);
+  transform: translateY(-8px);
+}
+.pdm-pass-col.current:hover { transform: translateY(-11px) scale(1.02); }
+.pdm-pass-col-head {
+  background: var(--panel-2); text-align:center; padding: clamp(9px,1vw,13px) 6px 8px;
+  border-bottom: 1px solid var(--line-soft); position:relative;
+}
+.pdm-pass-col.reached .pdm-pass-col-head { background: linear-gradient(180deg, var(--gold-dim), var(--panel-2)); }
+.pdm-pass-col-lv { font-family:'Anton',sans-serif; font-size: clamp(16px, 1.6vw, 21px); color: var(--fog); line-height:1; }
+.pdm-pass-col-name { font-family:'Space Mono',monospace; font-size: clamp(8px, 0.8vw, 10px); color: var(--gold-pale); text-transform:uppercase; letter-spacing:0.03em; margin-top:4px; min-height:11px; }
+.pdm-pass-col-lock {
+  position:absolute; top:5px; right:5px; width:15px; height:15px; color: var(--dim);
+}
+.pdm-pass-col-body { padding: clamp(5px,0.7vw,8px); display:flex; flex-direction:column; gap: clamp(3px,0.5vw,5px); }
+.pdm-pass-cell {
+  background: var(--void); border:1px solid var(--line-soft); padding: 5px 7px;
+  display:flex; align-items:center; gap:6px; min-height: clamp(32px,3.2vw,40px); overflow:hidden;
+  transition: border-color .15s;
+}
+.pdm-pass-col:hover .pdm-pass-cell { border-color: var(--line); }
+.pdm-pass-col.reached .pdm-pass-cell { border-color: rgba(212,175,55,.25); }
+.pdm-pass-cell-icon { font-size: clamp(14px,1.4vw,18px); flex-shrink:0; line-height:1; }
+.pdm-pass-cell-text {
+  font-size: clamp(9px,0.85vw,11px); line-height:1.2; color: var(--dim); overflow:hidden; text-overflow:ellipsis;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+}
+.pdm-pass-col.reached .pdm-pass-cell-text { color: var(--fog); }
+.pdm-pass-col-xp {
+  text-align:center; font-family:'Space Mono',monospace; font-size: clamp(9px,0.9vw,11px); color: var(--dim);
+  padding: 6px 4px 9px; border-top: 1px dashed var(--line-soft);
+}
+.pdm-pass-ribbon {
+  position:absolute; top:-11px; left:50%; transform:translateX(-50%); background: var(--gold);
+  color: var(--void); font-family:'Oswald',sans-serif; font-weight:700; font-size: clamp(8.5px,0.85vw,10.5px);
+  letter-spacing:0.06em; padding: 3px 10px; text-transform:uppercase; white-space:nowrap;
+  clip-path: polygon(6% 0,94% 0,100% 100%,50% 80%,0% 100%);
+}
+.pdm-pass-season-col {
+  flex: 0 0 clamp(40px,4vw,54px); width: clamp(40px,4vw,54px); display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(180deg, var(--blue-pop), var(--gold-dim)); opacity:.55; position:relative;
+  scroll-snap-align: start;
+}
+.pdm-pass-season-col span {
+  writing-mode: vertical-rl; transform: rotate(180deg); font-family:'Anton',sans-serif;
+  font-size:12px; color: var(--void); letter-spacing:0.05em; white-space:nowrap;
+}
+.pdm-tier-modal-rewards { font-size:13px; line-height:2; color: var(--fog); margin-bottom:6px; }
+
+/* ---------- EVOLUTION ---------- */
+.pdm-photo-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(120px,1fr)); gap:10px; margin-top:6px; }
+.pdm-photo-slot {
+  aspect-ratio: 3/4; background: var(--void-2); border: 1px dashed var(--line);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  cursor:pointer; position:relative; overflow:hidden; text-align:center; padding:8px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.pdm-photo-slot img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
+.pdm-photo-label {
+  position:absolute; bottom:0; left:0; right:0; background: rgba(10,13,24,.8);
+  font-size:10px; color: var(--gold-pale); padding: 5px; text-align:center;
+  font-family:'Space Mono',monospace; text-transform:uppercase; letter-spacing:0.05em;
+}
+.pdm-photo-slot.empty { color: var(--dim); font-size: 26px; }
+.pdm-photo-slot.empty span.pdm-plus-label { font-size:10px; margin-top:4px; font-family:'Space Mono',monospace; }
+
+/* ---------- PROJETO ZERO ---------- */
+.pdm-secret-panel { text-align:center; padding: 44px 20px; }
+.pdm-secret-count {
+  font-family:'Anton',sans-serif; font-size:64px; color: var(--fog); line-height:1;
+  text-shadow: 3px 0 0 rgba(212,175,55,.55), -3px 0 0 rgba(92,127,224,.4);
+}
+.pdm-secret-label { font-family:'Oswald',sans-serif; font-size:11px; color: var(--dim); letter-spacing:0.2em; text-transform:uppercase; margin-top:2px;}
+.pdm-secret-best { font-family:'Space Mono',monospace; font-size:11px; color: var(--dim); margin-top:12px; }
+.pdm-btn {
+  font-family:'Oswald',sans-serif; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; font-size:12px;
+  background: var(--gold); color: var(--void); border:none; padding: 12px 24px;
+  cursor:pointer; margin-top:18px; transition: background .2s, transform .15s;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.pdm-btn:hover { background: var(--gold-pale); transform: translate(-1px,-1px); }
+.pdm-btn-ghost {
+  background:none; border: 1px solid var(--line); color: var(--dim);
+  font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:0.05em; text-transform:uppercase;
+  padding: 8px 16px; cursor:pointer; margin-top:10px; clip-path:none;
+}
+.pdm-btn-ghost:hover { color: var(--rose-pale); border-color: var(--rose); }
+
+/* ---------- MODAL ---------- */
+.pdm-modal-bg {
+  display:none; position:fixed; inset:0; background: rgba(6,8,16,.8);
+  z-index: 999; align-items:center; justify-content:center; padding:20px;
+}
+.pdm-modal-bg.open { display:flex; }
+.pdm-modal {
+  background: var(--panel); border: 1px solid var(--gold-dim); max-width: 360px; width:100%;
+  padding: 22px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+}
+.pdm-modal h3 { color: var(--gold-pale); font-size:16px; margin-bottom:12px; }
+.pdm-modal p { font-size:13px; color: var(--dim); line-height:1.6; margin-bottom:16px; }
+.pdm-modal img { width:100%; max-height:320px; object-fit:contain; margin-bottom:14px; background:var(--void); }
+.pdm-modal-row { display:flex; gap:10px; justify-content:flex-end; }
+.pdm-file-input { display:none; }
+
+.pdm-toast {
+  position: fixed; bottom: 20px; left:50%; transform: translateX(-50%) translateY(20px);
+  background: var(--gold); color: var(--void); font-family:'Oswald',sans-serif; font-size:12px;
+  letter-spacing:0.05em; text-transform:uppercase; padding: 10px 20px; opacity:0; pointer-events:none;
+  transition: all .35s; z-index: 1000;
+}
+.pdm-toast.show { opacity:1; transform: translateX(-50%) translateY(0); }
+
+.pdm-loading { text-align:center; padding: 60px 20px; color: var(--dim); font-family:'Oswald',sans-serif; letter-spacing:0.1em; text-transform:uppercase; font-size:13px; }
+
+/* ---------- FILL WIDER VIEWPORTS ---------- */
+@media (min-width: 640px) {
+  .pdm-panel { padding: 26px 32px 32px; }
+  .pdm-frame-wrap { width: 128px; height: 128px; }
+  .pdm-level-name { font-size: 46px; }
+  .pdm-eyebrow { font-size: 23px; }
+  .pdm-skills-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .pdm-quest { padding: 18px 22px; }
+  .pdm-photo-grid { grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 14px; }
+}
+@media (min-width: 900px) {
+  .pdm-dashboard-grid { display:grid; grid-template-columns: 1.6fr 1fr; gap: 18px; align-items:start; }
+  .pdm-quest-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .pdm-quest-grid .pdm-quest { margin-bottom: 0; }
+  .pdm-container { padding-top: 30px; }
+}
+@media (min-width: 1200px) {
+  .pdm-skills-grid { grid-template-columns: repeat(3, 1fr); gap: 22px; }
+}
+
+@media (max-width: 480px) {
+  .pdm-hero { justify-content:center; text-align:center; }
+  .pdm-hero-info { min-width: 100%; }
+  .pdm-xpbar-row, .pdm-streak-badge { justify-content:center; }
+}
+</style>
+</head>
+<body>
+
+<script>
+// Shim de armazenamento local: salva o progresso no navegador (localStorage),
+// no mesmo formato { value } que o restante do app já espera.
+window.storage = {
+  get: function(key) {
+    const v = localStorage.getItem(key);
+    return Promise.resolve(v !== null ? { value: v } : null);
+  },
+  set: function(key, value) {
+    localStorage.setItem(key, value);
+    return Promise.resolve();
+  }
+};
+</script>
+
+<div class="pdm-root" id="pdmRoot">
+  <div class="pdm-container">
+    <div class="pdm-loading" id="pdmLoading">Abrindo o compêndio...</div>
+
+    <div id="pdmApp" style="display:none;">
+      <div class="pdm-header">
+        <div class="pdm-brand">
+          <div class="pdm-brand-mark"><span>M</span></div>
+          <div class="pdm-brand-text">PASSE DA DISCIPLINA<b>MESTRE</b></div>
+        </div>
+        <div class="pdm-mini-profile" onclick="pdmGoto('dashboard')">
+          <div class="pdm-mini-name" id="pdmMiniName"><b>—</b>—</div>
+          <div class="pdm-mini-avatar" id="pdmMiniAvatar">M</div>
+        </div>
+      </div>
+      <div class="pdm-torn"></div>
+
+      <div class="pdm-nav">
+        <button class="pdm-nav-btn" data-view="dashboard" onclick="pdmGoto('dashboard')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          Painel
+        </button>
+        <button class="pdm-nav-btn" data-view="quests" onclick="pdmGoto('quests')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Missões
+        </button>
+        <button class="pdm-nav-btn" data-view="pass" onclick="pdmGoto('pass')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l2.6 6.6L21 9l-5 4.5L17.5 21 12 17.3 6.5 21 8 13.5 3 9l6.4-.4z"/></svg>
+          Passe
+        </button>
+        <button class="pdm-nav-btn" data-view="evolution" onclick="pdmGoto('evolution')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="1"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+          Evolução
+        </button>
+        <button class="pdm-nav-btn pdm-nav-secret" data-view="secret" onclick="pdmGoto('secret')" title="Privado">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+        </button>
+      </div>
+
+      <!-- ===== DASHBOARD ===== -->
+      <div class="pdm-view" data-view="dashboard">
+        <div class="pdm-dashboard-grid">
+          <div>
+            <div class="pdm-panel">
+              <div class="pdm-hero">
+                <div class="pdm-hero-wedge"></div>
+                <div class="pdm-frame-wrap" data-stage="0" id="pdmFrameWrap" onclick="pdmOpenPhotoPicker('profile')">
+                  <div class="pdm-frame-ring"></div>
+                  <div class="pdm-avatar" id="pdmAvatar">M</div>
+                  <div class="pdm-avatar-hint">+</div>
+                </div>
+                <div class="pdm-hero-info">
+                  <div class="pdm-level-name" id="pdmLevelName">Fracassado</div>
+                  <div class="pdm-level-sub" id="pdmLevelSub">Nível geral — 0 XP</div>
+                  <div class="pdm-xpbar-row"><span>Próximo tier</span><b id="pdmXpToNext">—</b></div>
+                  <div class="pdm-xpbar"><div class="pdm-xpbar-fill" id="pdmXpFill" style="width:0%"></div></div>
+                  <div class="pdm-streak-badge">
+                    <span class="pdm-streak-flame">◆</span>
+                    <span id="pdmStreakText">0 dias de streak</span>
+                    <span class="pdm-streak-mult" id="pdmStreakMult">1.0x</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pdm-panel">
+              <div class="pdm-eyebrow">Habilidades</div>
+              <div class="pdm-skills-grid" id="pdmSkillsGrid"></div>
+            </div>
+          </div>
+
+          <div class="pdm-panel">
+            <div class="pdm-eyebrow">Frase do dia</div>
+            <div class="pdm-quote">
+              <p id="pdmQuoteText">—</p>
+              <span id="pdmQuoteAuthor">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== QUESTS ===== -->
+      <div class="pdm-view" data-view="quests">
+        <div class="pdm-panel">
+          <div class="pdm-eyebrow">Missões de hoje</div>
+          <div class="pdm-quest-progress" id="pdmQuestProgress">0/0 concluídas</div>
+          <div id="pdmQuestList" class="pdm-quest-grid"></div>
+        </div>
+      </div>
+
+      <!-- ===== BATTLE PASS ===== -->
+      <div class="pdm-view" data-view="pass">
+        <div class="pdm-panel">
+          <div class="pdm-pass-header">
+            <div class="pdm-pass-badge">NÍVEL <b id="pdmPassLevelNum">1</b></div>
+            <div class="pdm-pass-barwrap">
+              <span class="pdm-pass-sub" id="pdmPassSub">—</span>
+              <div class="pdm-xpbar"><div class="pdm-xpbar-fill" id="pdmPassFill" style="width:0%"></div></div>
+              <span class="pdm-pass-xpnum" id="pdmPassXp">0 XP</span>
+            </div>
+          </div>
+          <p style="font-size:11.5px;color:var(--dim);margin:10px 0 0;">Arraste, use as setas ou toque numa coluna pra ver os prêmios completos daquele tier.</p>
+          <div class="pdm-pass-wrap">
+            <button class="pdm-pass-arrow prev" onclick="pdmScrollPass(-1)" aria-label="Anterior">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div class="pdm-pass-scroll" id="pdmPassTrack"></div>
+            <button class="pdm-pass-arrow next" onclick="pdmScrollPass(1)" aria-label="Próximo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== EVOLUTION ===== -->
+      <div class="pdm-view" data-view="evolution">
+        <div class="pdm-panel">
+          <div class="pdm-eyebrow">Registro mensal</div>
+          <p style="font-size:12.5px;color:var(--dim);margin:-4px 0 14px;">Uma foto por mês. Só você vê essas imagens.</p>
+          <div class="pdm-photo-grid" id="pdmPhotoGrid"></div>
+        </div>
+      </div>
+
+      <!-- ===== SECRET / PROJETO ZERO ===== -->
+      <div class="pdm-view" data-view="secret">
+        <div class="pdm-panel pdm-secret-panel">
+          <div class="pdm-eyebrow" style="justify-content:center;">Projeto Zero</div>
+          <div class="pdm-secret-count" id="pdmSecretCount">0</div>
+          <div class="pdm-secret-label">dias em sequência</div>
+          <div class="pdm-secret-best" id="pdmSecretBest">recorde: 0</div>
+          <div>
+            <button class="pdm-btn" id="pdmSecretBtn" onclick="pdmMarkClean()">Marcar hoje</button>
+          </div>
+          <div>
+            <button class="pdm-btn-ghost" onclick="pdmConfirmReset()">Reiniciar sequência</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center; margin-top: 30px;">
+        <button class="pdm-btn-ghost" onclick="pdmConfirmFullReset()">Zerar todo o progresso</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photo modal -->
+  <div class="pdm-modal-bg" id="pdmPhotoModal">
+    <div class="pdm-modal">
+      <h3 id="pdmPhotoModalTitle">Foto</h3>
+      <img id="pdmPhotoModalImg" style="display:none;" />
+      <p id="pdmPhotoModalText"></p>
+      <input type="file" accept="image/*" class="pdm-file-input" id="pdmFileInput" onchange="pdmHandleFile(event)" />
+      <div class="pdm-modal-row">
+        <button class="pdm-btn-ghost" onclick="pdmCloseModal('pdmPhotoModal')">Fechar</button>
+        <button class="pdm-btn" onclick="document.getElementById('pdmFileInput').click()">Enviar foto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tier detail modal -->
+  <div class="pdm-modal-bg" id="pdmTierModal">
+    <div class="pdm-modal">
+      <h3 id="pdmTierModalTitle">Tier</h3>
+      <p id="pdmTierModalXp" style="margin-bottom:10px;"></p>
+      <div class="pdm-tier-modal-rewards" id="pdmTierModalRewards"></div>
+      <div class="pdm-modal-row">
+        <button class="pdm-btn-ghost" onclick="pdmCloseModal('pdmTierModal')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm modal -->
+  <div class="pdm-modal-bg" id="pdmConfirmModal">
+    <div class="pdm-modal">
+      <h3 id="pdmConfirmTitle">Confirmar</h3>
+      <p id="pdmConfirmText"></p>
+      <div class="pdm-modal-row">
+        <button class="pdm-btn-ghost" onclick="pdmCloseModal('pdmConfirmModal')">Cancelar</button>
+        <button class="pdm-btn" id="pdmConfirmBtn">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pdm-toast" id="pdmToast">—</div>
+</div>
+
+<script>
+(function() {
+
+// ---------------------------------------------------------------
+// DATA
+// ---------------------------------------------------------------
+const TIERS = [
+  {t:1, xp:0, name:'Fracassado', rewards:[]},
+  {t:2, xp:100, name:null, rewards:['🎸 Palhetas e cordas novas de guitarra','💪 Whey/barra de proteína (dose pequena)','👕 Camiseta de treino simples','☕ Café especial + algo doce','🥋 Acessório pequeno de treino']},
+  {t:3, xp:150, name:'Aprendiz', rewards:['👕 Camiseta fitness de marca boa','💊 Suplemento (whey ou creatina)','🎮 Jogo indie ou em promoção','🍕 Rolê casual','🎸 Kit de cordas premium']},
+  {t:4, xp:300, name:null, rewards:['🥋 Kimono inicial para começar a praticar','💊 Combo de suplementos (tamanho grande)','🎮 Jogo de médio orçamento','🍽️ Rolê em restaurante novo','🎸 Afinador ou capotraste']},
+  {t:5, xp:500, name:'Disciplinado', rewards:['💊 Combo de suplementos — 1 mês','🎬 Rolê cinema + jantar','🎮 Jogo AAA (promoção)','👕 Peça de roupa de treino premium','🥋 Rash guard ou protetor bucal']},
+  {t:6, xp:750, name:null, rewards:['🎭 Rolê teatro','💆 Massagem relaxante avulsa','🎮 Jogo recém-lançado','🎸 Pedal de efeito básico','👖 Peça de roupa nova']},
+  {t:7, xp:1200, name:'Consistente', rewards:['🎮 Jogo AAA novo, dia de lançamento','💆 Dia de spa','🥋 Upgrade de kimono','🍽️ Rolê premium (jantar chique)','🎧 Headset gamer básico']},
+  {t:8, xp:1700, name:null, rewards:['💊 Suplementos — combo mensal completo','✂️ Corte de cabelo + barba','🕶️ Experiência VR avulsa','🏛️ Rolê cultural + jantar','🎸 Acessório premium de guitarra']},
+  {t:9, xp:2100, name:null, rewards:['🎸 Pedal de efeito avançado','👖 Peça de roupa nova','💆 Spa day completo','🎮 Edição especial de um jogo','🥋 Aula experimental extra']},
+  {t:10, xp:2500, name:'Guerreiro', rewards:['🎭 Rolê premium (teatro + jantar)','🎧 Headset gamer de qualidade','✂️ Tratamento estético de cabelo completo','💊 Suplementos linha premium','🕶️ Jogo em VR completo']},
+  {t:11, xp:3200, name:null, rewards:['👖 Mini guarda-roupa (2-3 peças)','💆 Combo massagem + spa','🎮 Jogo grande + DLC','⌨️ Periférico PC','🥋 Acessórios para nova graduação']},
+  {t:12, xp:3900, name:null, rewards:['👕 Guarda-roupa parcial (marco físico)','🖥️ Periférico PC (monitor entrada)','✈️ Bate-volta / viagem curta','💊 Suplementos — estoque trimestral','🎸 Upgrade de equipamento']},
+  {t:13, xp:4500, name:null, rewards:['🥋 Inscrição/exame de primeira graduação','✂️ Tratamento estético premium','🎮 Jogo + acessórios temáticos','🎤 Rolê especial (show/festival)','🎸 Upgrade de instrumento']},
+  {t:14, xp:5000, name:'Mestre da Rotina', rewards:['🕶️ Óculos VR','🎮 Jogo VR AAA','👔 Guarda-roupa completo','💆 Assinatura mensal de massagem','🥋 Kimono profissional']},
+  {t:15, xp:6200, name:null, rewards:['💆 Spa day completo','🖥️ Peça de PC (GPU/monitor)','🎮 Franquia completa (coleção)','✈️ Viagem de fim de semana','🎸 Guitarra nova ou upgrade grande']},
+  {t:16, xp:7500, name:null, rewards:['🎧 Headset/controle gamer topo','✂️ Pacote de tratamento estético contínuo','💊 Suplementos — estoque anual','👔 Roupas de marca','🥋 Seminário de artes marciais']},
+  {t:17, xp:8200, name:null, rewards:['👔 Guarda-roupa completo (marco físico grande)','🖥️ Monitor gamer de alta qualidade','🎮 Edição colecionador','✈️ Viagem maior','🔊 Amplificador ou acessório topo']},
+  {t:18, xp:9000, name:'Referência', rewards:['🕶️ Setup VR completo','🖥️ GPU de alta performance','💆 Spa retreat de fim de semana','🥋 Kimono de competição oficial','✈️ Viagem nacional ou internacional']},
+  {t:19, xp:11000, name:null, rewards:['🖥️ Peça de PC topo (GPU/processador)','🎮 Jogo colecionador + merch','👔 Guarda-roupa grife completo','💆 Assinatura anual de massagem','🥋 Exame de faixa avançada']},
+  {t:20, xp:13000, name:null, rewards:['🎮 Persona 4 Revival — dia 1 (18/fev/2027)','🎁 Merchandise Persona','🎉 Rolê especial de lançamento','🖥️ Peça final de PC','🎮 Jogo bônus da wishlist']},
+  {t:21, xp:15000, name:'Inacreditável', rewards:['🖥️ PC gamer completo','✈️ Viagem grande de celebração','🥋 Exame de faixa avançada + evento','🎉 Festa de celebração do ano','👔 Renovação completa de guarda-roupa']},
+  {t:22, xp:17000, name:null, rewards:['🎸 Guitarra ou equipamento de estúdio novo','🥋 Aula com instrutor renomado','🎮 Novo hardware de jogo','✈️ Viagem internacional curta','💆 Assinatura semestral de bem-estar']},
+  {t:23, xp:19500, name:null, rewards:['👔 Guarda-roupa de grife renovado','🖥️ Upgrade de PC (peça topo adicional)','🎮 Coleção completa + colecionáveis','✈️ Viagem maior (etapa 1)','🥋 Equipamento de competição completo']},
+  {t:24, xp:22000, name:null, rewards:['💊 Ano inteiro de suplementação premium','🎸 Setup de estúdio caseiro','🕶️ Upgrade completo de VR','🍽️ Rolê gastronômico de alto nível','✂️ Pacote anual de tratamentos estéticos']},
+  {t:25, xp:25000, name:null, rewards:['🥋 Exame de graduação avançada','✈️ Viagem internacional maior (completa)','🖥️ PC gamer topo absoluto','🎉 Evento grande (festival/show)','👔 Renovação total de guarda-roupa']},
+  {t:26, xp:28000, name:null, rewards:['🎁 Presente grande à sua escolha','🥋 Patrocínio de campeonato/evento de nicho','🎸 Instrumento de nível profissional','✈️ Viagem longa, imersão total','💆 Retiro de bem-estar completo']},
+  {t:27, xp:30000, name:'Lendário', rewards:['🚗 Carro novo','🥋 Título/graduação de referência','🎸 Estúdio pessoal completo','🖥️ Setup definitivo (PC + VR + periféricos)','🎉 Celebração de dois anos de disciplina']},
+];
+const NAMED_TIERS = TIERS.filter(t => t.name);
+
+const QUOTES = [
+  {q:'A disciplina é a forma mais alta de amor-próprio.', a:'Original'},
+  {q:'Você não sobe de nível no dia da vitória. Sobe nos dias em que ninguém está olhando.', a:'Original'},
+  {q:'O homem que move montanhas começa carregando pequenas pedras.', a:'Confúcio'},
+  {q:'Não é o mais forte que sobrevive, mas o mais adaptável.', a:'Atribuído a Darwin'},
+  {q:'Honra não é o que os outros veem. É o que você faz quando ninguém vê.', a:'Original'},
+  {q:'A queda não te define. O tempo que você leva pra levantar, sim.', a:'Original'},
+  {q:'Água mole em pedra dura, tanto bate até que fura.', a:'Provérbio'},
+  {q:'A persona que você veste todo dia é a persona que você se torna.', a:'Original'},
+  {q:'Conheça seu inimigo e conheça a si mesmo.', a:'Sun Tzu'},
+  {q:'A vitória pertence a quem mais a deseja.', a:'Atribuído a Napoleão'},
+  {q:'Todo mestre já foi um desastre que se recusou a desistir.', a:'Original'},
+  {q:'Não busque a força de fora. Busque a disciplina de dentro.', a:'Miyamoto Musashi (parafraseado)'},
+  {q:'Um objetivo sem plano é apenas um desejo.', a:'Atribuído a Antoine de Saint-Exupéry'},
+  {q:'Sua sombra só te assombra enquanto você não a encara.', a:'Original'},
+  {q:'A jornada de mil quilômetros começa com um único passo.', a:'Lao Tzu'},
+  {q:'Cada streak quebrado é uma lição, não uma sentença.', a:'Original'},
+  {q:'Excelência não é um ato, é um hábito.', a:'Atribuído a Aristóteles'},
+  {q:'O guerreiro de hoje é só o aprendiz que não desistiu ontem.', a:'Original'},
+  {q:'Faça hoje o que os outros não fazem, viva amanhã como os outros não podem.', a:'Provérbio popular'},
+  {q:'Não é sobre motivação. É sobre se tornar alguém que não precisa dela.', a:'Original'},
+];
+
+const QUEST_DEFS = {
+  pmp: {id:'pmp', name:'Estudo PMP', meta:'Bloco de 60 min · Study Hall PMI', xp:15, skill:'trabalho',
+    icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>'},
+  treino: {id:'treino', name:'Treino', meta:'Bloco de 60 min · academia, bike ou piscina', xp:15, skill:'saude',
+    icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6.5 6.5l11 11M4 8l4-4M20 16l-4 4M2 6l4-4M22 18l-4 4M9 4L4 9l11 11 5-5z"/></svg>'},
+  ingles: {id:'ingles', name:'Inglês', meta:'Bloco de 30 min · imersão diária', xp:10, skill:'trabalho',
+    icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20 15 15 0 010-20z"/></svg>'},
+  ingles_ext: {id:'ingles_ext', name:'Inglês (bloco estendido)', meta:'Bloco de 60 min · pós-PMP', xp:25, skill:'trabalho',
+    icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20 15 15 0 010-20z"/></svg>'},
+  guitarra: {id:'guitarra', name:'Guitarra', meta:"Bloco de 20 min · Avenged Sevenfold / Guns N' Roses", xp:8, skill:'hobbies',
+    icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="16" r="4"/><path d="M11 13L19 5m0 0h-4m4 0v4"/></svg>'},
+};
+const PMP_CUTOFF = new Date('2026-10-01T00:00:00');
+
+const SKILL_META = {
+  saude: {name:'Saúde e Força', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6.5 6.5l11 11M4 8l4-4M20 16l-4 4M2 6l4-4M22 18l-4 4M9 4L4 9l11 11 5-5z"/></svg>'},
+  hobbies: {name:'Hobbies', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="16" r="4"/><path d="M11 13L19 5m0 0h-4m4 0v4"/></svg>'},
+  trabalho: {name:'Trabalho', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>'},
+};
+
+// ---------------------------------------------------------------
+// STATE
+// ---------------------------------------------------------------
+let STATE = null;
+let PROFILE_PHOTO = null;
+let MONTHLY_PHOTOS = {};
+let pendingPhotoTarget = null;
+
+function todayISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function monthISO() { return todayISO().slice(0,7); }
+function dayOfYear() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  return Math.floor((now - start) / 86400000);
+}
+function daysBetween(a, b) {
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+
+function defaultState() {
+  return {
+    totalXP: 0,
+    skills: {saude:0, hobbies:0, trabalho:0},
+    streak: {count:0, lastDate:null},
+    projetoZero: {streak:0, lastDate:null, best:0},
+    dailyQuests: {date: todayISO(), done:{}},
+  };
+}
+
+async function loadState() {
+  try {
+    const r = await window.storage.get('mestre-state');
+    STATE = r ? JSON.parse(r.value) : defaultState();
+  } catch(e) { STATE = defaultState(); }
+  if (!STATE.dailyQuests || STATE.dailyQuests.date !== todayISO()) {
+    STATE.dailyQuests = {date: todayISO(), done:{}};
+  }
+  try {
+    const p = await window.storage.get('mestre-profile-photo');
+    PROFILE_PHOTO = p ? JSON.parse(p.value).dataUrl : null;
+  } catch(e) { PROFILE_PHOTO = null; }
+  try {
+    const m = await window.storage.get('mestre-monthly-photos');
+    MONTHLY_PHOTOS = m ? JSON.parse(m.value) : {};
+  } catch(e) { MONTHLY_PHOTOS = {}; }
+}
+
+async function saveState() {
+  try { await window.storage.set('mestre-state', JSON.stringify(STATE)); }
+  catch(e) { pdmToast('Erro ao salvar. Tente novamente.'); }
+}
+async function saveProfilePhoto() {
+  try { await window.storage.set('mestre-profile-photo', JSON.stringify({dataUrl: PROFILE_PHOTO})); }
+  catch(e) { pdmToast('Erro ao salvar a foto.'); }
+}
+async function saveMonthlyPhotos() {
+  try { await window.storage.set('mestre-monthly-photos', JSON.stringify(MONTHLY_PHOTOS)); }
+  catch(e) { pdmToast('Erro ao salvar a foto.'); }
+}
+
+// ---------------------------------------------------------------
+// XP / LEVEL LOGIC
+// ---------------------------------------------------------------
+function getMultiplier(streakCount) {
+  if (streakCount >= 90) return 2.0;
+  if (streakCount >= 30) return 1.5;
+  if (streakCount >= 7) return 1.2;
+  return 1.0;
+}
+
+function registerStreakDay() {
+  const t = todayISO();
+  const s = STATE.streak;
+  if (s.lastDate === t) return;
+  if (s.lastDate && daysBetween(s.lastDate, t) === 1) {
+    s.count += 1;
+  } else {
+    s.count = 1;
+  }
+  s.lastDate = t;
+}
+
+function awardXP(questId) {
+  const def = QUEST_DEFS[questId];
+  if (!def) return;
+  const mult = getMultiplier(STATE.streak.count || (STATE.streak.lastDate === todayISO() ? STATE.streak.count : 0));
+  // multiplier based on streak BEFORE today's increment, so use current stored count if already counted today, else compute prospectively
+  const currentMult = getMultiplier(STATE.streak.lastDate === todayISO() ? STATE.streak.count : STATE.streak.count);
+  const gained = Math.round(def.xp * currentMult);
+  STATE.skills[def.skill] = (STATE.skills[def.skill] || 0) + gained;
+  STATE.totalXP += gained;
+  registerStreakDay();
+  return gained;
+}
+
+function getLevelInfo(xp) {
+  let current = NAMED_TIERS[0];
+  let next = NAMED_TIERS[1];
+  for (let i = 0; i < NAMED_TIERS.length; i++) {
+    if (xp >= NAMED_TIERS[i].xp) { current = NAMED_TIERS[i]; next = NAMED_TIERS[i+1] || null; }
+  }
+  const stage = NAMED_TIERS.indexOf(current);
+  let progressPct = 100;
+  let toNext = 'Nível máximo';
+  if (next) {
+    const span = next.xp - current.xp;
+    const done = xp - current.xp;
+    progressPct = Math.max(0, Math.min(100, (done/span)*100));
+    toNext = (next.xp - xp) + ' XP para ' + next.name;
+  }
+  return {current, next, stage, progressPct, toNext};
+}
+
+function skillLevel(xp) { return Math.floor(Math.sqrt(xp/40)) + 1; }
+function skillLevelProgress(xp) {
+  const lvl = skillLevel(xp);
+  const base = Math.pow(lvl-1,2)*40;
+  const nextBase = Math.pow(lvl,2)*40;
+  const pct = Math.max(0, Math.min(100, ((xp-base)/(nextBase-base))*100));
+  return pct;
+}
+
+// ---------------------------------------------------------------
+// RENDER
+// ---------------------------------------------------------------
+function pdmGoto(view) {
+  document.querySelectorAll('.pdm-view').forEach(v => v.classList.toggle('active', v.dataset.view === view));
+  document.querySelectorAll('.pdm-nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  if (view === 'pass') {
+    requestAnimationFrame(() => {
+      const current = document.querySelector('.pdm-pass-col.current');
+      if (current) current.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+    });
+  }
+}
+
+function pdmToast(msg) {
+  const el = document.getElementById('pdmToast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function renderHeader() {
+  const info = getLevelInfo(STATE.totalXP);
+  const avatarHtml = PROFILE_PHOTO ? '<img src="'+PROFILE_PHOTO+'">' : 'M';
+  document.getElementById('pdmMiniAvatar').innerHTML = avatarHtml;
+  document.getElementById('pdmMiniName').innerHTML = '<b>' + info.current.name + '</b>' + STATE.totalXP + ' XP';
+  document.getElementById('pdmAvatar').innerHTML = avatarHtml;
+  document.getElementById('pdmFrameWrap').dataset.stage = info.stage;
+  document.getElementById('pdmLevelName').textContent = info.current.name;
+  document.getElementById('pdmLevelSub').textContent = 'Nível geral — ' + STATE.totalXP + ' XP acumulados';
+  document.getElementById('pdmXpToNext').textContent = info.toNext;
+  document.getElementById('pdmXpFill').style.width = info.progressPct + '%';
+  const mult = getMultiplier(STATE.streak.count);
+  document.getElementById('pdmStreakText').textContent = STATE.streak.count + (STATE.streak.count===1 ? ' dia de streak' : ' dias de streak');
+  document.getElementById('pdmStreakMult').textContent = mult.toFixed(1) + 'x';
+}
+
+function renderQuote() {
+  const idx = (dayOfYear() + new Date().getFullYear()) % QUOTES.length;
+  const item = QUOTES[idx];
+  document.getElementById('pdmQuoteText').textContent = '"' + item.q + '"';
+  document.getElementById('pdmQuoteAuthor').textContent = '— ' + item.a;
+}
+
+function renderSkills() {
+  const grid = document.getElementById('pdmSkillsGrid');
+  grid.innerHTML = '';
+  Object.keys(SKILL_META).forEach(key => {
+    const meta = SKILL_META[key];
+    const xp = STATE.skills[key] || 0;
+    const lvl = skillLevel(xp);
+    const pct = skillLevelProgress(xp);
+    const card = document.createElement('div');
+    card.className = 'pdm-skill-card';
+    card.innerHTML =
+      '<div class="pdm-skill-head">' +
+        '<div class="pdm-skill-icon">'+meta.icon+'</div>' +
+        '<div class="pdm-skill-name">'+meta.name+'</div>' +
+        '<div class="pdm-skill-lvl">LV '+lvl+'</div>' +
+      '</div>' +
+      '<div class="pdm-skill-bar"><div class="pdm-skill-bar-fill" style="width:'+pct+'%"></div></div>' +
+      '<div class="pdm-skill-xp">'+xp+' XP</div>';
+    grid.appendChild(card);
+  });
+}
+
+function activeQuestIds() {
+  const now = new Date();
+  if (now >= PMP_CUTOFF) return ['treino','ingles_ext','guitarra'];
+  return ['pmp','treino','ingles','guitarra'];
+}
+
+function renderQuests() {
+  const list = document.getElementById('pdmQuestList');
+  list.innerHTML = '';
+  const ids = activeQuestIds();
+  let doneCount = 0;
+  ids.forEach(id => {
+    const def = QUEST_DEFS[id];
+    const done = !!STATE.dailyQuests.done[id];
+    if (done) doneCount++;
+    const mult = getMultiplier(STATE.streak.lastDate === todayISO() ? STATE.streak.count : STATE.streak.count);
+    const xpShown = Math.round(def.xp * mult);
+    const row = document.createElement('div');
+    row.className = 'pdm-quest' + (done ? ' done' : '');
+    row.innerHTML =
+      '<div class="pdm-quest-icon">'+def.icon+'</div>' +
+      '<div class="pdm-quest-body">' +
+        '<div class="pdm-quest-name">'+def.name+'</div>' +
+        '<div class="pdm-quest-meta">'+def.meta+'</div>' +
+      '</div>' +
+      '<div class="pdm-quest-xp">+'+xpShown+' XP</div>' +
+      '<div class="pdm-quest-check" data-id="'+id+'">✓</div>';
+    row.querySelector('.pdm-quest-check').addEventListener('click', () => pdmToggleQuest(id));
+    list.appendChild(row);
+  });
+  document.getElementById('pdmQuestProgress').innerHTML = '<b>'+doneCount+'/'+ids.length+'</b> missões concluídas hoje';
+}
+
+async function pdmToggleQuest(id) {
+  if (STATE.dailyQuests.done[id]) return; // one-way, already earned today
+  const gained = awardXP(id);
+  STATE.dailyQuests.done[id] = true;
+  await saveState();
+  pdmToast('+' + gained + ' XP');
+  renderAll();
+}
+
+function splitReward(str) {
+  const idx = str.indexOf(' ');
+  return idx === -1 ? {icon:'✦', text:str} : {icon:str.slice(0,idx), text:str.slice(idx+1)};
+}
+
+function renderPass() {
+  const info = getLevelInfo(STATE.totalXP);
+  document.getElementById('pdmPassXp').textContent = STATE.totalXP.toLocaleString('pt-BR') + ' XP';
+  document.getElementById('pdmPassSub').textContent = info.current.name + (info.next ? ' → ' + info.next.name : ' (máximo)');
+  document.getElementById('pdmPassFill').style.width = info.progressPct + '%';
+  document.getElementById('pdmPassLevelNum').textContent = info.current.t;
+
+  const track = document.getElementById('pdmPassTrack');
+  track.innerHTML = '';
+  TIERS.forEach((tier) => {
+    if (tier.t === 22) {
+      const div = document.createElement('div');
+      div.className = 'pdm-pass-season-col';
+      div.innerHTML = '<span>TEMPORADA 2 — RUMO AO LENDÁRIO</span>';
+      track.appendChild(div);
+    }
+    const reached = STATE.totalXP >= tier.xp;
+    const isCurrent = tier.t === info.current.t;
+    const col = document.createElement('div');
+    col.className = 'pdm-pass-col' + (reached ? ' reached' : ' locked') + (isCurrent ? ' current' : '');
+    col.onclick = () => { if (!passJustDragged) pdmOpenTierModal(tier.t); };
+
+    let cellsHtml = '';
+    if (tier.rewards.length) {
+      tier.rewards.forEach(r => {
+        const {icon, text} = splitReward(r);
+        cellsHtml += '<div class="pdm-pass-cell"><span class="pdm-pass-cell-icon">'+icon+'</span><span class="pdm-pass-cell-text">'+text+'</span></div>';
+      });
+    } else {
+      cellsHtml = '<div class="pdm-pass-cell"><span class="pdm-pass-cell-text">Ponto de partida</span></div>';
+    }
+
+    col.innerHTML =
+      (isCurrent ? '<div class="pdm-pass-ribbon">Você está aqui</div>' : '') +
+      '<div class="pdm-pass-col-head">' +
+        (!reached ? '<svg class="pdm-pass-col-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>' : '') +
+        '<div class="pdm-pass-col-lv">T'+tier.t+'</div>' +
+        '<div class="pdm-pass-col-name">'+(tier.name || '&nbsp;')+'</div>' +
+      '</div>' +
+      '<div class="pdm-pass-col-body">'+cellsHtml+'</div>' +
+      '<div class="pdm-pass-col-xp">'+tier.xp.toLocaleString('pt-BR')+' XP</div>';
+    track.appendChild(col);
+  });
+
+  if (isNaN(info.current.t)) {} // no-op guard
+  // auto-scroll to current tier column on first render of this view
+}
+
+function pdmOpenTierModal(t) {
+  const tier = TIERS.find(x => x.t === t);
+  if (!tier) return;
+  document.getElementById('pdmTierModalTitle').textContent = 'Tier ' + tier.t + (tier.name ? ' — ' + tier.name : '');
+  document.getElementById('pdmTierModalXp').textContent = tier.xp.toLocaleString('pt-BR') + ' XP acumulados';
+  const rewardsEl = document.getElementById('pdmTierModalRewards');
+  rewardsEl.innerHTML = tier.rewards.length ? tier.rewards.join('<br>') : 'Ponto de partida — sem prêmio, é o dia zero.';
+  document.getElementById('pdmTierModal').classList.add('open');
+}
+
+function renderEvolution() {
+  const grid = document.getElementById('pdmPhotoGrid');
+  grid.innerHTML = '';
+  const cm = monthISO();
+  const months = new Set(Object.keys(MONTHLY_PHOTOS));
+  months.add(cm);
+  const sorted = Array.from(months).sort().reverse();
+  sorted.forEach(m => {
+    const [y, mm] = m.split('-');
+    const label = new Date(y, mm-1, 1).toLocaleDateString('pt-BR', {month:'short', year:'numeric'});
+    const photo = MONTHLY_PHOTOS[m];
+    const slot = document.createElement('div');
+    slot.className = 'pdm-photo-slot' + (photo ? '' : ' empty');
+    slot.onclick = () => pdmOpenPhotoPicker('month', m);
+    if (photo) {
+      slot.innerHTML = '<img src="'+photo+'"><div class="pdm-photo-label">'+label+'</div>';
+    } else {
+      slot.innerHTML = '<div>+</div><span class="pdm-plus-label">'+label+'</span>';
+    }
+    grid.appendChild(slot);
+  });
+}
+
+function renderSecret() {
+  document.getElementById('pdmSecretCount').textContent = STATE.projetoZero.streak;
+  document.getElementById('pdmSecretBest').textContent = 'recorde: ' + STATE.projetoZero.best;
+  const btn = document.getElementById('pdmSecretBtn');
+  const doneToday = STATE.projetoZero.lastDate === todayISO();
+  btn.textContent = doneToday ? 'Hoje já marcado' : 'Marcar hoje';
+  btn.disabled = doneToday;
+  btn.style.opacity = doneToday ? '0.5' : '1';
+  btn.style.cursor = doneToday ? 'default' : 'pointer';
+}
+
+async function pdmMarkClean() {
+  const t = todayISO();
+  const pz = STATE.projetoZero;
+  if (pz.lastDate === t) return;
+  if (pz.lastDate && daysBetween(pz.lastDate, t) === 1) { pz.streak += 1; }
+  else { pz.streak = 1; }
+  pz.lastDate = t;
+  pz.best = Math.max(pz.best, pz.streak);
+  await saveState();
+  renderSecret();
+  pdmToast('Registrado.');
+}
+
+function renderAll() {
+  renderHeader();
+  renderQuote();
+  renderSkills();
+  renderQuests();
+  renderPass();
+  renderEvolution();
+  renderSecret();
+}
+
+// ---------------------------------------------------------------
+// PHOTO HANDLING
+// ---------------------------------------------------------------
+function pdmOpenPhotoPicker(target, month) {
+  pendingPhotoTarget = {target, month};
+  const modal = document.getElementById('pdmPhotoModal');
+  const img = document.getElementById('pdmPhotoModalImg');
+  const title = document.getElementById('pdmPhotoModalTitle');
+  const text = document.getElementById('pdmPhotoModalText');
+  if (target === 'profile') {
+    title.textContent = 'Foto de perfil';
+    text.textContent = 'Essa imagem aparece na sua moldura, que evolui conforme seu nível sobe.';
+    if (PROFILE_PHOTO) { img.src = PROFILE_PHOTO; img.style.display='block'; } else { img.style.display='none'; }
+  } else {
+    const [y,mm] = month.split('-');
+    const label = new Date(y, mm-1, 1).toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+    title.textContent = 'Registro — ' + label;
+    text.textContent = 'Só você vê essa foto. Ela fica salva na sua linha do tempo de evolução.';
+    if (MONTHLY_PHOTOS[month]) { img.src = MONTHLY_PHOTOS[month]; img.style.display='block'; } else { img.style.display='none'; }
+  }
+  modal.classList.add('open');
+}
+
+function resizeImage(file, maxDim) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.72));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function pdmHandleFile(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  try {
+    const dataUrl = await resizeImage(file, 500);
+    if (pendingPhotoTarget.target === 'profile') {
+      PROFILE_PHOTO = dataUrl;
+      await saveProfilePhoto();
+    } else {
+      MONTHLY_PHOTOS[pendingPhotoTarget.month] = dataUrl;
+      await saveMonthlyPhotos();
+    }
+    pdmToast('Foto salva.');
+    pdmCloseModal('pdmPhotoModal');
+    renderHeader();
+    renderEvolution();
+  } catch(e) {
+    pdmToast('Não foi possível processar a imagem.');
+  }
+  evt.target.value = '';
+}
+
+function pdmCloseModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ---------------------------------------------------------------
+// CONFIRM MODALS
+// ---------------------------------------------------------------
+function pdmConfirmReset() {
+  const modal = document.getElementById('pdmConfirmModal');
+  document.getElementById('pdmConfirmTitle').textContent = 'Reiniciar sequência';
+  document.getElementById('pdmConfirmText').textContent = 'Isso zera a sequência atual do Projeto Zero. O recorde continua salvo.';
+  const btn = document.getElementById('pdmConfirmBtn');
+  btn.onclick = async () => {
+    STATE.projetoZero.streak = 0;
+    STATE.projetoZero.lastDate = null;
+    await saveState();
+    renderSecret();
+    pdmCloseModal('pdmConfirmModal');
+  };
+  modal.classList.add('open');
+}
+
+function pdmConfirmFullReset() {
+  const modal = document.getElementById('pdmConfirmModal');
+  document.getElementById('pdmConfirmTitle').textContent = 'Zerar todo o progresso';
+  document.getElementById('pdmConfirmText').textContent = 'Isso apaga XP, streaks, missões e o Projeto Zero. As fotos não são apagadas. Essa ação não pode ser desfeita.';
+  const btn = document.getElementById('pdmConfirmBtn');
+  btn.onclick = async () => {
+    STATE = defaultState();
+    await saveState();
+    renderAll();
+    pdmCloseModal('pdmConfirmModal');
+    pdmToast('Progresso reiniciado.');
+  };
+  modal.classList.add('open');
+}
+
+// ---------------------------------------------------------------
+// BATTLE PASS — scroll interaction (drag + arrows)
+// ---------------------------------------------------------------
+let passDragging = false, passDragStartX = 0, passDragScrollStart = 0, passDragMoved = 0, passJustDragged = false;
+
+function pdmScrollPass(dir) {
+  const track = document.getElementById('pdmPassTrack');
+  const firstCol = track.querySelector('.pdm-pass-col, .pdm-pass-season-col');
+  const step = (firstCol ? firstCol.offsetWidth : 160) * 3 + 24;
+  track.scrollBy({left: dir * step, behavior: 'smooth'});
+}
+
+function pdmInitPassDrag() {
+  const track = document.getElementById('pdmPassTrack');
+  if (!track) return;
+  track.addEventListener('mousedown', (e) => {
+    passDragging = true; passDragMoved = 0;
+    track.classList.add('dragging');
+    passDragStartX = e.pageX;
+    passDragScrollStart = track.scrollLeft;
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!passDragging) return;
+    const dx = e.pageX - passDragStartX;
+    passDragMoved = Math.max(passDragMoved, Math.abs(dx));
+    track.scrollLeft = passDragScrollStart - dx;
+  });
+  window.addEventListener('mouseup', () => {
+    if (!passDragging) return;
+    passDragging = false;
+    track.classList.remove('dragging');
+    if (passDragMoved > 6) {
+      passJustDragged = true;
+      setTimeout(() => { passJustDragged = false; }, 60);
+    }
+  });
+}
+
+// ---------------------------------------------------------------
+// INIT
+// ---------------------------------------------------------------
+window.pdmGoto = pdmGoto;
+window.pdmOpenTierModal = pdmOpenTierModal;
+window.pdmOpenPhotoPicker = pdmOpenPhotoPicker;
+window.pdmHandleFile = pdmHandleFile;
+window.pdmCloseModal = pdmCloseModal;
+window.pdmMarkClean = pdmMarkClean;
+window.pdmConfirmReset = pdmConfirmReset;
+window.pdmConfirmFullReset = pdmConfirmFullReset;
+window.pdmScrollPass = pdmScrollPass;
+
+(async function init() {
+  await loadState();
+  document.getElementById('pdmLoading').style.display = 'none';
+  document.getElementById('pdmApp').style.display = 'block';
+  renderAll();
+  pdmInitPassDrag();
+  pdmGoto('dashboard');
+})();
+
+})();
+</script>
+
+</body>
+</html>
