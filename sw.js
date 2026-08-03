@@ -1,4 +1,4 @@
-const CACHE_NAME = 'passe-do-mestre-v1';
+const CACHE_NAME = 'passe-do-mestre-v2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -7,6 +7,11 @@ const APP_SHELL = [
   './icons/icon-512.png',
   './icons/icon-512-maskable.png',
   './icons/apple-touch-icon.png',
+  './js/utils.js',
+  './js/icons.js',
+  './js/habits-missions-data.js',
+  './js/habits-missions-ui.js',
+  './js/reminders.js',
 ];
 
 self.addEventListener('install', (event) => {
