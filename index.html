@@ -2,9 +2,30 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0A0D18">
+<meta name="description" content="Passe do Mestre — painel de disciplina, missões diárias e passe de batalha pessoal.">
+
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mestre">
+
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/icon-512.png" sizes="512x512" type="image/png">
+<link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+
 <title>Passe do Mestre</title>
 <style>
+html, body {
+  margin: 0;
+  background: #0A0D18;
+  height: 100%;
+  overscroll-behavior-y: contain;
+  -webkit-tap-highlight-color: transparent;
+}
 @import url('https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
 .pdm-root {
@@ -57,7 +78,15 @@
   letter-spacing: 0.01em;
 }
 
-.pdm-container { max-width: 1440px; width:100%; margin: 0 auto; padding: 20px clamp(16px, 3.5vw, 56px) 70px; position:relative; z-index:1; }
+.pdm-container {
+  max-width: 1440px; width:100%; margin: 0 auto; position:relative; z-index:1;
+  padding: calc(20px + env(safe-area-inset-top)) calc(clamp(16px, 3.5vw, 56px) + env(safe-area-inset-right)) calc(70px + env(safe-area-inset-bottom)) calc(clamp(16px, 3.5vw, 56px) + env(safe-area-inset-left));
+}
+
+.pdm-root button, .pdm-root [onclick], .pdm-root .pdm-quest-check, .pdm-root .pdm-pass-col, .pdm-root .pdm-photo-slot {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* jagged torn-paper divider, used under the header */
 .pdm-torn {
@@ -472,6 +501,13 @@
   .pdm-hero { justify-content:center; text-align:center; }
   .pdm-hero-info { min-width: 100%; }
   .pdm-xpbar-row, .pdm-streak-badge { justify-content:center; }
+
+  /* larger touch targets on phones */
+  .pdm-quest-check { width:40px; height:40px; }
+  .pdm-nav-btn { padding: 12px 16px; }
+  .pdm-mini-profile { padding: 6px; margin: -6px; }
+  .pdm-frame-wrap { cursor: pointer; }
+  .pdm-photo-slot { min-height: 96px; }
 }
 </style>
 </head>
@@ -490,6 +526,12 @@ window.storage = {
     return Promise.resolve();
   }
 };
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
 </script>
 
 <div class="pdm-root" id="pdmRoot">
