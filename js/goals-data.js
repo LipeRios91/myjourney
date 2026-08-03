@@ -6,8 +6,9 @@
 // Missões manuais podem, opcionalmente, se vincular a um Objetivo direto.
 //
 // Depende de window.PdmHM (pra consultar hábitos/missões vinculados e pra
-// desvincular quando um objetivo é excluído) e das funções utilitárias
-// globais (js/utils.js).
+// desvincular quando um objetivo é excluído), window.PdmGamification (só
+// informa quando um objetivo é concluído/deixa de estar concluído — nunca
+// mexe em XP diretamente) e das funções utilitárias globais (js/utils.js).
 
 (function () {
   let GOALS = [];
@@ -102,23 +103,39 @@
       history: [],
       createdAt: now,
       archivedAt: null,
+      xpAwarded: false, // garante um único evento de XP por conclusão (evita ganho duplicado)
     };
     GOALS.push(goal);
     saveGoals();
     return goal;
   }
 
+  // Retorna { goal, gamification }: gamification vem preenchido só quando
+  // esta chamada cruzou a fronteira de status "concluído" (concedendo ou
+  // estornando o XP fixo de objetivo concluído), senão vem null.
   function updateGoal(id, data) {
     const g = GOALS.find((x) => x.id === id);
-    if (!g) return null;
+    if (!g) return { goal: null, gamification: null };
+    const wasCompleted = g.status === 'concluido';
     ['name', 'description', 'category', 'icon', 'color', 'status', 'startDate', 'targetDate', 'hasNumericGoal', 'goalUnit', 'goalInitialValue', 'goalTargetValue'].forEach((k) => {
       if (data[k] !== undefined) g[k] = data[k];
     });
     if (typeof g.name === 'string') g.name = g.name.trim();
     if (!g.hasNumericGoal) { g.goalUnit = ''; g.goalInitialValue = null; g.goalTargetValue = null; }
     else { g.goalInitialValue = Number(g.goalInitialValue) || 0; g.goalTargetValue = Number(g.goalTargetValue) || 0; }
+
+    let gamification = null;
+    const nowCompleted = g.status === 'concluido';
+    if (!wasCompleted && nowCompleted && !g.xpAwarded) {
+      g.xpAwarded = true;
+      gamification = window.PdmGamification ? window.PdmGamification.recordGoalCompleted() : null;
+    } else if (wasCompleted && !nowCompleted && g.xpAwarded) {
+      g.xpAwarded = false;
+      if (window.PdmGamification) window.PdmGamification.revertGoalCompletion();
+    }
+
     saveGoals();
-    return g;
+    return { goal: g, gamification };
   }
 
   // "Excluir" = arquivar (preserva o objetivo e seu histórico), mas remove de

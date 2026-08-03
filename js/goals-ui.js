@@ -191,8 +191,14 @@
       goalTargetValue: d.hasNumericGoal ? Number(targetValue) : null,
     };
 
-    if (d.editingId) { PdmGoals.updateGoal(d.editingId, data); pdmToast('Objetivo atualizado.'); }
-    else { PdmGoals.createGoal(data); pdmToast('Objetivo criado.'); }
+    if (d.editingId) {
+      const { gamification } = PdmGoals.updateGoal(d.editingId, data);
+      pdmToast('Objetivo atualizado.');
+      if (gamification && window.pdmShowGamificationFeedback) window.pdmShowGamificationFeedback(gamification);
+    } else {
+      PdmGoals.createGoal(data);
+      pdmToast('Objetivo criado.');
+    }
     pdmCloseModal('pdmGoalFormModal');
     window.pdmRenderAll();
   }

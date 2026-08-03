@@ -98,9 +98,8 @@
 
   function renderHomeStreak() {
     const grid = document.getElementById('pdmHomeStreak');
-    if (!grid || !window.PdmCore) return;
-    const state = window.PdmCore.getState();
-    const s = state.streak || { count: 0, best: 0 };
+    if (!grid || !window.PdmGamification) return;
+    const s = window.PdmGamification.getStreak();
     grid.innerHTML = statTile(s.count || 0, 'Sequência atual') + statTile(s.best || 0, 'Melhor sequência');
   }
 

@@ -49,6 +49,12 @@ Tudo roda 100% client-side:
 - `js/icons.js` — `HABIT_ICONS`, `HABIT_COLORS`, `HM_CATEGORIES` (categorias
   = as mesmas 3 skills do dashboard: saude/hobbies/trabalho — não duplicar
   taxonomia nova, reusar essa).
+- `js/gamification-data.js` — camada de Gamificação (ver seção própria
+  abaixo), expõe `window.PdmGamification`. É a fonte da verdade de XP,
+  nível, Battle Pass, habilidades, streak e conquistas — hábitos/missões/
+  objetivos só a chamam pra "informar" que uma ação aconteceu, nunca
+  gravam XP diretamente. Não depende de `PdmHM`/`PdmGoals` (sentido único,
+  mesma lógica de `PdmGoals` → `PdmHM`).
 - `js/habits-missions-data.js` — camada de dados de Hábitos & Missões (ver
   seção própria abaixo), expõe `window.PdmHM`.
 - `js/goals-data.js` — camada de dados de Objetivos (ver seção própria
@@ -68,10 +74,10 @@ Tudo roda 100% client-side:
   na Agenda, mesma convenção `window.pdmXxx`.
 - `js/reminders.js` — lembretes best-effort via Notification API, expõe
   `window.PdmReminders`. Só dispara com o app aberto (ver limitação abaixo).
-- `window.PdmCore` — ponte definida no script legado (dentro de `index.html`)
-  que expõe `getState()/getMultiplier()/registerStreakDay()/saveState()/toast()`
-  pros módulos externos lerem/gravarem XP e o streak global sem duplicar essa
-  lógica. Se mexer no XP/streak, é aqui que fica a fonte da verdade.
+- `window.PdmCore` — ponte definida no script legado (dentro de `index.html`),
+  hoje só expõe `toast()` pros módulos externos dispararem o toast genérico
+  de erro. XP/nível/streak não vivem mais aqui — são responsabilidade de
+  `window.PdmGamification` (ver seção "Gamificação" abaixo).
 - `window.storage` — shim que grava em `localStorage` do navegador (bloco de
   script logo após `<body>`). Formato: `get(key)` retorna `{value}` ou `null`;
   `set(key, value)` grava string.
@@ -154,13 +160,82 @@ vez de criar um conceito paralelo.
   dessas features foi implementada agora — só a base pra elas não exigirem
   reescrever o modelo de dados depois.
 
+## Gamificação
+
+`js/gamification-data.js` (`window.PdmGamification`) + `js/gamification-ui.js`.
+Camada **completamente desacoplada** de Objetivos/Hábitos/Missões: eles só a
+chamam pra informar que uma ação aconteceu (`recordMissionCompleted`,
+`recordHabitCreated`, `recordGoalCompleted` e seus reversos `revert*`) — nunca
+leem nem gravam XP/streak/nível diretamente. `PdmGamification` não depende de
+`PdmHM`/`PdmGoals` (sentido único, mesma regra de `PdmGoals` → `PdmHM`): tudo
+que ela precisa pra decidir (categoria da missão, se é oriunda de hábito, se
+o dia inteiro foi resolvido) é passado pelo chamador como parâmetro, nunca
+buscado de volta nos outros módulos.
+
+- **XP** é configurável por tipo de ação: missão/hábito usam o próprio
+  `mission.xp`/`habit.xp` (cadastro); as demais ações vivem centralizadas em
+  `XP_RULES` no topo do arquivo (`goalCompleted`, `dailyPlanCompleted`,
+  `skillLevelUp`). Concluir uma missão soma XP tanto ao total geral quanto à
+  habilidade da categoria dela (`STATE.skills[categoria]`) — é assim que "o
+  XP contribui pro nível geral e pra habilidade correspondente" sem precisar
+  de lógica duplicada.
+- **Nível do usuário = o próprio Battle Pass**: não existem duas progressões
+  paralelas. `TIERS`/`NAMED_TIERS` (27 tiers, 9 com nome) moraram pra cá
+  (antes viviam soltos no script legado); `getLevelInfo(xp)` acha o tier
+  nomeado atual/próximo e é usado tanto pro "Nível geral" da Home quanto pro
+  Battle Pass da view `pass`. Subir de tier nomeado dispara a animação de
+  level up; cruzar qualquer um dos 27 tiers (nomeado ou não) conta como
+  "novos prêmios do Battle Pass desbloqueados", porque todo tier tem
+  recompensas mesmo sem nome.
+- **Habilidades** continuam sendo as mesmas 3 de sempre (`saude`/`hobbies`/
+  `trabalho`, de `HM_CATEGORIES` — não é uma taxonomia nova). Nível de
+  habilidade é só uma função pura do XP acumulado nela (`skillLevel`); ao
+  cruzar um nível a habilidade concede um bônus fixo (`XP_RULES.skillLevelUp`)
+  que soma no XP geral (não recursivamente na própria habilidade, senão
+  looparia).
+- **Sequência (streak)** guarda `count` (atual), `best` (recorde) e
+  `totalActiveDays` (total histórico de dias que já bateram o critério
+  mínimo, mesmo com sequências quebradas no meio — métrica distinta de
+  `best`). Critério mínimo pra contar o dia: concluir ao menos uma missão
+  (`registerStreakDay`, chamado de dentro de `recordMissionCompleted`).
+- **Conquistas** (`ACHIEVEMENT_DEFS`) são condições puras avaliadas contra o
+  estado atual a cada evento (`evaluateAchievements`) — uma vez desbloqueada
+  fica permanente (guardada com a data), mesmo que a ação que a desbloqueou
+  seja desfeita depois (reabrir uma missão não tira a conquista de "100
+  missões concluídas", por exemplo — só o XP pontual é estornado).
+  Contadores vitalícios (`lifetime.*`) por isso só crescem, nunca diminuem.
+- **Reversão de XP** (reabrir/excluir missão, ou tirar um objetivo do status
+  "concluído") estorna o XP daquela ação específica (`revertMissionCompletion`/
+  `revertGoalCompletion`), mas não mexe em streak, contadores vitalícios ou
+  conquistas já desbloqueadas — mesma lógica de antes desta camada existir,
+  só que agora centralizada.
+- **Dedup de XP**: cada mission só pode gerar um evento de XP (`mission.xpAwarded`
+  bloqueia reconclusão) e cada Objetivo só concede o XP de "concluído" uma vez
+  (`goal.xpAwarded`, verificado pela transição de status em `PdmGoals.updateGoal`
+  — só dispara ao cruzar a fronteira "não concluído → concluído", e estorna ao
+  cruzar de volta).
+- **Feedback visual** (`js/gamification-ui.js`) é sempre discreto e não
+  bloqueia a interação: uma fila de toasts sequenciais (`queueFeedback`) pra
+  não sobrepor múltiplos eventos da mesma ação (XP + conquista + evolução de
+  habilidade, por exemplo), mais uma animação leve só pra subida de nível
+  (`#pdmLevelUpOverlay`, `pointer-events:none`, some sozinha). Qualquer
+  handler que chame uma ação de gamificação repassa o resultado retornado
+  pra `window.pdmShowGamificationFeedback(result, opts)` — só esse arquivo
+  decide o que virou toast, o que virou conquista, etc.
+- **Migração**: na primeira execução desta camada, `mestre-gamification` não
+  existe ainda — `PdmGamification.init()` migra `totalXP`/`skills`/`streak`
+  do antigo `STATE` do script legado (`mestre-state`) uma única vez, pra
+  quem já usava o app antes desta camada existir não perder progresso.
+  `STATE` (script legado) hoje só guarda o Projeto Zero — feature separada,
+  não é gamificação.
+
 ## Home (tela principal)
 
 `js/home-ui.js` (expõe só `window.pdmRenderHome`) é **puramente
 apresentacional** — nenhuma regra de negócio própria, nenhum estado próprio.
-Ela só lê dos módulos existentes (`PdmHM`, `PdmGoals`, `PdmCore`) e monta a
-tela; toda ação (concluir, reagendar, criar hábito/missão/objetivo) delega
-pros handlers que já existem nos outros módulos.
+Ela só lê dos módulos existentes (`PdmHM`, `PdmGoals`, `PdmGamification`) e
+monta a tela; toda ação (concluir, reagendar, criar hábito/missão/objetivo)
+delega pros handlers que já existem nos outros módulos.
 
 - Reaproveita componentes de linha já existentes em vez de recriar: `window.
   pdmMissionRowHtml(m, {highlight})` (de `habits-missions-ui.js`) e `window.

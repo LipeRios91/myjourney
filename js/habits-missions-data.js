@@ -4,8 +4,9 @@
 // Missão = execução real, numa data específica, gerada por um hábito OU criada manualmente.
 // Toda a interação de "concluir" acontece na Missão — o hábito nunca é marcado como feito.
 //
-// Depende de: window.storage (shim de persistência), window.PdmCore (ponte para
-// XP/streak/estado global, exposta pelo script legado no fim do <body>), e das
+// Depende de: window.storage (shim de persistência), window.PdmGamification
+// (camada de gamificação — só informa que uma missão/hábito aconteceu, nunca
+// mexe em XP/streak diretamente), window.PdmCore (só o toast de erro), e das
 // funções utilitárias globais de js/utils.js.
 
 (function () {
@@ -267,6 +268,10 @@
     HABITS.push(habit);
     saveHabits();
     ensureMissionsForDate(todayISO());
+    if (window.PdmGamification) {
+      const gamResult = window.PdmGamification.recordHabitCreated();
+      if (window.pdmShowGamificationFeedback) window.pdmShowGamificationFeedback(gamResult);
+    }
     return habit;
   }
 
@@ -417,19 +422,27 @@
   function completeMission(id) {
     const m = MISSIONS.find((x) => x.id === id);
     if (!m || m.status === 'concluida' || m.date > todayISO()) return null;
-    const core = window.PdmCore;
-    const state = core.getState();
-    const gained = Math.round((m.xp || 0) * core.getMultiplier(state.streak.count));
-    state.skills[m.category] = (state.skills[m.category] || 0) + gained;
-    state.totalXP += gained;
-    core.registerStreakDay();
     m.status = 'concluida';
     m.completedAt = new Date().toISOString();
-    m.xpAwarded = gained;
+
+    // O bônus de "planejamento do dia" só faz sentido pra ação de hoje —
+    // reconhece o dia como cumprido quando esta era a última missão em
+    // aberto (concluída ou cancelada é considerado resolvido).
+    const dayMissions = MISSIONS.filter((x) => x.date === m.date);
+    const dailyPlanJustCompleted = m.date === todayISO() && dayMissions.every((x) => ['concluida', 'cancelada'].includes(x.status));
+
+    const result = window.PdmGamification.recordMissionCompleted({
+      xp: m.xp || 0,
+      category: m.category,
+      isHabitMission: m.origin === 'habit',
+      durationMin: m.durationMin || 0,
+      label: m.name,
+      dailyPlanJustCompleted,
+    });
+    m.xpAwarded = result.xpGained;
     saveMissions();
-    core.saveState();
     if (m.habitId) recomputeAndPersistHabitStats(m.habitId);
-    return gained;
+    return result;
   }
 
   // Reabre uma missão concluída OU cancelada, voltando pra "não iniciada".
@@ -438,11 +451,7 @@
     const m = MISSIONS.find((x) => x.id === id);
     if (!m || !['concluida', 'cancelada'].includes(m.status)) return null;
     if (m.status === 'concluida' && m.xpAwarded) {
-      const core = window.PdmCore;
-      const state = core.getState();
-      state.skills[m.category] = Math.max(0, (state.skills[m.category] || 0) - m.xpAwarded);
-      state.totalXP = Math.max(0, state.totalXP - m.xpAwarded);
-      core.saveState();
+      window.PdmGamification.revertMissionCompletion({ category: m.category, xpAwarded: m.xpAwarded });
     }
     m.status = 'nao_iniciada';
     m.completedAt = null;
@@ -466,11 +475,7 @@
     if (idx === -1) return false;
     const m = MISSIONS[idx];
     if (m.status === 'concluida' && m.xpAwarded) {
-      const core = window.PdmCore;
-      const state = core.getState();
-      state.skills[m.category] = Math.max(0, (state.skills[m.category] || 0) - m.xpAwarded);
-      state.totalXP = Math.max(0, state.totalXP - m.xpAwarded);
-      core.saveState();
+      window.PdmGamification.revertMissionCompletion({ category: m.category, xpAwarded: m.xpAwarded });
     }
     const habitId = m.habitId;
     MISSIONS.splice(idx, 1);

@@ -289,6 +289,37 @@ html, body {
 .pdm-skill-bar-fill { height:100%; background: linear-gradient(90deg, var(--blue-pop), var(--gold)); }
 .pdm-skill-xp { font-size:10.5px; color: var(--dim); margin-top:5px; font-family:'Space Mono',monospace; }
 
+/* ---------- CONQUISTAS ---------- */
+.pdm-achievements-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap:12px; margin-top:6px; }
+.pdm-achievement {
+  display:flex; align-items:flex-start; gap:12px; padding: 14px 16px;
+  background: var(--void-2); border:1px solid var(--line-soft); opacity:.5;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+.pdm-achievement.unlocked { opacity:1; border-color: var(--gold-dim); }
+.pdm-achievement-icon { font-size:24px; line-height:1; flex-shrink:0; filter: grayscale(1); }
+.pdm-achievement.unlocked .pdm-achievement-icon { filter:none; }
+.pdm-achievement-body { flex:1; min-width:0; }
+.pdm-achievement-name { font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.02em; color:var(--fog); text-transform:uppercase; }
+.pdm-achievement-desc { font-size:11.5px; color:var(--dim); margin-top:3px; line-height:1.4; }
+.pdm-achievement-date { font-size:10px; color: var(--gold-pale); margin-top:6px; font-family:'Space Mono',monospace; text-transform:uppercase; letter-spacing:0.04em; }
+.pdm-achievement:not(.unlocked) .pdm-achievement-date { color:var(--dim); }
+
+/* ---------- LEVEL UP (feedback discreto, não bloqueia interação) ---------- */
+.pdm-levelup-overlay {
+  position:fixed; inset:0; z-index:1001; display:flex; align-items:flex-start; justify-content:center;
+  padding-top: calc(70px + env(safe-area-inset-top)); pointer-events:none;
+  opacity:0; transform: translateY(-10px); transition: opacity .4s ease, transform .4s ease;
+}
+.pdm-levelup-overlay.show { opacity:1; transform: translateY(0); }
+.pdm-levelup-card {
+  background: linear-gradient(155deg, var(--gold-dim) 0%, var(--panel) 60%); border:1px solid var(--gold);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
+  padding: 16px 28px; text-align:center; box-shadow: 0 10px 30px rgba(0,0,0,.45), 0 0 24px rgba(212,175,55,.35);
+}
+.pdm-levelup-eyebrow { font-family:'Space Mono',monospace; font-size:10.5px; color: var(--gold-pale); text-transform:uppercase; letter-spacing:0.12em; }
+.pdm-levelup-name { font-family:'Anton',sans-serif; font-size:26px; color: var(--fog); margin-top:2px; text-shadow: 2px 0 0 rgba(212,175,55,.5), -2px 0 0 rgba(92,127,224,.35); }
+
 /* ---------- QUESTS ---------- */
 .pdm-quest-progress { font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:0.05em; text-transform:uppercase; color:var(--dim); margin-bottom:14px; }
 .pdm-quest-progress b { font-family:'Anton',sans-serif; font-size:16px; color: var(--gold-pale); }
@@ -915,6 +946,11 @@ if ('serviceWorker' in navigator) {
       <!-- ===== BATTLE PASS ===== -->
       <div class="pdm-view" data-view="pass">
         <div class="pdm-panel">
+          <div class="pdm-eyebrow">Perfil</div>
+          <div class="pdm-stat-grid" id="pdmProfileStats" style="margin-top:6px;"></div>
+        </div>
+
+        <div class="pdm-panel">
           <div class="pdm-pass-header">
             <div class="pdm-pass-badge">NÍVEL <b id="pdmPassLevelNum">1</b></div>
             <div class="pdm-pass-barwrap">
@@ -938,6 +974,11 @@ if ('serviceWorker' in navigator) {
         <div class="pdm-panel">
           <div class="pdm-eyebrow">Habilidades</div>
           <div class="pdm-skills-grid" id="pdmSkillsGrid"></div>
+        </div>
+
+        <div class="pdm-panel">
+          <div class="pdm-eyebrow">Conquistas</div>
+          <div class="pdm-achievements-grid" id="pdmAchievementsGrid"></div>
         </div>
 
         <div class="pdm-panel">
@@ -1100,16 +1141,26 @@ if ('serviceWorker' in navigator) {
     <span id="pdmToastMsg">—</span>
     <button id="pdmToastAction" style="display:none; background:none; border:none; color:var(--void); font-weight:700; text-decoration:underline; margin-left:10px; cursor:pointer; font-family:inherit; font-size:inherit;"></button>
   </div>
+
+  <!-- Animação de subida de nível — discreta, não bloqueia interação -->
+  <div class="pdm-levelup-overlay" id="pdmLevelUpOverlay">
+    <div class="pdm-levelup-card">
+      <div class="pdm-levelup-eyebrow">Novo nível</div>
+      <div class="pdm-levelup-name" id="pdmLevelUpName">—</div>
+    </div>
+  </div>
 </div>
 
 <script src="./js/utils.js"></script>
 <script src="./js/icons.js"></script>
+<script src="./js/gamification-data.js"></script>
 <script src="./js/habits-missions-data.js"></script>
 <script src="./js/goals-data.js"></script>
 <script src="./js/gcal.js"></script>
 <script src="./js/habits-missions-ui.js"></script>
 <script src="./js/goals-ui.js"></script>
 <script src="./js/gcal-ui.js"></script>
+<script src="./js/gamification-ui.js"></script>
 <script src="./js/home-ui.js"></script>
 <script src="./js/reminders.js"></script>
 
@@ -1119,36 +1170,9 @@ if ('serviceWorker' in navigator) {
 // ---------------------------------------------------------------
 // DATA
 // ---------------------------------------------------------------
-const TIERS = [
-  {t:1, xp:0, name:'Fracassado', rewards:[]},
-  {t:2, xp:100, name:null, rewards:['🎸 Palhetas e cordas novas de guitarra','💪 Whey/barra de proteína (dose pequena)','👕 Camiseta de treino simples','☕ Café especial + algo doce','🥋 Acessório pequeno de treino']},
-  {t:3, xp:150, name:'Aprendiz', rewards:['👕 Camiseta fitness de marca boa','💊 Suplemento (whey ou creatina)','🎮 Jogo indie ou em promoção','🍕 Rolê casual','🎸 Kit de cordas premium']},
-  {t:4, xp:300, name:null, rewards:['🥋 Kimono inicial para começar a praticar','💊 Combo de suplementos (tamanho grande)','🎮 Jogo de médio orçamento','🍽️ Rolê em restaurante novo','🎸 Afinador ou capotraste']},
-  {t:5, xp:500, name:'Disciplinado', rewards:['💊 Combo de suplementos — 1 mês','🎬 Rolê cinema + jantar','🎮 Jogo AAA (promoção)','👕 Peça de roupa de treino premium','🥋 Rash guard ou protetor bucal']},
-  {t:6, xp:750, name:null, rewards:['🎭 Rolê teatro','💆 Massagem relaxante avulsa','🎮 Jogo recém-lançado','🎸 Pedal de efeito básico','👖 Peça de roupa nova']},
-  {t:7, xp:1200, name:'Consistente', rewards:['🎮 Jogo AAA novo, dia de lançamento','💆 Dia de spa','🥋 Upgrade de kimono','🍽️ Rolê premium (jantar chique)','🎧 Headset gamer básico']},
-  {t:8, xp:1700, name:null, rewards:['💊 Suplementos — combo mensal completo','✂️ Corte de cabelo + barba','🕶️ Experiência VR avulsa','🏛️ Rolê cultural + jantar','🎸 Acessório premium de guitarra']},
-  {t:9, xp:2100, name:null, rewards:['🎸 Pedal de efeito avançado','👖 Peça de roupa nova','💆 Spa day completo','🎮 Edição especial de um jogo','🥋 Aula experimental extra']},
-  {t:10, xp:2500, name:'Guerreiro', rewards:['🎭 Rolê premium (teatro + jantar)','🎧 Headset gamer de qualidade','✂️ Tratamento estético de cabelo completo','💊 Suplementos linha premium','🕶️ Jogo em VR completo']},
-  {t:11, xp:3200, name:null, rewards:['👖 Mini guarda-roupa (2-3 peças)','💆 Combo massagem + spa','🎮 Jogo grande + DLC','⌨️ Periférico PC','🥋 Acessórios para nova graduação']},
-  {t:12, xp:3900, name:null, rewards:['👕 Guarda-roupa parcial (marco físico)','🖥️ Periférico PC (monitor entrada)','✈️ Bate-volta / viagem curta','💊 Suplementos — estoque trimestral','🎸 Upgrade de equipamento']},
-  {t:13, xp:4500, name:null, rewards:['🥋 Inscrição/exame de primeira graduação','✂️ Tratamento estético premium','🎮 Jogo + acessórios temáticos','🎤 Rolê especial (show/festival)','🎸 Upgrade de instrumento']},
-  {t:14, xp:5000, name:'Mestre da Rotina', rewards:['🕶️ Óculos VR','🎮 Jogo VR AAA','👔 Guarda-roupa completo','💆 Assinatura mensal de massagem','🥋 Kimono profissional']},
-  {t:15, xp:6200, name:null, rewards:['💆 Spa day completo','🖥️ Peça de PC (GPU/monitor)','🎮 Franquia completa (coleção)','✈️ Viagem de fim de semana','🎸 Guitarra nova ou upgrade grande']},
-  {t:16, xp:7500, name:null, rewards:['🎧 Headset/controle gamer topo','✂️ Pacote de tratamento estético contínuo','💊 Suplementos — estoque anual','👔 Roupas de marca','🥋 Seminário de artes marciais']},
-  {t:17, xp:8200, name:null, rewards:['👔 Guarda-roupa completo (marco físico grande)','🖥️ Monitor gamer de alta qualidade','🎮 Edição colecionador','✈️ Viagem maior','🔊 Amplificador ou acessório topo']},
-  {t:18, xp:9000, name:'Referência', rewards:['🕶️ Setup VR completo','🖥️ GPU de alta performance','💆 Spa retreat de fim de semana','🥋 Kimono de competição oficial','✈️ Viagem nacional ou internacional']},
-  {t:19, xp:11000, name:null, rewards:['🖥️ Peça de PC topo (GPU/processador)','🎮 Jogo colecionador + merch','👔 Guarda-roupa grife completo','💆 Assinatura anual de massagem','🥋 Exame de faixa avançada']},
-  {t:20, xp:13000, name:null, rewards:['🎮 Persona 4 Revival — dia 1 (18/fev/2027)','🎁 Merchandise Persona','🎉 Rolê especial de lançamento','🖥️ Peça final de PC','🎮 Jogo bônus da wishlist']},
-  {t:21, xp:15000, name:'Inacreditável', rewards:['🖥️ PC gamer completo','✈️ Viagem grande de celebração','🥋 Exame de faixa avançada + evento','🎉 Festa de celebração do ano','👔 Renovação completa de guarda-roupa']},
-  {t:22, xp:17000, name:null, rewards:['🎸 Guitarra ou equipamento de estúdio novo','🥋 Aula com instrutor renomado','🎮 Novo hardware de jogo','✈️ Viagem internacional curta','💆 Assinatura semestral de bem-estar']},
-  {t:23, xp:19500, name:null, rewards:['👔 Guarda-roupa de grife renovado','🖥️ Upgrade de PC (peça topo adicional)','🎮 Coleção completa + colecionáveis','✈️ Viagem maior (etapa 1)','🥋 Equipamento de competição completo']},
-  {t:24, xp:22000, name:null, rewards:['💊 Ano inteiro de suplementação premium','🎸 Setup de estúdio caseiro','🕶️ Upgrade completo de VR','🍽️ Rolê gastronômico de alto nível','✂️ Pacote anual de tratamentos estéticos']},
-  {t:25, xp:25000, name:null, rewards:['🥋 Exame de graduação avançada','✈️ Viagem internacional maior (completa)','🖥️ PC gamer topo absoluto','🎉 Evento grande (festival/show)','👔 Renovação total de guarda-roupa']},
-  {t:26, xp:28000, name:null, rewards:['🎁 Presente grande à sua escolha','🥋 Patrocínio de campeonato/evento de nicho','🎸 Instrumento de nível profissional','✈️ Viagem longa, imersão total','💆 Retiro de bem-estar completo']},
-  {t:27, xp:30000, name:'Lendário', rewards:['🚗 Carro novo','🥋 Título/graduação de referência','🎸 Estúdio pessoal completo','🖥️ Setup definitivo (PC + VR + periféricos)','🎉 Celebração de dois anos de disciplina']},
-];
-const NAMED_TIERS = TIERS.filter(t => t.name);
+// Tiers do Battle Pass, XP/nível/streak, habilidades e conquistas moraram
+// pra js/gamification-data.js (window.PdmGamification) — camada de
+// gamificação desacoplada. Este script só renderiza o que ela calcula.
 
 const QUOTES = [
   {q:'A disciplina é a forma mais alta de amor-próprio.', a:'Original'},
@@ -1189,20 +1213,20 @@ let pendingPhotoTarget = null;
 
 function defaultState() {
   return {
-    totalXP: 0,
-    skills: {saude:0, hobbies:0, trabalho:0},
-    streak: {count:0, lastDate:null, best:0},
     projetoZero: {streak:0, lastDate:null, best:0},
   };
 }
 
+// XP/skills/streak moraram pra js/gamification-data.js (window.PdmGamification).
+// STATE aqui só guarda o Projeto Zero (feature separada, não é gamificação) —
+// versões antigas do app ainda têm totalXP/skills/streak salvos neste mesmo
+// storage; eles são migrados uma vez pra PdmGamification e depois ignorados.
 async function loadState() {
   try {
     const r = await window.storage.get('mestre-state');
     STATE = r ? JSON.parse(r.value) : defaultState();
   } catch(e) { STATE = defaultState(); }
-  if (!STATE.streak) STATE.streak = {count:0, lastDate:null, best:0};
-  if (STATE.streak.best == null) STATE.streak.best = STATE.streak.count || 0;
+  if (!STATE.projetoZero) STATE.projetoZero = {streak:0, lastDate:null, best:0};
   try {
     const p = await window.storage.get('mestre-profile-photo');
     PROFILE_PHOTO = p ? JSON.parse(p.value).dataUrl : null;
@@ -1226,65 +1250,12 @@ async function saveMonthlyPhotos() {
   catch(e) { pdmToast('Erro ao salvar a foto.'); }
 }
 
-// ---------------------------------------------------------------
-// XP / LEVEL LOGIC
-// ---------------------------------------------------------------
-function getMultiplier(streakCount) {
-  if (streakCount >= 90) return 2.0;
-  if (streakCount >= 30) return 1.5;
-  if (streakCount >= 7) return 1.2;
-  return 1.0;
-}
-
-function registerStreakDay() {
-  const t = todayISO();
-  const s = STATE.streak;
-  if (s.lastDate === t) return;
-  if (s.lastDate && daysBetween(s.lastDate, t) === 1) {
-    s.count += 1;
-  } else {
-    s.count = 1;
-  }
-  s.lastDate = t;
-  s.best = Math.max(s.best || 0, s.count);
-}
-
-// Ponte pro módulo de Hábitos & Missões (js/habits-missions-data.js), que
-// precisa ler/gravar XP, skills e o streak global sem duplicar essa lógica.
+// Ponte pro módulo de Hábitos & Missões e de Objetivos — hoje só o toast
+// genérico de erro; XP/nível/streak são responsabilidade exclusiva de
+// window.PdmGamification (js/gamification-data.js).
 window.PdmCore = {
-  getState: () => STATE,
-  getMultiplier,
-  registerStreakDay,
-  saveState: () => saveState(),
   toast: (msg) => pdmToast(msg),
 };
-
-function getLevelInfo(xp) {
-  let current = NAMED_TIERS[0];
-  let next = NAMED_TIERS[1];
-  for (let i = 0; i < NAMED_TIERS.length; i++) {
-    if (xp >= NAMED_TIERS[i].xp) { current = NAMED_TIERS[i]; next = NAMED_TIERS[i+1] || null; }
-  }
-  const stage = NAMED_TIERS.indexOf(current);
-  let progressPct = 100;
-  let toNext = 'Nível máximo';
-  if (next) {
-    const span = next.xp - current.xp;
-    const done = xp - current.xp;
-    progressPct = Math.max(0, Math.min(100, (done/span)*100));
-    toNext = (next.xp - xp) + ' XP para ' + next.name;
-  }
-  return {current, next, stage, progressPct, toNext};
-}
-
-function skillLevel(xp) { return Math.floor(Math.sqrt(xp/40)) + 1; }
-function skillLevelProgress(xp) {
-  const lvl = skillLevel(xp);
-  const base = Math.pow(lvl-1,2)*40;
-  const nextBase = Math.pow(lvl,2)*40;
-  const pct = Math.max(0, Math.min(100, ((xp-base)/(nextBase-base))*100));
-  return pct;
-}
 
 // ---------------------------------------------------------------
 // RENDER
@@ -1324,18 +1295,20 @@ function pdmToast(msg, actionLabel, onAction) {
 }
 
 function renderHeader() {
-  const info = getLevelInfo(STATE.totalXP);
+  const totalXP = PdmGamification.getTotalXP();
+  const info = PdmGamification.getLevelInfo(totalXP);
+  const streak = PdmGamification.getStreak();
   const avatarHtml = PROFILE_PHOTO ? '<img src="'+PROFILE_PHOTO+'">' : 'M';
   document.getElementById('pdmMiniAvatar').innerHTML = avatarHtml;
-  document.getElementById('pdmMiniName').innerHTML = '<b>' + info.current.name + '</b>' + STATE.totalXP + ' XP';
+  document.getElementById('pdmMiniName').innerHTML = '<b>' + info.current.name + '</b>' + totalXP + ' XP';
   document.getElementById('pdmAvatar').innerHTML = avatarHtml;
   document.getElementById('pdmFrameWrap').dataset.stage = info.stage;
   document.getElementById('pdmLevelName').textContent = info.current.name;
-  document.getElementById('pdmLevelSub').textContent = 'Nível geral — ' + STATE.totalXP + ' XP acumulados';
+  document.getElementById('pdmLevelSub').textContent = 'Nível geral — ' + totalXP + ' XP acumulados';
   document.getElementById('pdmXpToNext').textContent = info.toNext;
   document.getElementById('pdmXpFill').style.width = info.progressPct + '%';
-  const mult = getMultiplier(STATE.streak.count);
-  document.getElementById('pdmStreakText').textContent = STATE.streak.count + (STATE.streak.count===1 ? ' dia de streak' : ' dias de streak');
+  const mult = PdmGamification.getMultiplier(streak.count);
+  document.getElementById('pdmStreakText').textContent = streak.count + (streak.count===1 ? ' dia de streak' : ' dias de streak');
   document.getElementById('pdmStreakMult').textContent = mult.toFixed(1) + 'x';
 }
 
@@ -1351,9 +1324,10 @@ function renderSkills() {
   grid.innerHTML = '';
   Object.keys(SKILL_META).forEach(key => {
     const meta = SKILL_META[key];
-    const xp = STATE.skills[key] || 0;
-    const lvl = skillLevel(xp);
-    const pct = skillLevelProgress(xp);
+    const skillInfo = PdmGamification.getSkillLevelInfo(key);
+    const xp = skillInfo.xp;
+    const lvl = skillInfo.level;
+    const pct = skillInfo.progressPct;
     const card = document.createElement('div');
     card.className = 'pdm-skill-card';
     card.innerHTML =
@@ -1374,22 +1348,23 @@ function splitReward(str) {
 }
 
 function renderPass() {
-  const info = getLevelInfo(STATE.totalXP);
-  document.getElementById('pdmPassXp').textContent = STATE.totalXP.toLocaleString('pt-BR') + ' XP';
+  const totalXP = PdmGamification.getTotalXP();
+  const info = PdmGamification.getLevelInfo(totalXP);
+  document.getElementById('pdmPassXp').textContent = totalXP.toLocaleString('pt-BR') + ' XP';
   document.getElementById('pdmPassSub').textContent = info.current.name + (info.next ? ' → ' + info.next.name : ' (máximo)');
   document.getElementById('pdmPassFill').style.width = info.progressPct + '%';
   document.getElementById('pdmPassLevelNum').textContent = info.current.t;
 
   const track = document.getElementById('pdmPassTrack');
   track.innerHTML = '';
-  TIERS.forEach((tier) => {
+  PdmGamification.getTiers().forEach((tier) => {
     if (tier.t === 22) {
       const div = document.createElement('div');
       div.className = 'pdm-pass-season-col';
       div.innerHTML = '<span>TEMPORADA 2 — RUMO AO LENDÁRIO</span>';
       track.appendChild(div);
     }
-    const reached = STATE.totalXP >= tier.xp;
+    const reached = totalXP >= tier.xp;
     const isCurrent = tier.t === info.current.t;
     const col = document.createElement('div');
     col.className = 'pdm-pass-col' + (reached ? ' reached' : ' locked') + (isCurrent ? ' current' : '');
@@ -1422,7 +1397,7 @@ function renderPass() {
 }
 
 function pdmOpenTierModal(t) {
-  const tier = TIERS.find(x => x.t === t);
+  const tier = PdmGamification.getTiers().find(x => x.t === t);
   if (!tier) return;
   document.getElementById('pdmTierModalTitle').textContent = 'Tier ' + tier.t + (tier.name ? ' — ' + tier.name : '');
   document.getElementById('pdmTierModalXp').textContent = tier.xp.toLocaleString('pt-BR') + ' XP acumulados';
@@ -1487,6 +1462,7 @@ function renderAll() {
   if (window.pdmRenderGoalsList) window.pdmRenderGoalsList();
   if (window.pdmRenderHome) window.pdmRenderHome();
   renderPass();
+  if (window.pdmRenderGamificationProfile) window.pdmRenderGamificationProfile();
   renderEvolution();
   renderSecret();
 }
@@ -1586,6 +1562,7 @@ function pdmConfirmFullReset() {
   btn.onclick = async () => {
     STATE = defaultState();
     await saveState();
+    if (window.PdmGamification) await window.PdmGamification.resetAll();
     if (window.PdmGoals) window.PdmGoals.resetAll();
     if (window.PdmHM) window.PdmHM.resetAll();
     renderAll();
@@ -1650,6 +1627,7 @@ window.pdmToast = pdmToast;
 
 (async function init() {
   await loadState();
+  await window.PdmGamification.init();
   await window.PdmGoals.init();
   await window.PdmHM.init();
   document.getElementById('pdmLoading').style.display = 'none';

@@ -112,10 +112,12 @@
       pdmToast('Essa missão é de um dia futuro — só dá pra concluir a partir da data.');
       return;
     }
-    const gained = PdmHM.completeMission(id);
-    if (gained == null) return;
+    const result = PdmHM.completeMission(id);
+    if (result == null) return;
     window.pdmRenderAll();
-    pdmToast('+' + gained + ' XP', 'Desfazer', () => { PdmHM.reopenMission(id); window.pdmRenderAll(); });
+    if (window.pdmShowGamificationFeedback) {
+      window.pdmShowGamificationFeedback(result, { undoLabel: 'Desfazer', onUndo: () => { PdmHM.reopenMission(id); window.pdmRenderAll(); } });
+    }
   }
 
   // ---------------------------------------------------------------
@@ -680,10 +682,12 @@
 
   function pdmUIStartMission(id) { PdmHM.startMission(id); window.pdmRenderAll(); pdmOpenMissionDetail(id); }
   function pdmUICompleteMission(id) {
-    const gained = PdmHM.completeMission(id);
+    const result = PdmHM.completeMission(id);
     pdmCloseModal('pdmMissionModal');
     window.pdmRenderAll();
-    if (gained != null) pdmToast('+' + gained + ' XP', 'Desfazer', () => { PdmHM.reopenMission(id); window.pdmRenderAll(); });
+    if (result != null && window.pdmShowGamificationFeedback) {
+      window.pdmShowGamificationFeedback(result, { undoLabel: 'Desfazer', onUndo: () => { PdmHM.reopenMission(id); window.pdmRenderAll(); } });
+    }
   }
   function pdmUICancelMission(id) {
     pdmConfirmGeneric('Cancelar missão', 'A missão fica marcada como cancelada, sem XP. Isso não afeta o hábito.', () => {
