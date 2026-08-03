@@ -63,6 +63,9 @@ Tudo roda 100% client-side:
   `js/utils.js` justamente pra serem compartilhados entre este arquivo e
   `habits-missions-ui.js` — qualquer módulo de UI novo deve reusá-los, não
   redefini-los.
+- `js/gcal.js` — integração unidirecional com Google Agenda (ver seção
+  própria abaixo), expõe `window.PdmGCal`. `js/gcal-ui.js` — status/botões
+  na Agenda, mesma convenção `window.pdmXxx`.
 - `js/reminders.js` — lembretes best-effort via Notification API, expõe
   `window.PdmReminders`. Só dispara com o app aberto (ver limitação abaixo).
 - `window.PdmCore` — ponte definida no script legado (dentro de `index.html`)
@@ -188,6 +191,38 @@ pros handlers que já existem nos outros módulos.
   há objetivo ativo **e** nenhum hábito **e** nenhuma missão hoje — na prática
   raro, já que hábitos padrão são semeados automaticamente no primeiro uso
   (ver `PdmHM.init`), mas a lógica cobre o caso de tudo ter sido arquivado.
+
+## Google Agenda (integração unidirecional)
+
+`js/gcal.js` (`window.PdmGCal`) + `js/gcal-ui.js`. Status/ações vivem no
+header da view `quests` (`#pdmGCalStatus`, populado por
+`pdmRenderGCalStatus()`), e cada missão ganha um botão de envio individual
+(`buildMissionActionsHtml` em `habits-missions-ui.js`).
+
+- **Só EMPURRA** (app → Google): cria/atualiza evento por missão via
+  `POST`/`PATCH` em `/calendars/primary/events`. Não traz de volta edições
+  feitas direto no Google Agenda — sincronização bidirecional de verdade
+  exigiria webhooks (push notifications da API do Google), e isso precisa
+  de um endpoint de servidor pra receber a notificação. Sem backend (ver
+  "Estado real da arquitetura" acima), não dá — se pedirem isso, é a mesma
+  regra: parar e comunicar antes, não implementar silenciosamente.
+- Autenticação via **Google Identity Services (GIS)**, fluxo de "cliente
+  público"/SPA: token de acesso obtido direto no navegador, sem client
+  secret e sem servidor. O **Client ID não é segredo** (é seguro expor no
+  código/repo público) — só o client secret seria, e este fluxo não usa um.
+  O usuário cola o próprio Client ID (criado no Google Cloud Console) em
+  `#pdmGCalConfigModal`, guardado em `localStorage` (`mestre-gcal-client-id`).
+- Token dura ~1h e vive só em memória (`accessToken` no closure de
+  `gcal.js`), nunca em `localStorage` — sem backend não dá pra guardar
+  refresh token com segurança. Cada sessão do navegador pode pedir login de
+  novo (geralmente silencioso, se o usuário segue logado no Google).
+- `mission.gcalEventId` (persistido via `PdmHM.setMissionGCalEventId`) é o
+  vínculo missão↔evento: reenviar a mesma missão faz `PATCH` no evento
+  existente em vez de duplicar; se o evento foi apagado direto no Google
+  (404), cria um novo e substitui o id salvo.
+- `sw.js` tem guarda de mesma origem no handler de `fetch` — pedidos pro
+  GIS/Calendar API (terceiros) sempre vão direto pra rede, nunca passam
+  pelo cache-first do app shell.
 
 ## Design system
 

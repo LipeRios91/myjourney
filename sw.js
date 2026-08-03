@@ -1,4 +1,4 @@
-const CACHE_NAME = 'passe-do-mestre-v5';
+const CACHE_NAME = 'passe-do-mestre-v6';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,8 +11,10 @@ const APP_SHELL = [
   './js/icons.js',
   './js/habits-missions-data.js',
   './js/goals-data.js',
+  './js/gcal.js',
   './js/habits-missions-ui.js',
   './js/goals-ui.js',
+  './js/gcal-ui.js',
   './js/home-ui.js',
   './js/reminders.js',
 ];
@@ -33,6 +35,9 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  // Só cacheia o próprio app shell — pedidos de terceiros (Google Identity
+  // Services, Calendar API) sempre vão direto pra rede, sem cache-first.
+  if (new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;

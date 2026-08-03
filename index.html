@@ -496,6 +496,9 @@ html, body {
 .pdm-home-quick-actions button:hover { border-color: var(--gold); color: var(--gold-pale); }
 .pdm-home-quick-actions svg { width:18px; height:18px; }
 
+.pdm-gcal-status { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.pdm-gcal-status .pdm-head-btn svg { width:14px; height:14px; }
+
 /* ---------- HABITS & MISSIONS ---------- */
 .pdm-section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
 .pdm-section-head .pdm-eyebrow { margin-bottom:0; }
@@ -863,6 +866,7 @@ if ('serviceWorker' in navigator) {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>
             </button>
           </div>
+          <div class="pdm-gcal-status" id="pdmGCalStatus"></div>
           <div class="pdm-quest-progress" id="pdmQuestProgress">0/0 concluídas</div>
           <div id="pdmQuestList" class="pdm-quest-grid"></div>
         </div>
@@ -1057,6 +1061,28 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 
+  <!-- Google Calendar config modal (Client ID) -->
+  <div class="pdm-modal-bg" id="pdmGCalConfigModal">
+    <div class="pdm-modal">
+      <h3>Conectar Google Agenda</h3>
+      <p>Pra enviar suas missões pro Google Agenda, você precisa de um <b>Client ID OAuth</b> (gratuito, é só seu — fica salvo neste navegador).</p>
+      <p style="margin-top:-8px;">
+        1. Abra o <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style="color:var(--gold-pale);">Google Cloud Console → Credenciais</a><br>
+        2. Crie um projeto (se não tiver) e um <b>ID do cliente OAuth</b> do tipo "Aplicativo da Web"<br>
+        3. Em "Origens JavaScript autorizadas", adicione a URL onde o app está publicado<br>
+        4. Copie o Client ID gerado e cole abaixo
+      </p>
+      <div class="pdm-field">
+        <label>Client ID</label>
+        <input class="pdm-input" id="gcalClientIdInput" placeholder="algo como 123456-abc.apps.googleusercontent.com">
+      </div>
+      <div class="pdm-modal-row">
+        <button class="pdm-btn-ghost" onclick="pdmCloseModal('pdmGCalConfigModal')">Cancelar</button>
+        <button class="pdm-btn" onclick="pdmSubmitGCalConfig()">Salvar e conectar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirm modal — sempre por último no DOM, pra ficar acima de qualquer
        outro modal já aberto (ex: confirmar exclusão em cima do detalhe). -->
   <div class="pdm-modal-bg" id="pdmConfirmModal">
@@ -1080,8 +1106,10 @@ if ('serviceWorker' in navigator) {
 <script src="./js/icons.js"></script>
 <script src="./js/habits-missions-data.js"></script>
 <script src="./js/goals-data.js"></script>
+<script src="./js/gcal.js"></script>
 <script src="./js/habits-missions-ui.js"></script>
 <script src="./js/goals-ui.js"></script>
+<script src="./js/gcal-ui.js"></script>
 <script src="./js/home-ui.js"></script>
 <script src="./js/reminders.js"></script>
 

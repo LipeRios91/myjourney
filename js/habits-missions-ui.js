@@ -75,6 +75,7 @@
   function pdmRenderAgenda() {
     if (!agendaDate) agendaDate = todayISO();
     PdmHM.ensureMissionsForDate(agendaDate);
+    if (window.pdmRenderGCalStatus) window.pdmRenderGCalStatus();
     const dateEl = document.getElementById('pdmAgendaDate');
     if (!dateEl) return;
     const isToday = agendaDate === todayISO();
@@ -561,6 +562,7 @@
     html += '<span class="pdm-mission-badge">+' + m.xp + ' XP</span>';
     html += '<span class="pdm-mission-badge">' + escapeHtml(catName) + '</span>';
     html += habit ? '<span class="pdm-mission-badge">Do hábito: ' + escapeHtml(habit.name) + '</span>' : '<span class="pdm-mission-badge">Missão manual</span>';
+    if (m.gcalEventId) html += '<span class="pdm-mission-badge" style="border-color:var(--gold);color:var(--gold-pale);">Enviada ao Google Agenda</span>';
     html += '</div>';
 
     const linkedGoal = m.goalId && window.PdmGoals ? window.PdmGoals.getGoal(m.goalId) : null;
@@ -598,6 +600,9 @@
       btns.push('<button class="pdm-btn"' + (isFuture ? ' disabled' : '') + ' onclick="pdmUICompleteMission(\'' + m.id + '\')">Concluir</button>');
       btns.push('<button class="pdm-btn-ghost" onclick="pdmToggleRescheduleBox(true)">Reagendar</button>');
       btns.push('<button class="pdm-btn-ghost" onclick="pdmUICancelMission(\'' + m.id + '\')">Cancelar</button>');
+    }
+    if (window.PdmGCal) {
+      btns.push('<button class="pdm-btn-ghost" onclick="pdmUIPushMissionToGCal(\'' + m.id + '\')">' + (m.gcalEventId ? 'Atualizar no Google Agenda' : 'Enviar pro Google Agenda') + '</button>');
     }
     btns.push('<button class="pdm-btn-ghost" onclick="pdmSwitchMissionModalToEdit(\'' + m.id + '\')">Editar</button>');
     btns.push('<button class="pdm-btn-ghost" onclick="pdmUIDeleteMission(\'' + m.id + '\')" style="border-color:var(--rose);color:var(--rose-pale);">Excluir</button>');

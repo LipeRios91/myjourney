@@ -392,6 +392,17 @@
 
   function rescheduleMission(id, newDate) { return updateMission(id, { date: newDate }); }
 
+  // Guarda o id do evento correspondente no Google Agenda (integração
+  // unidirecional: app -> Google, ver js/gcal.js), pra reenvios virarem
+  // atualização do mesmo evento em vez de criar um duplicado.
+  function setMissionGCalEventId(id, eventId) {
+    const m = MISSIONS.find((x) => x.id === id);
+    if (!m) return null;
+    m.gcalEventId = eventId;
+    saveMissions();
+    return m;
+  }
+
   // Ninguém pode iniciar/concluir uma missão de um dia futuro — só a partir
   // da data marcada. Isso é reforçado aqui (não só na UI) porque é regra de
   // negócio, não só uma restrição de tela.
@@ -500,6 +511,7 @@
     createManualMission,
     updateMission,
     rescheduleMission,
+    setMissionGCalEventId,
     startMission,
     completeMission,
     reopenMission,
