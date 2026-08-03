@@ -60,6 +60,7 @@
 
   function missionRowHtml(m) {
     const colorHex = habitColorHex(m.color);
+    const isFuture = m.date > todayISO();
     const badges = [];
     if (m.priority === 'alta') badges.push('<span class="pdm-mission-badge prioridade-alta">Alta</span>');
     if (m.status === 'adiada') badges.push('<span class="pdm-mission-badge status-adiada">Adiada</span>');
@@ -77,7 +78,7 @@
           '<div class="pdm-mission-meta">' + meta + '</div>' +
         '</div>' +
         '<div class="pdm-mission-xp">+' + m.xp + ' XP</div>' +
-        '<div class="pdm-mission-check" onclick="event.stopPropagation(); pdmQuickCompleteMission(\'' + m.id + '\')">✓</div>' +
+        '<div class="pdm-mission-check' + (isFuture ? ' is-future' : '') + '" onclick="event.stopPropagation(); pdmQuickToggleMission(\'' + m.id + '\')">✓</div>' +
       '</div>'
     );
   }
@@ -105,9 +106,22 @@
   function pdmAgendaShift(delta) { agendaDate = addDaysISO(agendaDate || todayISO(), delta); pdmRenderAgenda(); }
   function pdmAgendaGoToday() { agendaDate = todayISO(); pdmRenderAgenda(); }
 
-  function pdmQuickCompleteMission(id) {
+  // Toque no checkbox da agenda: se já está concluída, desmarca (pra corrigir
+  // um toque sem querer); senão, tenta concluir — mas não deixa concluir
+  // missão de um dia futuro.
+  function pdmQuickToggleMission(id) {
     const m = PdmHM.getMission(id);
-    if (!m || m.status === 'concluida') return;
+    if (!m) return;
+    if (m.status === 'concluida') {
+      PdmHM.reopenMission(id);
+      window.pdmRenderAll();
+      pdmToast('Conclusão desfeita.');
+      return;
+    }
+    if (m.date > todayISO()) {
+      pdmToast('Essa missão é de um dia futuro — só dá pra concluir a partir da data.');
+      return;
+    }
     const gained = PdmHM.completeMission(id);
     if (gained == null) return;
     window.pdmRenderAll();
@@ -558,20 +572,22 @@
   }
 
   function buildMissionActionsHtml(m) {
+    const isFuture = m.date > todayISO();
     const btns = [];
     if (m.status === 'concluida') {
       btns.push('<button class="pdm-btn-ghost" onclick="pdmUIReopenMission(\'' + m.id + '\')">Desfazer conclusão</button>');
     } else if (m.status === 'cancelada') {
       btns.push('<button class="pdm-btn-ghost" onclick="pdmUIReopenMission(\'' + m.id + '\')">Reabrir</button>');
     } else {
-      if (m.status !== 'em_andamento') btns.push('<button class="pdm-btn-ghost" onclick="pdmUIStartMission(\'' + m.id + '\')">Iniciar</button>');
-      btns.push('<button class="pdm-btn" onclick="pdmUICompleteMission(\'' + m.id + '\')">Concluir</button>');
+      if (m.status !== 'em_andamento') btns.push('<button class="pdm-btn-ghost"' + (isFuture ? ' disabled' : '') + ' onclick="pdmUIStartMission(\'' + m.id + '\')">Iniciar</button>');
+      btns.push('<button class="pdm-btn"' + (isFuture ? ' disabled' : '') + ' onclick="pdmUICompleteMission(\'' + m.id + '\')">Concluir</button>');
       btns.push('<button class="pdm-btn-ghost" onclick="pdmToggleRescheduleBox(true)">Reagendar</button>');
       btns.push('<button class="pdm-btn-ghost" onclick="pdmUICancelMission(\'' + m.id + '\')">Cancelar</button>');
     }
     btns.push('<button class="pdm-btn-ghost" onclick="pdmSwitchMissionModalToEdit(\'' + m.id + '\')">Editar</button>');
     btns.push('<button class="pdm-btn-ghost" onclick="pdmUIDeleteMission(\'' + m.id + '\')" style="border-color:var(--rose);color:var(--rose-pale);">Excluir</button>');
-    return '<div class="pdm-detail-actions">' + btns.join('') + '</div>';
+    const hint = isFuture ? '<p class="pdm-field-hint">Essa missão é de um dia futuro — iniciar/concluir só ficam disponíveis a partir da data marcada.</p>' : '';
+    return hint + '<div class="pdm-detail-actions">' + btns.join('') + '</div>';
   }
 
   function buildMissionFormHtml(existing) {
@@ -671,7 +687,7 @@
   // EXPORTS
   // ---------------------------------------------------------------
   Object.assign(window, {
-    pdmRenderAgenda, pdmAgendaShift, pdmAgendaGoToday, pdmQuickCompleteMission,
+    pdmRenderAgenda, pdmAgendaShift, pdmAgendaGoToday, pdmQuickToggleMission,
     pdmRenderHabitsList, pdmToggleArchivedHabits,
     pdmOpenHabitForm, pdmSubmitHabitForm,
     pdmHabitFormPick, pdmHabitFormSetFreqType, pdmHabitFormToggleWeekday, pdmHabitFormSetWeeklyDay,

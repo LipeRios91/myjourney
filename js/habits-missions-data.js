@@ -367,9 +367,12 @@
 
   function rescheduleMission(id, newDate) { return updateMission(id, { date: newDate }); }
 
+  // Ninguém pode iniciar/concluir uma missão de um dia futuro — só a partir
+  // da data marcada. Isso é reforçado aqui (não só na UI) porque é regra de
+  // negócio, não só uma restrição de tela.
   function startMission(id) {
     const m = MISSIONS.find((x) => x.id === id);
-    if (!m || ['concluida', 'cancelada'].includes(m.status)) return null;
+    if (!m || ['concluida', 'cancelada'].includes(m.status) || m.date > todayISO()) return null;
     m.status = 'em_andamento';
     saveMissions();
     return m;
@@ -377,7 +380,7 @@
 
   function completeMission(id) {
     const m = MISSIONS.find((x) => x.id === id);
-    if (!m || m.status === 'concluida') return null;
+    if (!m || m.status === 'concluida' || m.date > todayISO()) return null;
     const core = window.PdmCore;
     const state = core.getState();
     const gained = Math.round((m.xp || 0) * core.getMultiplier(state.streak.count));
@@ -440,7 +443,19 @@
     return true;
   }
 
+  // Usado pelo "Zerar todo o progresso": apaga todos os hábitos e missões e
+  // recomeça do zero com os hábitos padrão (mesmo caminho do primeiro uso).
+  function resetAll() {
+    HABITS = [];
+    MISSIONS = [];
+    saveHabits();
+    saveMissions();
+    seedDefaultHabits();
+    ensureMissionsForDate(todayISO());
+  }
+
   window.PdmHM = {
+    resetAll,
     init,
     habitOccursOnDate,
     ensureMissionsForDate,

@@ -547,6 +547,7 @@ html, body {
 }
 .pdm-mission-check:hover { border-color: var(--gold); }
 .pdm-mission.status-concluida .pdm-mission-check { background: var(--gold); border-color: var(--gold); color: var(--void); }
+.pdm-mission-check.is-future { opacity: .35; border-style: dashed; }
 
 /* habit card */
 .pdm-habit {
@@ -1427,11 +1428,12 @@ function pdmConfirmReset() {
 function pdmConfirmFullReset() {
   const modal = document.getElementById('pdmConfirmModal');
   document.getElementById('pdmConfirmTitle').textContent = 'Zerar todo o progresso';
-  document.getElementById('pdmConfirmText').textContent = 'Isso apaga XP, streaks, missões e o Projeto Zero. As fotos não são apagadas. Essa ação não pode ser desfeita.';
+  document.getElementById('pdmConfirmText').textContent = 'Isso apaga XP, streaks, hábitos, missões e o Projeto Zero, e recomeça com os hábitos padrão. As fotos não são apagadas. Essa ação não pode ser desfeita.';
   const btn = document.getElementById('pdmConfirmBtn');
   btn.onclick = async () => {
     STATE = defaultState();
     await saveState();
+    if (window.PdmHM) window.PdmHM.resetAll();
     renderAll();
     pdmCloseModal('pdmConfirmModal');
     pdmToast('Progresso reiniciado.');
