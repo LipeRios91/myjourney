@@ -43,10 +43,14 @@
   // ---------------------------------------------------------------
   let agendaDate = null;
 
-  function missionRowHtml(m) {
+  function missionRowHtml(m, opts) {
+    opts = opts || {};
     const colorHex = habitColorHex(m.color);
     const isFuture = m.date > todayISO();
+    const catName = (HM_CATEGORIES.find((c) => c.key === m.category) || {}).name;
     const badges = [];
+    if (opts.highlight) badges.push('<span class="pdm-mission-badge pdm-mission-next-badge">◆ Próxima</span>');
+    if (catName) badges.push('<span class="pdm-mission-badge">' + escapeHtml(catName) + '</span>');
     if (m.priority === 'alta') badges.push('<span class="pdm-mission-badge prioridade-alta">Alta</span>');
     if (m.status === 'adiada') badges.push('<span class="pdm-mission-badge status-adiada">Adiada</span>');
     if (m.status === 'cancelada') badges.push('<span class="pdm-mission-badge">Cancelada</span>');
@@ -56,7 +60,7 @@
     if (m.durationMin) metaParts.push(m.durationMin + ' min');
     const meta = (metaParts.length ? '<span>' + escapeHtml(metaParts.join(' · ')) + '</span>' : '') + badges.join('');
     return (
-      '<div class="pdm-mission status-' + m.status + '" style="--habit-color:' + colorHex + '" onclick="pdmOpenMissionDetail(\'' + m.id + '\')">' +
+      '<div class="pdm-mission' + (opts.highlight ? ' pdm-mission-next' : '') + ' status-' + m.status + '" style="--habit-color:' + colorHex + '" onclick="pdmOpenMissionDetail(\'' + m.id + '\')">' +
         '<div class="pdm-mission-icon">' + habitIconSvg(m.icon) + '</div>' +
         '<div class="pdm-mission-body">' +
           '<div class="pdm-mission-name">' + escapeHtml(m.name) + '</div>' +
@@ -722,5 +726,7 @@
     pdmToggleRescheduleBox, pdmConfirmReschedule,
     pdmDescribeFrequency: describeFrequency,
     pdmConfirmGeneric,
+    pdmMissionRowHtml: missionRowHtml,
+    pdmMissionStatusLabels: MISSION_STATUS_LABELS,
   });
 })();

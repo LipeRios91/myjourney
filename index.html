@@ -480,6 +480,22 @@ html, body {
 
 .pdm-loading { text-align:center; padding: 60px 20px; color: var(--dim); font-family:'Oswald',sans-serif; letter-spacing:0.1em; text-transform:uppercase; font-size:13px; }
 
+/* ---------- HOME ---------- */
+.pdm-home-greeting {
+  font-family:'Anton',sans-serif; font-size: 26px; color: var(--fog); line-height:1;
+  text-shadow: 2px 0 0 rgba(212,175,55,.5), -2px 0 0 rgba(92,127,224,.35);
+}
+.pdm-home-date { font-family:'Space Mono',monospace; font-size:11px; color:var(--dim); margin-top:5px; }
+.pdm-home-quick-actions { display:flex; gap:10px; margin-bottom:18px; }
+.pdm-home-quick-actions button {
+  flex:1; background: var(--void-2); border:1px solid var(--line-soft); color:var(--fog);
+  font-family:'Oswald',sans-serif; font-weight:600; font-size:11px; letter-spacing:0.03em; text-transform:uppercase;
+  padding: 12px 6px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px;
+  clip-path: polygon(8px 0,100% 0,100% 100%,0 100%,0 8px); transition: border-color .15s, color .15s;
+}
+.pdm-home-quick-actions button:hover { border-color: var(--gold); color: var(--gold-pale); }
+.pdm-home-quick-actions svg { width:18px; height:18px; }
+
 /* ---------- HABITS & MISSIONS ---------- */
 .pdm-section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
 .pdm-section-head .pdm-eyebrow { margin-bottom:0; }
@@ -527,6 +543,10 @@ html, body {
 }
 .pdm-mission.status-concluida { opacity:.55; }
 .pdm-mission.status-cancelada { opacity:.4; }
+.pdm-mission-next {
+  border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 6px 16px rgba(212,175,55,.18);
+}
+.pdm-mission-badge.pdm-mission-next-badge { background: var(--gold); color: var(--void); border-color: var(--gold); font-weight: 700; }
 .pdm-mission.status-cancelada .pdm-mission-name { text-decoration: line-through; }
 .pdm-mission.status-concluida .pdm-mission-name { text-decoration: line-through; text-decoration-color: var(--gold-dim); }
 .pdm-mission-icon { width:26px; height:26px; flex-shrink:0; color: var(--habit-color, var(--gold)); }
@@ -654,7 +674,6 @@ html, body {
   .pdm-photo-grid { grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 14px; }
 }
 @media (min-width: 900px) {
-  .pdm-dashboard-grid { display:grid; grid-template-columns: 1.6fr 1fr; gap: 18px; align-items:start; }
   .pdm-quest-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .pdm-quest-grid .pdm-quest { margin-bottom: 0; }
   .pdm-container { padding-top: 30px; }
@@ -715,7 +734,7 @@ if ('serviceWorker' in navigator) {
           <div class="pdm-brand-mark"><span>M</span></div>
           <div class="pdm-brand-text">PASSE DA DISCIPLINA<b>MESTRE</b></div>
         </div>
-        <div class="pdm-mini-profile" onclick="pdmGoto('dashboard')">
+        <div class="pdm-mini-profile" onclick="pdmGoto('home')">
           <div class="pdm-mini-name" id="pdmMiniName"><b>—</b>—</div>
           <div class="pdm-mini-avatar" id="pdmMiniAvatar">M</div>
         </div>
@@ -723,9 +742,9 @@ if ('serviceWorker' in navigator) {
       <div class="pdm-torn"></div>
 
       <div class="pdm-nav">
-        <button class="pdm-nav-btn" data-view="dashboard" onclick="pdmGoto('dashboard')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-          Painel
+        <button class="pdm-nav-btn" data-view="home" onclick="pdmGoto('home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+          Home
         </button>
         <button class="pdm-nav-btn" data-view="quests" onclick="pdmGoto('quests')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
@@ -752,45 +771,82 @@ if ('serviceWorker' in navigator) {
         </button>
       </div>
 
-      <!-- ===== DASHBOARD ===== -->
-      <div class="pdm-view" data-view="dashboard">
-        <div class="pdm-dashboard-grid">
-          <div>
-            <div class="pdm-panel">
-              <div class="pdm-hero">
-                <div class="pdm-hero-wedge"></div>
-                <div class="pdm-frame-wrap" data-stage="0" id="pdmFrameWrap" onclick="pdmOpenPhotoPicker('profile')">
-                  <div class="pdm-frame-ring"></div>
-                  <div class="pdm-avatar" id="pdmAvatar">M</div>
-                  <div class="pdm-avatar-hint">+</div>
-                </div>
-                <div class="pdm-hero-info">
-                  <div class="pdm-level-name" id="pdmLevelName">Fracassado</div>
-                  <div class="pdm-level-sub" id="pdmLevelSub">Nível geral — 0 XP</div>
-                  <div class="pdm-xpbar-row"><span>Próximo tier</span><b id="pdmXpToNext">—</b></div>
-                  <div class="pdm-xpbar"><div class="pdm-xpbar-fill" id="pdmXpFill" style="width:0%"></div></div>
-                  <div class="pdm-streak-badge">
-                    <span class="pdm-streak-flame">◆</span>
-                    <span id="pdmStreakText">0 dias de streak</span>
-                    <span class="pdm-streak-mult" id="pdmStreakMult">1.0x</span>
-                  </div>
+      <!-- ===== HOME ===== -->
+      <div class="pdm-view" data-view="home">
+        <div id="pdmHomeEmptyState" style="display:none;"></div>
+        <div id="pdmHomeContent">
+
+          <div class="pdm-panel">
+            <div class="pdm-home-greeting" id="pdmHomeGreeting">Bom dia</div>
+            <div class="pdm-home-date" id="pdmHomeDate">—</div>
+            <div class="pdm-hero" style="margin-top:14px;">
+              <div class="pdm-hero-wedge"></div>
+              <div class="pdm-frame-wrap" data-stage="0" id="pdmFrameWrap" onclick="pdmOpenPhotoPicker('profile')">
+                <div class="pdm-frame-ring"></div>
+                <div class="pdm-avatar" id="pdmAvatar">M</div>
+                <div class="pdm-avatar-hint">+</div>
+              </div>
+              <div class="pdm-hero-info">
+                <div class="pdm-level-name" id="pdmLevelName">Fracassado</div>
+                <div class="pdm-level-sub" id="pdmLevelSub">Nível geral — 0 XP</div>
+                <div class="pdm-xpbar-row"><span>Próximo tier</span><b id="pdmXpToNext">—</b></div>
+                <div class="pdm-xpbar"><div class="pdm-xpbar-fill" id="pdmXpFill" style="width:0%"></div></div>
+                <div class="pdm-streak-badge">
+                  <span class="pdm-streak-flame">◆</span>
+                  <span id="pdmStreakText">0 dias de streak</span>
+                  <span class="pdm-streak-mult" id="pdmStreakMult">1.0x</span>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div class="pdm-panel">
-              <div class="pdm-eyebrow">Habilidades</div>
-              <div class="pdm-skills-grid" id="pdmSkillsGrid"></div>
-            </div>
+          <div class="pdm-home-quick-actions">
+            <button onclick="pdmOpenMissionForm()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              Missão
+            </button>
+            <button onclick="pdmOpenHabitForm()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+              Hábito
+            </button>
+            <button onclick="pdmOpenGoalForm()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+              Objetivo
+            </button>
           </div>
 
           <div class="pdm-panel">
-            <div class="pdm-eyebrow">Frase do dia</div>
-            <div class="pdm-quote">
-              <p id="pdmQuoteText">—</p>
-              <span id="pdmQuoteAuthor">—</span>
-            </div>
+            <div class="pdm-eyebrow">Resumo do dia</div>
+            <div class="pdm-stat-grid" id="pdmHomeSummary" style="margin-top:6px;"></div>
           </div>
+
+          <div class="pdm-panel">
+            <div class="pdm-eyebrow">Missões de hoje</div>
+            <div id="pdmHomeMissions"></div>
+          </div>
+
+          <div class="pdm-panel">
+            <div class="pdm-section-head">
+              <div class="pdm-eyebrow">Objetivos em destaque</div>
+              <button class="pdm-head-btn" id="pdmHomeGoalsSeeAll" onclick="pdmGoto('goals')" style="display:none;">
+                Ver todos
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </div>
+            <div id="pdmHomeGoals"></div>
+          </div>
+
+          <div class="pdm-panel">
+            <div class="pdm-eyebrow">Hábitos do dia</div>
+            <p style="font-size:11.5px;color:var(--dim);margin:-6px 0 12px;">Só informativo — a execução acontece na missão gerada por cada hábito.</p>
+            <div id="pdmHomeHabits"></div>
+          </div>
+
+          <div class="pdm-panel">
+            <div class="pdm-eyebrow">Sequência</div>
+            <div class="pdm-stat-grid" id="pdmHomeStreak" style="grid-template-columns:repeat(2,1fr); margin-top:6px;"></div>
+          </div>
+
         </div>
       </div>
 
@@ -872,6 +928,19 @@ if ('serviceWorker' in navigator) {
             <button class="pdm-pass-arrow next" onclick="pdmScrollPass(1)" aria-label="Próximo">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg>
             </button>
+          </div>
+        </div>
+
+        <div class="pdm-panel">
+          <div class="pdm-eyebrow">Habilidades</div>
+          <div class="pdm-skills-grid" id="pdmSkillsGrid"></div>
+        </div>
+
+        <div class="pdm-panel">
+          <div class="pdm-eyebrow">Frase do dia</div>
+          <div class="pdm-quote">
+            <p id="pdmQuoteText">—</p>
+            <span id="pdmQuoteAuthor">—</span>
           </div>
         </div>
       </div>
@@ -1013,6 +1082,7 @@ if ('serviceWorker' in navigator) {
 <script src="./js/goals-data.js"></script>
 <script src="./js/habits-missions-ui.js"></script>
 <script src="./js/goals-ui.js"></script>
+<script src="./js/home-ui.js"></script>
 <script src="./js/reminders.js"></script>
 
 <script>
@@ -1093,7 +1163,7 @@ function defaultState() {
   return {
     totalXP: 0,
     skills: {saude:0, hobbies:0, trabalho:0},
-    streak: {count:0, lastDate:null},
+    streak: {count:0, lastDate:null, best:0},
     projetoZero: {streak:0, lastDate:null, best:0},
   };
 }
@@ -1103,6 +1173,8 @@ async function loadState() {
     const r = await window.storage.get('mestre-state');
     STATE = r ? JSON.parse(r.value) : defaultState();
   } catch(e) { STATE = defaultState(); }
+  if (!STATE.streak) STATE.streak = {count:0, lastDate:null, best:0};
+  if (STATE.streak.best == null) STATE.streak.best = STATE.streak.count || 0;
   try {
     const p = await window.storage.get('mestre-profile-photo');
     PROFILE_PHOTO = p ? JSON.parse(p.value).dataUrl : null;
@@ -1146,6 +1218,7 @@ function registerStreakDay() {
     s.count = 1;
   }
   s.lastDate = t;
+  s.best = Math.max(s.best || 0, s.count);
 }
 
 // Ponte pro módulo de Hábitos & Missões (js/habits-missions-data.js), que
@@ -1200,6 +1273,7 @@ function pdmGoto(view) {
   if (view === 'quests' && window.pdmRenderAgenda) window.pdmRenderAgenda();
   if (view === 'habits' && window.pdmRenderHabitsList) window.pdmRenderHabitsList();
   if (view === 'goals' && window.pdmRenderGoalsList) window.pdmRenderGoalsList();
+  if (view === 'home' && window.pdmRenderHome) window.pdmRenderHome();
 }
 
 let pdmToastTimer = null;
@@ -1383,6 +1457,7 @@ function renderAll() {
   if (window.pdmRenderAgenda) window.pdmRenderAgenda();
   if (window.pdmRenderHabitsList) window.pdmRenderHabitsList();
   if (window.pdmRenderGoalsList) window.pdmRenderGoalsList();
+  if (window.pdmRenderHome) window.pdmRenderHome();
   renderPass();
   renderEvolution();
   renderSecret();
@@ -1553,7 +1628,7 @@ window.pdmToast = pdmToast;
   document.getElementById('pdmApp').style.display = 'block';
   renderAll();
   pdmInitPassDrag();
-  pdmGoto('dashboard');
+  pdmGoto('home');
   if (window.PdmReminders) window.PdmReminders.scheduleTodayReminders();
 })();
 

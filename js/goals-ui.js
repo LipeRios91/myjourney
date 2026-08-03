@@ -325,5 +325,6 @@
     pdmGoalFormCategoryChange, pdmGoalFormAddCategory,
     pdmOpenGoalDetail, pdmToggleGoalHistoryBox, pdmSubmitGoalHistory, pdmDeleteGoalHistory,
     pdmUIArchiveGoal, pdmUIRestoreGoal,
+    pdmGoalRowHtml: goalRowHtml,
   });
 })();

@@ -151,6 +151,44 @@ vez de criar um conceito paralelo.
   dessas features foi implementada agora — só a base pra elas não exigirem
   reescrever o modelo de dados depois.
 
+## Home (tela principal)
+
+`js/home-ui.js` (expõe só `window.pdmRenderHome`) é **puramente
+apresentacional** — nenhuma regra de negócio própria, nenhum estado próprio.
+Ela só lê dos módulos existentes (`PdmHM`, `PdmGoals`, `PdmCore`) e monta a
+tela; toda ação (concluir, reagendar, criar hábito/missão/objetivo) delega
+pros handlers que já existem nos outros módulos.
+
+- Reaproveita componentes de linha já existentes em vez de recriar: `window.
+  pdmMissionRowHtml(m, {highlight})` (de `habits-missions-ui.js`) e `window.
+  pdmGoalRowHtml(g)` (de `goals-ui.js`) — ambos exportados especificamente
+  pra isso. Se o visual de uma linha de missão/objetivo mudar, muda num
+  lugar só e reflete em todo canto (Home, Agenda, Objetivos).
+- **Atualização automática**: não existe listener/observer — `pdmRenderHome()`
+  só entra na função `renderAll()` do script legado (chamada depois de toda
+  mutação no app) e no `pdmGoto('home')`. Se um módulo novo passar a mutar
+  dados, garanta que ele chama `window.pdmRenderAll()` no fim (padrão já
+  seguido por todos os handlers existentes) — a Home atualiza de graça.
+  Não crie um mecanismo de atualização paralelo pra Home.
+  Se um cálculo genuinamente pertencer a outro domínio (ex: "essa missão
+  está atrasada"), implemente-o como função pura exportada do módulo dono,
+  não direto dentro de `home-ui.js`.
+- "Próxima missão" ganha um badge dourado (`pdm-mission-next-badge`) inline
+  na própria linha, não uma fita sobreposta (`::before` com offset negativo)
+  — `.pdm-mission` tem `clip-path`, que corta qualquer pseudo-elemento seu
+  que tente desenhar fora da própria caixa. Se precisar de um badge/fita
+  "flutuando" sobre um elemento com `clip-path`, ele precisa ser um elemento
+  real fora da árvore clipada (como `.pdm-pass-ribbon`, cujo pai não usa
+  `clip-path`), não um pseudo-elemento do próprio elemento clipado.
+- O antigo streak "global" (`STATE.streak`) ganhou `best` (melhor sequência
+  histórica, atualizado em `registerStreakDay()`) — a Home é quem pediu esse
+  dado; hábitos individuais já tinham `stats.bestStreak` próprio, não confundir
+  os dois.
+- Estado vazio (`#pdmHomeEmptyState` vs `#pdmHomeContent`) dispara quando não
+  há objetivo ativo **e** nenhum hábito **e** nenhuma missão hoje — na prática
+  raro, já que hábitos padrão são semeados automaticamente no primeiro uso
+  (ver `PdmHM.init`), mas a lógica cobre o caso de tudo ter sido arquivado.
+
 ## Design system
 
 Prefixo `pdm-` em todas as classes (evita colisão, já que é tudo um arquivo
@@ -179,10 +217,12 @@ uma feature de UI pronta (ver seção de testes abaixo).
 
 ## Views existentes (não duplicar)
 
-`dashboard` (painel/hero/XP), `quests` (agenda diária de missões — não é mais
-uma lista fixa, gera via `PdmHM.ensureMissionsForDate`), `habits` (lista de
-hábitos + CRUD), `goals` (lista de objetivos + CRUD), `pass` (passe de
-batalha com tiers), `evolution` (fotos mensais), `secret` (Projeto Zero).
+`home` (tela principal — ponto de entrada diário, ver seção própria abaixo),
+`quests` (agenda diária de missões, navegável por dia — não é mais uma lista
+fixa, gera via `PdmHM.ensureMissionsForDate`), `habits` (lista de hábitos +
+CRUD), `goals` (lista de objetivos + CRUD), `pass` (passe de batalha com
+tiers — também hospeda Habilidades e Frase do dia, que saíram da Home pra
+manter ela enxuta), `evolution` (fotos mensais), `secret` (Projeto Zero).
 Detalhe/formulário de hábito, missão e objetivo são modais
 (`pdmHabitFormModal`, `pdmHabitDetailModal`, `pdmMissionModal`,
 `pdmGoalFormModal`, `pdmGoalDetailModal`), não views próprias — segue o
