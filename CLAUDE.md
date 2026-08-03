@@ -51,8 +51,18 @@ Tudo roda 100% client-side:
   taxonomia nova, reusar essa).
 - `js/habits-missions-data.js` — camada de dados de Hábitos & Missões (ver
   seção própria abaixo), expõe `window.PdmHM`.
+- `js/goals-data.js` — camada de dados de Objetivos (ver seção própria
+  abaixo), expõe `window.PdmGoals`. Depende de `window.PdmHM` pra consultar
+  hábitos/missões vinculados; `PdmHM` **não** depende de `PdmGoals` (sentido
+  único, evita dependência circular entre os dois módulos).
 - `js/habits-missions-ui.js` — render + formulários + modais de Hábitos &
   Missões, expõe várias `window.pdmXxx` (mesma convenção do script legado).
+- `js/goals-ui.js` — render + formulário + detalhe de Objetivos, mesma
+  convenção. Os helpers de formulário genéricos (`field`, `buildSegmented`,
+  `statTile`, `captureFormValues`/`restoreFormValues`) moraram pra
+  `js/utils.js` justamente pra serem compartilhados entre este arquivo e
+  `habits-missions-ui.js` — qualquer módulo de UI novo deve reusá-los, não
+  redefini-los.
 - `js/reminders.js` — lembretes best-effort via Notification API, expõe
   `window.PdmReminders`. Só dispara com o app aberto (ver limitação abaixo).
 - `window.PdmCore` — ponte definida no script legado (dentro de `index.html`)
@@ -101,6 +111,46 @@ real numa data, gerada de um hábito OU criada manualmente — só ela é conclu
   confiável de verdade (app fechado), isso precisa de Web Push + servidor:
   pare e avise antes de implementar, é a mesma regra de "backend" acima.
 
+## Objetivos (camada estratégica)
+
+Hierarquia: **Objetivo → Hábito → Missão → Execução.** É a estrutura
+principal da aplicação — qualquer feature nova que envolva "propósito",
+"progresso" ou "por que o usuário está fazendo isso" deve se apoiar nela em
+vez de criar um conceito paralelo.
+
+- Um hábito tem no máximo um objetivo (`habit.goalId`). Missões geradas por
+  hábito herdam o `goalId` automaticamente no momento da geração (snapshot,
+  igual já acontece com `category`/`color`/`icon` — editar o hábito depois
+  não reescreve missões passadas, só resincroniza as futuras não tocadas).
+  Missões manuais podem, opcionalmente, se vincular direto a um objetivo
+  (`mfGoalId` no formulário).
+- **Categorias de Objetivo são uma taxonomia própria** (`GOAL_CATEGORIES`,
+  padrão + personalizadas pelo usuário, em `mestre-goal-categories`) —
+  **não confundir com `HM_CATEGORIES`** (saude/hobbies/trabalho, usada por
+  hábito/missão pra XP de skill). São conceitos diferentes que coincidem só
+  parcialmente no nome ("Saúde" existe nas duas listas, são chaves separadas).
+- "Excluir objetivo" = arquivar (`archivedAt`, preserva o objetivo e seu
+  histórico de evolução) **+** `PdmHM.unlinkGoal()` (limpa `goalId` de todo
+  hábito/missão vinculado). Isso deixa hábitos "órfãos" de propósito — a UI
+  mostra "Sem objetivo vinculado" e deixa o usuário reatribuir editando o
+  hábito; não há cascata de exclusão.
+- Progresso (`PdmGoals.computeGoalProgress`): se o objetivo tem meta numérica
+  (`hasNumericGoal`), é `(atual − inicial) / (alvo − inicial)` — funciona
+  igual pra metas que sobem (economizar) ou que descem (perder peso), não
+  precisa de lógica separada pros dois casos. Sem meta numérica, cai pra
+  "% de missões vinculadas concluídas" (execução). "Valor atual" vem sempre
+  do registro mais recente do histórico de evolução (`goal.history`), não de
+  um campo solto — se não houver nenhum registro ainda, usa o valor inicial.
+- Arquitetura pensada pra caber, sem refatoração grande, features futuras já
+  cogitadas (dashboard de objetivos, Disciplina Score por objetivo,
+  recomendações de IA, estatísticas, conquistas, Google Agenda): as funções
+  de progresso/estatística são puras (recebem o objetivo, devolvem números),
+  o módulo só lê de `PdmHM` por uma interface pequena e explícita
+  (`listHabitsByGoal`/`listMissionsByGoal`/`unlinkGoal`), e cada objetivo já
+  carrega tudo que uma futura tela de dashboard precisaria agregar. Nenhuma
+  dessas features foi implementada agora — só a base pra elas não exigirem
+  reescrever o modelo de dados depois.
+
 ## Design system
 
 Prefixo `pdm-` em todas as classes (evita colisão, já que é tudo um arquivo
@@ -131,12 +181,14 @@ uma feature de UI pronta (ver seção de testes abaixo).
 
 `dashboard` (painel/hero/XP), `quests` (agenda diária de missões — não é mais
 uma lista fixa, gera via `PdmHM.ensureMissionsForDate`), `habits` (lista de
-hábitos + CRUD), `pass` (passe de batalha com tiers), `evolution` (fotos
-mensais), `secret` (Projeto Zero). Detalhe/formulário de hábito e de missão
-são modais (`pdmHabitFormModal`, `pdmHabitDetailModal`, `pdmMissionModal`),
-não views próprias — segue o padrão de modal já usado pra foto/tier/confirmação.
-Uma feature nova normalmente é uma dessas views/modais, ou uma seção dentro de
-uma delas — raramente justifica uma view nova.
+hábitos + CRUD), `goals` (lista de objetivos + CRUD), `pass` (passe de
+batalha com tiers), `evolution` (fotos mensais), `secret` (Projeto Zero).
+Detalhe/formulário de hábito, missão e objetivo são modais
+(`pdmHabitFormModal`, `pdmHabitDetailModal`, `pdmMissionModal`,
+`pdmGoalFormModal`, `pdmGoalDetailModal`), não views próprias — segue o
+padrão de modal já usado pra foto/tier/confirmação. Uma feature nova
+normalmente é uma dessas views/modais, ou uma seção dentro de uma delas —
+raramente justifica uma view nova.
 
 Modais empilhados: o modal de confirmação genérico (`pdmConfirmModal`,
 usado por `pdmConfirmGeneric()`) precisa ficar **por último no `<body>`**

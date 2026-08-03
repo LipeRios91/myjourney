@@ -122,6 +122,7 @@
     return {
       id: uid('m'),
       habitId: habit.id,
+      goalId: habit.goalId || null, // missão herda o Objetivo do hábito automaticamente
       origin: 'habit',
       name: habit.name,
       description: habit.description || '',
@@ -213,7 +214,9 @@
     saveHabits();
   }
 
-  function computeGoalProgress(habit) {
+  // Progresso da META do hábito (habit.goal, ex: "3x por semana") — não
+  // confundir com o Objetivo estratégico (entidade separada em js/goals-data.js).
+  function computeHabitGoalProgress(habit) {
     if (!habit.goal || habit.goal.type !== 'count_per_period') return null;
     const period = habit.goal.period || 'week';
     const today = todayISO();
@@ -243,6 +246,7 @@
     const now = new Date().toISOString();
     const habit = {
       id: uid('h'),
+      goalId: data.goalId || null, // vínculo com o Objetivo estratégico (js/goals-data.js)
       name: data.name.trim(),
       description: (data.description || '').trim(),
       category: data.category,
@@ -269,9 +273,9 @@
   function updateHabit(id, data) {
     const h = HABITS.find((x) => x.id === id);
     if (!h) return null;
-    const structuralKeys = ['frequency', 'startDate', 'endDate', 'schedule', 'priority', 'xp'];
+    const structuralKeys = ['frequency', 'startDate', 'endDate', 'schedule', 'priority', 'xp', 'goalId'];
     const structuralChanged = structuralKeys.some((k) => data[k] !== undefined && JSON.stringify(data[k]) !== JSON.stringify(h[k]));
-    ['name', 'description', 'category', 'color', 'icon', 'frequency', 'startDate', 'endDate', 'schedule', 'goal', 'reminder', 'xp', 'priority'].forEach((k) => {
+    ['name', 'description', 'category', 'color', 'icon', 'frequency', 'startDate', 'endDate', 'schedule', 'goal', 'reminder', 'xp', 'priority', 'goalId'].forEach((k) => {
       if (data[k] !== undefined) h[k] = data[k];
     });
     if (typeof h.name === 'string') h.name = h.name.trim();
@@ -306,6 +310,26 @@
   }
 
   // ---------------------------------------------------------------
+  // CONSULTAS/DESVÍNCULO USADAS PELO MÓDULO DE OBJETIVOS (js/goals-data.js)
+  // ---------------------------------------------------------------
+  function listHabitsByGoal(goalId) {
+    return HABITS.filter((h) => h.goalId === goalId).slice().sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  }
+  function listMissionsByGoal(goalId) {
+    return MISSIONS.filter((m) => m.goalId === goalId).slice().sort((a, b) => (a.scheduledDate < b.scheduledDate ? 1 : -1));
+  }
+  // "Excluir um objetivo... apenas remover a associação" — limpa goalId dos
+  // hábitos e missões vinculados, sem apagar nada deles.
+  function unlinkGoal(goalId) {
+    let changed = false;
+    HABITS.forEach((h) => { if (h.goalId === goalId) { h.goalId = null; changed = true; } });
+    if (changed) saveHabits();
+    changed = false;
+    MISSIONS.forEach((m) => { if (m.goalId === goalId) { m.goalId = null; changed = true; } });
+    if (changed) saveMissions();
+  }
+
+  // ---------------------------------------------------------------
   // CRUD — MISSÕES
   // ---------------------------------------------------------------
   function listMissionsForDate(dateISO) {
@@ -323,6 +347,7 @@
     const m = {
       id: uid('m'),
       habitId: null,
+      goalId: data.goalId || null, // missão manual pode, opcionalmente, se ligar a um Objetivo
       origin: 'manual',
       name: data.name.trim(),
       description: (data.description || '').trim(),
@@ -356,7 +381,7 @@
       m.date = patch.date;
       m.status = 'adiada';
     }
-    ['name', 'description', 'category', 'color', 'icon', 'time', 'endTime', 'durationMin', 'priority', 'xp', 'notes'].forEach((k) => {
+    ['name', 'description', 'category', 'color', 'icon', 'time', 'endTime', 'durationMin', 'priority', 'xp', 'notes', 'goalId'].forEach((k) => {
       if (patch[k] !== undefined) m[k] = patch[k];
     });
     if (typeof m.name === 'string') m.name = m.name.trim();
@@ -466,7 +491,10 @@
     archiveHabit,
     restoreHabit,
     getHabitMissionHistory,
-    computeGoalProgress,
+    listHabitsByGoal,
+    listMissionsByGoal,
+    unlinkGoal,
+    computeHabitGoalProgress,
     listMissionsForDate,
     getMission,
     createManualMission,

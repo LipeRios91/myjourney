@@ -735,6 +735,10 @@ if ('serviceWorker' in navigator) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
           Hábitos
         </button>
+        <button class="pdm-nav-btn" data-view="goals" onclick="pdmGoto('goals')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+          Objetivos
+        </button>
         <button class="pdm-nav-btn" data-view="pass" onclick="pdmGoto('pass')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l2.6 6.6L21 9l-5 4.5L17.5 21 12 17.3 6.5 21 8 13.5 3 9l6.4-.4z"/></svg>
           Passe
@@ -825,6 +829,25 @@ if ('serviceWorker' in navigator) {
           <div id="pdmHabitsArchivedWrap" style="display:none;">
             <p class="pdm-btn-ghost" style="clip-path:none; display:inline-block; margin-top:14px;" onclick="pdmToggleArchivedHabits()" id="pdmHabitsArchivedToggle">Mostrar arquivados</p>
             <div id="pdmHabitsArchivedList" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== OBJETIVOS ===== -->
+      <div class="pdm-view" data-view="goals">
+        <div class="pdm-panel">
+          <div class="pdm-section-head">
+            <div class="pdm-eyebrow">Meus objetivos</div>
+            <button class="pdm-head-btn" onclick="pdmOpenGoalForm()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              Novo objetivo
+            </button>
+          </div>
+          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Todo hábito existe pra contribuir com um objetivo — essa é a camada estratégica do Passe do Mestre.</p>
+          <div id="pdmGoalsList"></div>
+          <div id="pdmGoalsArchivedWrap" style="display:none;">
+            <p class="pdm-btn-ghost" style="clip-path:none; display:inline-block; margin-top:14px;" onclick="pdmToggleArchivedGoals()" id="pdmGoalsArchivedToggle">Mostrar arquivados</p>
+            <div id="pdmGoalsArchivedList" style="display:none;"></div>
           </div>
         </div>
       </div>
@@ -933,6 +956,29 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 
+  <!-- Goal form modal (create/edit) -->
+  <div class="pdm-modal-bg" id="pdmGoalFormModal">
+    <div class="pdm-modal pdm-modal-lg">
+      <h3 id="pdmGoalFormTitle">Novo objetivo</h3>
+      <div class="pdm-modal-scroll" id="pdmGoalFormBody"></div>
+      <div class="pdm-modal-row" style="margin-top:16px;">
+        <button class="pdm-btn-ghost" onclick="pdmCloseModal('pdmGoalFormModal')">Cancelar</button>
+        <button class="pdm-btn" onclick="pdmSubmitGoalForm()">Salvar objetivo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goal detail modal (progresso + histórico + hábitos/missões vinculados) -->
+  <div class="pdm-modal-bg" id="pdmGoalDetailModal">
+    <div class="pdm-modal pdm-modal-lg">
+      <h3 id="pdmGoalDetailTitle">Objetivo</h3>
+      <div class="pdm-modal-scroll" id="pdmGoalDetailBody"></div>
+      <div class="pdm-modal-row" style="margin-top:16px;">
+        <button class="pdm-btn-ghost" onclick="pdmCloseModal('pdmGoalDetailModal')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Mission modal (create / view / edit / actions) -->
   <div class="pdm-modal-bg" id="pdmMissionModal">
     <div class="pdm-modal pdm-modal-lg">
@@ -964,7 +1010,9 @@ if ('serviceWorker' in navigator) {
 <script src="./js/utils.js"></script>
 <script src="./js/icons.js"></script>
 <script src="./js/habits-missions-data.js"></script>
+<script src="./js/goals-data.js"></script>
 <script src="./js/habits-missions-ui.js"></script>
+<script src="./js/goals-ui.js"></script>
 <script src="./js/reminders.js"></script>
 
 <script>
@@ -1151,6 +1199,7 @@ function pdmGoto(view) {
   }
   if (view === 'quests' && window.pdmRenderAgenda) window.pdmRenderAgenda();
   if (view === 'habits' && window.pdmRenderHabitsList) window.pdmRenderHabitsList();
+  if (view === 'goals' && window.pdmRenderGoalsList) window.pdmRenderGoalsList();
 }
 
 let pdmToastTimer = null;
@@ -1333,6 +1382,7 @@ function renderAll() {
   renderSkills();
   if (window.pdmRenderAgenda) window.pdmRenderAgenda();
   if (window.pdmRenderHabitsList) window.pdmRenderHabitsList();
+  if (window.pdmRenderGoalsList) window.pdmRenderGoalsList();
   renderPass();
   renderEvolution();
   renderSecret();
@@ -1428,11 +1478,12 @@ function pdmConfirmReset() {
 function pdmConfirmFullReset() {
   const modal = document.getElementById('pdmConfirmModal');
   document.getElementById('pdmConfirmTitle').textContent = 'Zerar todo o progresso';
-  document.getElementById('pdmConfirmText').textContent = 'Isso apaga XP, streaks, hábitos, missões e o Projeto Zero, e recomeça com os hábitos padrão. As fotos não são apagadas. Essa ação não pode ser desfeita.';
+  document.getElementById('pdmConfirmText').textContent = 'Isso apaga XP, streaks, objetivos, hábitos, missões e o Projeto Zero, e recomeça com os hábitos padrão. As fotos não são apagadas. Essa ação não pode ser desfeita.';
   const btn = document.getElementById('pdmConfirmBtn');
   btn.onclick = async () => {
     STATE = defaultState();
     await saveState();
+    if (window.PdmGoals) window.PdmGoals.resetAll();
     if (window.PdmHM) window.PdmHM.resetAll();
     renderAll();
     pdmCloseModal('pdmConfirmModal');
@@ -1496,6 +1547,7 @@ window.pdmToast = pdmToast;
 
 (async function init() {
   await loadState();
+  await window.PdmGoals.init();
   await window.PdmHM.init();
   document.getElementById('pdmLoading').style.display = 'none';
   document.getElementById('pdmApp').style.display = 'block';

@@ -53,3 +53,23 @@ function escapeHtml(s) {
 }
 
 function clampPct(n) { return Math.max(0, Math.min(100, n)); }
+
+// ---------------------------------------------------------------
+// HELPERS DE MARKUP DE FORMULÁRIO — compartilhados por qualquer módulo de UI
+// (js/habits-missions-ui.js, js/goals-ui.js, e futuros).
+// ---------------------------------------------------------------
+function field(label, inner) { return '<div class="pdm-field"><label>' + label + '</label>' + inner + '</div>'; }
+function buildSegmented(options, activeVal, handlerName) {
+  return '<div class="pdm-segmented">' + options.map(([val, label]) =>
+    '<button type="button" class="' + (val === activeVal ? 'active' : '') + '" onclick="' + handlerName + '(\'' + val + '\')">' + label + '</button>'
+  ).join('') + '</div>';
+}
+function statTile(value, label) { return '<div class="pdm-stat-tile"><b>' + value + '</b><span>' + label + '</span></div>'; }
+function captureFormValues(ids) {
+  const vals = {};
+  ids.forEach((id) => { const el = document.getElementById(id); if (el) vals[id] = el.value; });
+  return vals;
+}
+function restoreFormValues(ids, vals) {
+  ids.forEach((id) => { const el = document.getElementById(id); if (el && vals[id] !== undefined) el.value = vals[id]; });
+}

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'passe-do-mestre-v3';
+const CACHE_NAME = 'passe-do-mestre-v4';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,7 +10,9 @@ const APP_SHELL = [
   './js/utils.js',
   './js/icons.js',
   './js/habits-missions-data.js',
+  './js/goals-data.js',
   './js/habits-missions-ui.js',
+  './js/goals-ui.js',
   './js/reminders.js',
 ];
 

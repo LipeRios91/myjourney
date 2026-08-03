@@ -16,24 +16,9 @@
   const PRIORITY_LABELS = { baixa: 'Baixa', media: 'Média', alta: 'Alta' };
   const REMINDER_LABELS = { none: 'Sem lembrete', '10min': '10 min antes', '30min': '30 min antes', '1h': '1h antes', custom: 'Personalizado' };
 
-  // ---------------------------------------------------------------
-  // HELPERS DE MARKUP
-  // ---------------------------------------------------------------
-  function field(label, inner) { return '<div class="pdm-field"><label>' + label + '</label>' + inner + '</div>'; }
-  function buildSegmented(options, activeVal, handlerName) {
-    return '<div class="pdm-segmented">' + options.map(([val, label]) =>
-      '<button type="button" class="' + (val === activeVal ? 'active' : '') + '" onclick="' + handlerName + '(\'' + val + '\')">' + label + '</button>'
-    ).join('') + '</div>';
-  }
-  function statTile(value, label) { return '<div class="pdm-stat-tile"><b>' + value + '</b><span>' + label + '</span></div>'; }
-  function captureFormValues(ids) {
-    const vals = {};
-    ids.forEach((id) => { const el = document.getElementById(id); if (el) vals[id] = el.value; });
-    return vals;
-  }
-  function restoreFormValues(ids, vals) {
-    ids.forEach((id) => { const el = document.getElementById(id); if (el && vals[id] !== undefined) el.value = vals[id]; });
-  }
+  // Helpers de markup de formulário (field/buildSegmented/statTile/
+  // capture+restoreFormValues) agora moraram pra js/utils.js — são
+  // compartilhados com js/goals-ui.js.
 
   function describeFrequency(habit) {
     const f = habit.frequency || {};
@@ -178,8 +163,11 @@
 
   function pdmOpenHabitForm(habitId) {
     const h = habitId ? PdmHM.getHabit(habitId) : null;
+    const goals = window.PdmGoals ? window.PdmGoals.listGoals() : [];
+    const defaultGoalId = (h && h.goalId) || (goals.length ? goals[0].id : null);
     habitFormDraft = h ? {
       editingId: h.id,
+      goalId: defaultGoalId,
       color: h.color,
       icon: h.icon,
       freqType: h.frequency.type,
@@ -192,7 +180,7 @@
       reminderType: h.reminder ? h.reminder.type : 'none',
       priority: h.priority || 'media',
     } : {
-      editingId: null, color: 'gold', icon: 'target', freqType: 'daily', weekdays: [], weeklyDay: 0,
+      editingId: null, goalId: defaultGoalId, color: 'gold', icon: 'target', freqType: 'daily', weekdays: [], weeklyDay: 0,
       monthlyMode: 'day_of_month', weekdayPosOrdinal: 1, weekdayPosWeekday: 0,
       goalType: 'none', reminderType: 'none', priority: 'media',
     };
@@ -222,6 +210,14 @@
     let html = '<div id="pdmHabitFormError" class="pdm-field-error" style="display:none;"></div>';
     html += field('Nome', '<input class="pdm-input" id="hfName" value="' + escapeHtml(name) + '" placeholder="Ex: Academia">');
     html += field('Descrição (opcional)', '<textarea class="pdm-textarea" id="hfDesc">' + escapeHtml(desc) + '</textarea>');
+
+    const goals = window.PdmGoals ? window.PdmGoals.listGoals() : [];
+    if (!goals.length) {
+      html += field('Objetivo', '<p class="pdm-field-hint">Todo hábito existe pra contribuir com um objetivo. Você ainda não tem nenhum — <button type="button" class="pdm-btn-ghost" style="margin-top:6px;" onclick="pdmCloseModal(\'pdmHabitFormModal\'); pdmOpenGoalForm();">criar um objetivo</button> e depois volte pra criar o hábito.</p>');
+    } else {
+      html += field('Objetivo', '<select class="pdm-select" id="hfGoalId">' + goals.map((g) => '<option value="' + g.id + '"' + (g.id === d.goalId ? ' selected' : '') + '>' + escapeHtml(g.name) + '</option>').join('') + '</select>');
+    }
+
     html += '<div class="pdm-field-row">';
     html += field('Categoria', '<select class="pdm-select" id="hfCategory">' + HM_CATEGORIES.map((c) => '<option value="' + c.key + '"' + (c.key === category ? ' selected' : '') + '>' + c.name + '</option>').join('') + '</select>');
     html += field('XP por execução', '<input class="pdm-input" type="number" min="0" id="hfXp" value="' + xp + '">');
@@ -330,6 +326,8 @@
     const name = document.getElementById('hfName').value.trim();
     const errors = [];
     if (!name) errors.push('Dê um nome pro hábito.');
+    const goalSelectEl = document.getElementById('hfGoalId');
+    if (!goalSelectEl || !goalSelectEl.value) errors.push('Todo hábito precisa estar vinculado a um objetivo.');
     if (d.freqType === 'weekdays' && d.weekdays.length === 0) errors.push('Escolha pelo menos um dia da semana.');
     if (d.freqType === 'custom') {
       const iv = Number(document.getElementById('hfIntervalDays').value);
@@ -373,6 +371,7 @@
       name,
       description: document.getElementById('hfDesc').value.trim(),
       category: document.getElementById('hfCategory').value,
+      goalId: goalSelectEl.value,
       color: d.color,
       icon: d.icon,
       frequency,
@@ -409,7 +408,7 @@
 
   function buildHabitDetailHtml(h) {
     const s = h.stats || {};
-    const goalProgress = PdmHM.computeGoalProgress(h);
+    const goalProgress = PdmHM.computeHabitGoalProgress(h);
     const catName = (HM_CATEGORIES.find((c) => c.key === h.category) || {}).name || '—';
 
     let html = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">';
@@ -419,6 +418,13 @@
     if (h.description) html += '<p style="font-size:13px;color:var(--dim);margin:8px 0;">' + escapeHtml(h.description) + '</p>';
     if (h.archivedAt) html += '<span class="pdm-mission-badge" style="display:inline-block;margin-bottom:8px;">Arquivado</span>';
     if (h.reminder && h.reminder.type !== 'none') html += '<span class="pdm-mission-badge" style="display:inline-block;margin-bottom:8px;margin-left:6px;">🔔 ' + REMINDER_LABELS[h.reminder.type] + '</span>';
+
+    const linkedGoal = h.goalId && window.PdmGoals ? window.PdmGoals.getGoal(h.goalId) : null;
+    if (linkedGoal) {
+      html += '<div class="pdm-field"><label>Objetivo</label><p class="pdm-field-hint" style="cursor:pointer;color:var(--gold-pale);" onclick="pdmCloseModal(\'pdmHabitDetailModal\'); pdmOpenGoalDetail(\'' + linkedGoal.id + '\')">' + escapeHtml(linkedGoal.name) + ' →</p></div>';
+    } else {
+      html += '<div class="pdm-field"><label>Objetivo</label><p class="pdm-field-hint">Sem objetivo vinculado. Edite o hábito pra escolher um.</p></div>';
+    }
 
     html += '<div class="pdm-stat-grid">';
     html += statTile(s.currentStreak || 0, 'Sequência atual');
@@ -488,7 +494,7 @@
   let missionModalMode = 'view'; // 'view' | 'form'
   let missionModalId = null;
   let missionFormDraft = { priority: 'media' };
-  const MISSION_FORM_FIELD_IDS = ['mfName', 'mfDesc', 'mfCategory', 'mfXp', 'mfDate', 'mfTime', 'mfDuration', 'mfNotes'];
+  const MISSION_FORM_FIELD_IDS = ['mfName', 'mfDesc', 'mfCategory', 'mfXp', 'mfDate', 'mfTime', 'mfDuration', 'mfNotes', 'mfGoalId'];
 
   function pdmOpenMissionForm(id) {
     missionModalId = id || null;
@@ -553,6 +559,11 @@
     html += habit ? '<span class="pdm-mission-badge">Do hábito: ' + escapeHtml(habit.name) + '</span>' : '<span class="pdm-mission-badge">Missão manual</span>';
     html += '</div>';
 
+    const linkedGoal = m.goalId && window.PdmGoals ? window.PdmGoals.getGoal(m.goalId) : null;
+    if (linkedGoal) {
+      html += '<div class="pdm-field"><label>Objetivo</label><p class="pdm-field-hint" style="cursor:pointer;color:var(--gold-pale);" onclick="pdmCloseModal(\'pdmMissionModal\'); pdmOpenGoalDetail(\'' + linkedGoal.id + '\')">' + escapeHtml(linkedGoal.name) + ' →</p></div>';
+    }
+
     if (m.description) html += '<p style="font-size:13px;color:var(--dim);margin-bottom:10px;">' + escapeHtml(m.description) + '</p>';
     if (m.notes) html += '<div class="pdm-field"><label>Observações</label><p style="font-size:13px;color:var(--fog);margin:0;">' + escapeHtml(m.notes) + '</p></div>';
     if (m.rescheduleHistory && m.rescheduleHistory.length) {
@@ -591,7 +602,7 @@
   }
 
   function buildMissionFormHtml(existing) {
-    const m = existing || { name: '', description: '', category: 'trabalho', color: 'gold', icon: 'flag', date: agendaDate || todayISO(), time: '', durationMin: '', xp: 10, notes: '' };
+    const m = existing || { name: '', description: '', category: 'trabalho', color: 'gold', icon: 'flag', date: agendaDate || todayISO(), time: '', durationMin: '', xp: 10, notes: '', goalId: null };
     let html = '<div id="pdmMissionFormError" class="pdm-field-error" style="display:none;"></div>';
     html += field('Nome', '<input class="pdm-input" id="mfName" value="' + escapeHtml(m.name) + '" placeholder="Ex: Consulta médica">');
     html += field('Descrição (opcional)', '<textarea class="pdm-textarea" id="mfDesc">' + escapeHtml(m.description || '') + '</textarea>');
@@ -599,6 +610,16 @@
     html += field('Categoria', '<select class="pdm-select" id="mfCategory">' + HM_CATEGORIES.map((c) => '<option value="' + c.key + '"' + (c.key === m.category ? ' selected' : '') + '>' + c.name + '</option>').join('') + '</select>');
     html += field('XP', '<input class="pdm-input" type="number" min="0" id="mfXp" value="' + m.xp + '">');
     html += '</div>';
+
+    if (existing && existing.habitId) {
+      const linkedGoal = existing.goalId && window.PdmGoals ? window.PdmGoals.getGoal(existing.goalId) : null;
+      html += field('Objetivo', '<p class="pdm-field-hint">' + (linkedGoal ? 'Herdado do hábito: ' + escapeHtml(linkedGoal.name) : 'O hábito de origem não tem objetivo vinculado.') + '</p>');
+    } else {
+      const goals = window.PdmGoals ? window.PdmGoals.listGoals() : [];
+      html += field('Objetivo (opcional)', '<select class="pdm-select" id="mfGoalId"><option value="">Nenhum</option>' +
+        goals.map((g) => '<option value="' + g.id + '"' + (g.id === m.goalId ? ' selected' : '') + '>' + escapeHtml(g.name) + '</option>').join('') + '</select>');
+    }
+
     html += '<div class="pdm-field-row">';
     html += field('Data', '<input class="pdm-input" type="date" id="mfDate" value="' + m.date + '">');
     html += field('Horário (opcional)', '<input class="pdm-input" type="time" id="mfTime" value="' + (m.time || '') + '">');
@@ -628,6 +649,7 @@
     if (!date) { errBox.style.display = 'block'; errBox.textContent = 'Escolha uma data.'; return; }
     errBox.style.display = 'none';
 
+    const goalSelectEl = document.getElementById('mfGoalId');
     const data = {
       name,
       description: document.getElementById('mfDesc').value.trim(),
@@ -639,6 +661,7 @@
       xp: Math.max(0, Number(document.getElementById('mfXp').value) || 0),
       notes: document.getElementById('mfNotes').value.trim(),
     };
+    if (goalSelectEl) data.goalId = goalSelectEl.value || null;
 
     if (missionModalId) { PdmHM.updateMission(missionModalId, data); pdmToast('Missão atualizada.'); }
     else { PdmHM.createManualMission(data); pdmToast('Missão criada.'); }
@@ -697,5 +720,7 @@
     pdmOpenMissionForm, pdmOpenMissionDetail, pdmSwitchMissionModalToEdit, pdmSubmitMissionForm, pdmMissionFormSetPriority,
     pdmUIStartMission, pdmUICompleteMission, pdmUICancelMission, pdmUIReopenMission, pdmUIDeleteMission,
     pdmToggleRescheduleBox, pdmConfirmReschedule,
+    pdmDescribeFrequency: describeFrequency,
+    pdmConfirmGeneric,
   });
 })();
