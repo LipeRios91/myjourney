@@ -20,6 +20,19 @@
   // capture+restoreFormValues) agora moraram pra js/utils.js — são
   // compartilhados com js/goals-ui.js.
 
+  // Opções de habilidade pro seletor de categoria: sempre as ativas, mais a
+  // atual do hábito/missão em edição mesmo se ela tiver sido arquivada
+  // depois — senão o select "perde" a seleção e reatribui silenciosamente
+  // pra outra habilidade ao salvar.
+  function skillOptions(currentKey) {
+    let skills = PdmGamification.getActiveSkills();
+    if (currentKey && !skills.some((s) => s.key === currentKey)) {
+      const archived = PdmGamification.getSkillMeta(currentKey);
+      if (archived) skills = skills.concat([archived]);
+    }
+    return skills.map((c) => '<option value="' + c.key + '"' + (c.key === currentKey ? ' selected' : '') + '>' + escapeHtml(c.name) + '</option>').join('');
+  }
+
   function describeFrequency(habit) {
     const f = habit.frequency || {};
     switch (f.type) {
@@ -47,7 +60,7 @@
     opts = opts || {};
     const colorHex = habitColorHex(m.color);
     const isFuture = m.date > todayISO();
-    const catName = (HM_CATEGORIES.find((c) => c.key === m.category) || {}).name;
+    const catName = (PdmGamification.getSkillMeta(m.category) || {}).name;
     const badges = [];
     if (opts.highlight) badges.push('<span class="pdm-mission-badge pdm-mission-next-badge">◆ Próxima</span>');
     if (catName) badges.push('<span class="pdm-mission-badge">' + escapeHtml(catName) + '</span>');
@@ -226,7 +239,7 @@
     }
 
     html += '<div class="pdm-field-row">';
-    html += field('Categoria', '<select class="pdm-select" id="hfCategory">' + HM_CATEGORIES.map((c) => '<option value="' + c.key + '"' + (c.key === category ? ' selected' : '') + '>' + c.name + '</option>').join('') + '</select>');
+    html += field('Habilidade', '<select class="pdm-select" id="hfCategory">' + skillOptions(category) + '</select>');
     html += field('XP por execução', '<input class="pdm-input" type="number" min="0" id="hfXp" value="' + xp + '">');
     html += '</div>';
 
@@ -416,7 +429,7 @@
   function buildHabitDetailHtml(h) {
     const s = h.stats || {};
     const goalProgress = PdmHM.computeHabitGoalProgress(h);
-    const catName = (HM_CATEGORIES.find((c) => c.key === h.category) || {}).name || '—';
+    const catName = (PdmGamification.getSkillMeta(h.category) || {}).name || '—';
 
     let html = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">';
     html += '<div class="pdm-habit-icon" style="color:' + habitColorHex(h.color) + ';">' + habitIconSvg(h.icon) + '</div>';
@@ -548,7 +561,7 @@
 
   function buildMissionViewHtml(m) {
     const habit = m.habitId ? PdmHM.getHabit(m.habitId) : null;
-    const catName = (HM_CATEGORIES.find((c) => c.key === m.category) || {}).name || '—';
+    const catName = (PdmGamification.getSkillMeta(m.category) || {}).name || '—';
     const metaParts = [formatDateFull(m.date)];
     if (m.time) metaParts.push(m.time + (m.endTime ? '–' + m.endTime : ''));
     if (m.durationMin) metaParts.push(m.durationMin + ' min');
@@ -618,7 +631,7 @@
     html += field('Nome', '<input class="pdm-input" id="mfName" value="' + escapeHtml(m.name) + '" placeholder="Ex: Consulta médica">');
     html += field('Descrição (opcional)', '<textarea class="pdm-textarea" id="mfDesc">' + escapeHtml(m.description || '') + '</textarea>');
     html += '<div class="pdm-field-row">';
-    html += field('Categoria', '<select class="pdm-select" id="mfCategory">' + HM_CATEGORIES.map((c) => '<option value="' + c.key + '"' + (c.key === m.category ? ' selected' : '') + '>' + c.name + '</option>').join('') + '</select>');
+    html += field('Habilidade', '<select class="pdm-select" id="mfCategory">' + skillOptions(m.category) + '</select>');
     html += field('XP', '<input class="pdm-input" type="number" min="0" id="mfXp" value="' + m.xp + '">');
     html += '</div>';
 

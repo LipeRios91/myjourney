@@ -28,11 +28,9 @@ const HABIT_COLORS = [
   { key: 'orange', hex: '#D98A4A' },
 ];
 
-const HM_CATEGORIES = [
-  { key: 'saude', name: 'Saúde e Força' },
-  { key: 'hobbies', name: 'Hobbies' },
-  { key: 'trabalho', name: 'Trabalho' },
-];
+// A taxonomia de categoria/habilidade (antes fixa aqui como HM_CATEGORIES)
+// agora é dinâmica — ver PdmGamification.getSkills()/getActiveSkills() em
+// js/gamification-data.js (padrão + habilidades personalizadas pelo usuário).
 
 function habitColorHex(key) {
   const found = HABIT_COLORS.find((c) => c.key === key);

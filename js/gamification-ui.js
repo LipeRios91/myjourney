@@ -59,11 +59,106 @@
     if (result.achievementsUnlocked && result.achievementsUnlocked.length) {
       result.achievementsUnlocked.forEach((a) => queueFeedback('🏆 Conquista desbloqueada: ' + a.name));
     }
-    if (window.pdmRenderGamificationProfile) window.pdmRenderGamificationProfile();
+    if (window.pdmRenderPerfil) window.pdmRenderPerfil();
   }
 
   // ---------------------------------------------------------------
-  // PAINEL DE PERFIL — resumo + conquistas, na view Passe
+  // HABILIDADES — grid editável (padrão + personalizadas)
+  // ---------------------------------------------------------------
+  function skillCardHtml(skill) {
+    const info = PdmGamification.getSkillLevelInfo(skill.key);
+    return (
+      '<div class="pdm-skill-card" style="--habit-color:' + habitColorHex(skill.color) + ';" onclick="pdmOpenSkillForm(\'' + skill.key + '\')">' +
+        '<div class="pdm-skill-head">' +
+          '<div class="pdm-skill-icon">' + habitIconSvg(skill.icon) + '</div>' +
+          '<div class="pdm-skill-name">' + escapeHtml(skill.name) + '</div>' +
+          '<div class="pdm-skill-lvl">LV ' + info.level + '</div>' +
+        '</div>' +
+        '<div class="pdm-skill-bar"><div class="pdm-skill-bar-fill" style="width:' + info.progressPct + '%"></div></div>' +
+        '<div class="pdm-skill-xp">' + info.xp + ' XP</div>' +
+      '</div>'
+    );
+  }
+
+  function pdmRenderSkills() {
+    const grid = document.getElementById('pdmSkillsGrid');
+    if (!grid || !window.PdmGamification) return;
+    const skills = PdmGamification.getActiveSkills();
+    grid.innerHTML = skills.map(skillCardHtml).join('') +
+      '<div class="pdm-skill-card pdm-skill-card-add" onclick="pdmOpenSkillForm()">' +
+        '<div class="pdm-skill-add-icon">+</div><div class="pdm-skill-add-label">Nova habilidade</div>' +
+      '</div>';
+  }
+
+  let skillFormDraft = null;
+
+  function pdmOpenSkillForm(key) {
+    const s = key ? PdmGamification.getSkillMeta(key) : null;
+    skillFormDraft = s
+      ? { editingKey: s.key, icon: s.icon, color: s.color, isDefault: s.isDefault }
+      : { editingKey: null, icon: 'target', color: 'gold', isDefault: false };
+    document.getElementById('pdmSkillFormTitle').textContent = s ? 'Editar habilidade' : 'Nova habilidade';
+    document.getElementById('pdmSkillFormBody').innerHTML = buildSkillFormHtml(s);
+    document.getElementById('pdmSkillFormModal').classList.add('open');
+  }
+
+  function buildSkillFormHtml(s) {
+    const d = skillFormDraft;
+    const name = s ? s.name : '';
+    let html = '<div id="pdmSkillFormError" class="pdm-field-error" style="display:none;"></div>';
+    html += field('Nome', '<input class="pdm-input" id="skName" value="' + escapeHtml(name) + '" placeholder="Ex: Liderança">');
+    html += field('Ícone', '<div class="pdm-icon-picker">' + HABIT_ICON_KEYS.map((k) =>
+      '<div class="pdm-icon-swatch' + (k === d.icon ? ' active' : '') + '" onclick="pdmSkillFormPick(\'icon\',\'' + k + '\')">' + HABIT_ICONS[k] + '</div>'
+    ).join('') + '</div>');
+    html += field('Cor', '<div class="pdm-color-picker">' + HABIT_COLORS.map((c) =>
+      '<div class="pdm-color-swatch' + (c.key === d.color ? ' active' : '') + '" style="background:' + c.hex + '" onclick="pdmSkillFormPick(\'color\',\'' + c.key + '\')"></div>'
+    ).join('') + '</div>');
+    if (d.editingKey && !d.isDefault) {
+      html += '<button type="button" class="pdm-btn-ghost" style="border-color:var(--rose);color:var(--rose-pale);" onclick="pdmUIArchiveSkill(\'' + d.editingKey + '\')">Excluir habilidade</button>';
+    }
+    return html;
+  }
+
+  function rerenderSkillForm() {
+    const existing = skillFormDraft.editingKey ? PdmGamification.getSkillMeta(skillFormDraft.editingKey) : null;
+    const vals = captureFormValues(['skName']);
+    document.getElementById('pdmSkillFormBody').innerHTML = buildSkillFormHtml(existing);
+    restoreFormValues(['skName'], vals);
+  }
+
+  function pdmSkillFormPick(kind, value) { skillFormDraft[kind] = value; rerenderSkillForm(); }
+
+  function pdmSubmitSkillForm() {
+    const errBox = document.getElementById('pdmSkillFormError');
+    const name = document.getElementById('skName').value.trim();
+    if (!name) { errBox.style.display = 'block'; errBox.textContent = 'Dê um nome pra habilidade.'; return; }
+    errBox.style.display = 'none';
+    const data = { name, icon: skillFormDraft.icon, color: skillFormDraft.color };
+    if (skillFormDraft.editingKey) { PdmGamification.updateSkill(skillFormDraft.editingKey, data); pdmToast('Habilidade atualizada.'); }
+    else { PdmGamification.createSkill(data); pdmToast('Habilidade criada.'); }
+    pdmCloseModal('pdmSkillFormModal');
+    window.pdmRenderAll();
+  }
+
+  function pdmUIArchiveSkill(key) {
+    pdmConfirmGeneric('Excluir habilidade', 'O XP já acumulado nela fica guardado, mas ela some da lista pra novos hábitos e missões.', () => {
+      PdmGamification.archiveSkill(key);
+      pdmCloseModal('pdmSkillFormModal');
+      window.pdmRenderAll();
+      pdmToast('Habilidade excluída.');
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // VIEW PERFIL — stats + habilidades + conquistas, tudo num lugar só
+  // ---------------------------------------------------------------
+  function pdmRenderPerfil() {
+    pdmRenderSkills();
+    pdmRenderGamificationProfile();
+  }
+
+  // ---------------------------------------------------------------
+  // PAINEL DE PERFIL — resumo + conquistas
   // ---------------------------------------------------------------
   function pdmRenderGamificationProfile() {
     const statsEl = document.getElementById('pdmProfileStats');
@@ -100,5 +195,8 @@
     }).join('');
   }
 
-  Object.assign(window, { pdmShowGamificationFeedback, pdmRenderGamificationProfile });
+  Object.assign(window, {
+    pdmShowGamificationFeedback, pdmRenderGamificationProfile, pdmRenderPerfil, pdmRenderSkills,
+    pdmOpenSkillForm, pdmSkillFormPick, pdmSubmitSkillForm, pdmUIArchiveSkill,
+  });
 })();

@@ -50,6 +50,76 @@
   const NAMED_TIERS = TIERS.filter((t) => t.name);
 
   // ---------------------------------------------------------------
+  // HABILIDADES — taxonomia própria (padrão + personalizadas pelo
+  // usuário), mesmo padrão de GOAL_CATEGORIES em js/goals-data.js. As keys
+  // padrão (saude/hobbies/trabalho) são preservadas pra não perder o XP já
+  // acumulado em STATE.skills de quem já usava o app.
+  // ---------------------------------------------------------------
+  const DEFAULT_SKILLS = [
+    { key: 'saude', name: 'Saúde e Força', icon: 'dumbbell', color: 'rose' },
+    { key: 'hobbies', name: 'Hobbies', icon: 'guitar', color: 'purple' },
+    { key: 'trabalho', name: 'Trabalho', icon: 'book', color: 'blue' },
+  ];
+  let SKILLS = [];
+
+  async function loadSkills() {
+    try {
+      const r = await window.storage.get('mestre-skills');
+      SKILLS = r ? JSON.parse(r.value) : [];
+    } catch (e) { SKILLS = []; }
+    if (!SKILLS.length) {
+      SKILLS = DEFAULT_SKILLS.map((s) => Object.assign({ isDefault: true, archivedAt: null }, s));
+      await saveSkills();
+    }
+  }
+  async function saveSkills() {
+    try { await window.storage.set('mestre-skills', JSON.stringify(SKILLS)); }
+    catch (e) { if (window.PdmCore) window.PdmCore.toast('Erro ao salvar habilidades.'); }
+  }
+
+  function getSkills() { return SKILLS.slice(); }
+  function getActiveSkills() { return SKILLS.filter((s) => !s.archivedAt); }
+  function getSkillMeta(key) { return SKILLS.find((s) => s.key === key) || null; }
+
+  function createSkill(data) {
+    const name = (data.name || '').trim();
+    if (!name) return null;
+    const skill = { key: uid('skill'), name, icon: data.icon || 'target', color: data.color || 'gold', isDefault: false, archivedAt: null };
+    SKILLS.push(skill);
+    STATE.skills[skill.key] = STATE.skills[skill.key] || 0;
+    saveSkills();
+    save();
+    return skill;
+  }
+
+  function updateSkill(key, data) {
+    const s = SKILLS.find((x) => x.key === key);
+    if (!s) return null;
+    ['name', 'icon', 'color'].forEach((k) => { if (data[k] !== undefined) s[k] = data[k]; });
+    if (typeof s.name === 'string') s.name = s.name.trim();
+    saveSkills();
+    return s;
+  }
+
+  // Habilidades padrão nunca são arquivadas (sempre as 3 disponíveis) — só
+  // as personalizadas podem ser "excluídas" (soft delete, preserva o XP já
+  // acumulado nela, só some do seletor de novos hábitos/missões).
+  function archiveSkill(key) {
+    const s = SKILLS.find((x) => x.key === key);
+    if (!s || s.isDefault) return null;
+    s.archivedAt = new Date().toISOString();
+    saveSkills();
+    return s;
+  }
+  function restoreSkill(key) {
+    const s = SKILLS.find((x) => x.key === key);
+    if (!s) return null;
+    s.archivedAt = null;
+    saveSkills();
+    return s;
+  }
+
+  // ---------------------------------------------------------------
   // XP — quantidade configurável por tipo de ação. Missões e hábitos já
   // têm XP configurável no próprio cadastro (mission.xp/habit.xp); as
   // demais ações de gamificação pura ficam centralizadas aqui.
@@ -131,7 +201,10 @@
     catch (e) { if (window.PdmCore) window.PdmCore.toast('Erro ao salvar sua evolução.'); }
   }
 
-  async function init() { await load(); }
+  async function init() {
+    await load();
+    await loadSkills();
+  }
 
   // ---------------------------------------------------------------
   // FUNÇÕES PURAS — nível, Battle Pass, habilidades, streak
@@ -345,7 +418,9 @@
   // Usado pelo "Zerar todo o progresso".
   async function resetAll() {
     STATE = defaultGamState();
+    SKILLS = DEFAULT_SKILLS.map((s) => Object.assign({ isDefault: true, archivedAt: null }, s));
     await save();
+    await saveSkills();
   }
 
   window.PdmGamification = {
@@ -366,6 +441,13 @@
     getHistory,
     getXpRules,
     getLifetime,
+    getSkills,
+    getActiveSkills,
+    getSkillMeta,
+    createSkill,
+    updateSkill,
+    archiveSkill,
+    restoreSkill,
     recordMissionCompleted,
     revertMissionCompletion,
     recordHabitCreated,

@@ -46,9 +46,10 @@ Tudo roda 100% client-side:
   Views trocadas via `data-view` + classe `.active` (`pdmGoto()`), sem router.
 - `js/utils.js` — datas/formatação/ids, funções globais (não são módulo ES,
   viram propriedades de `window` automaticamente). Carrega primeiro.
-- `js/icons.js` — `HABIT_ICONS`, `HABIT_COLORS`, `HM_CATEGORIES` (categorias
-  = as mesmas 3 skills do dashboard: saude/hobbies/trabalho — não duplicar
-  taxonomia nova, reusar essa).
+- `js/icons.js` — `HABIT_ICONS`, `HABIT_COLORS` (paleta/ícones compartilhados
+  por hábito, objetivo e habilidade). A taxonomia de categoria/habilidade em
+  si (antes fixa aqui como `HM_CATEGORIES`) hoje é dinâmica — ver
+  `PdmGamification.getSkills()`/`getActiveSkills()` (seção "Gamificação").
 - `js/gamification-data.js` — camada de Gamificação (ver seção própria
   abaixo), expõe `window.PdmGamification`. É a fonte da verdade de XP,
   nível, Battle Pass, habilidades, streak e conquistas — hábitos/missões/
@@ -135,9 +136,10 @@ vez de criar um conceito paralelo.
   (`mfGoalId` no formulário).
 - **Categorias de Objetivo são uma taxonomia própria** (`GOAL_CATEGORIES`,
   padrão + personalizadas pelo usuário, em `mestre-goal-categories`) —
-  **não confundir com `HM_CATEGORIES`** (saude/hobbies/trabalho, usada por
-  hábito/missão pra XP de skill). São conceitos diferentes que coincidem só
-  parcialmente no nome ("Saúde" existe nas duas listas, são chaves separadas).
+  **não confundir com as Habilidades** (`PdmGamification.getSkills()`,
+  padrão + personalizadas, usada por hábito/missão pra XP de skill). São
+  conceitos diferentes que coincidem só parcialmente no nome ("Saúde" existe
+  nas duas listas, são chaves separadas).
 - "Excluir objetivo" = arquivar (`archivedAt`, preserva o objetivo e seu
   histórico de evolução) **+** `PdmHM.unlinkGoal()` (limpa `goalId` de todo
   hábito/missão vinculado). Isso deixa hábitos "órfãos" de propósito — a UI
@@ -187,12 +189,22 @@ buscado de volta nos outros módulos.
   level up; cruzar qualquer um dos 27 tiers (nomeado ou não) conta como
   "novos prêmios do Battle Pass desbloqueados", porque todo tier tem
   recompensas mesmo sem nome.
-- **Habilidades** continuam sendo as mesmas 3 de sempre (`saude`/`hobbies`/
-  `trabalho`, de `HM_CATEGORIES` — não é uma taxonomia nova). Nível de
+- **Habilidades são uma taxonomia própria e editável** (`PdmGamification`
+  gerencia `SKILLS`, padrão + personalizadas pelo usuário, em
+  `mestre-skills` — mesmo padrão de `GOAL_CATEGORIES` em `js/goals-data.js`).
+  As 3 padrão (`saude`/`hobbies`/`trabalho`) preservam essas keys de
+  propósito (é nelas que o XP histórico já vive) e não podem ser arquivadas,
+  só renomeadas/reiconadas; habilidades personalizadas podem. "Excluir" uma
+  habilidade personalizada = arquivar (`archivedAt`), preserva o XP já
+  acumulado nela e só some do seletor de hábito/missão daí pra frente — um
+  hábito/missão antigo que já apontava pra ela continua mostrando o nome
+  normalmente (`getSkillMeta` busca em todas, arquivadas ou não). Nível de
   habilidade é só uma função pura do XP acumulado nela (`skillLevel`); ao
   cruzar um nível a habilidade concede um bônus fixo (`XP_RULES.skillLevelUp`)
   que soma no XP geral (não recursivamente na própria habilidade, senão
-  looparia).
+  looparia). Editar/criar habilidade é `js/gamification-ui.js`
+  (`pdmOpenSkillForm`), reaproveitando os mesmos pickers de ícone/cor de
+  hábito e objetivo.
 - **Sequência (streak)** guarda `count` (atual), `best` (recorde) e
   `totalActiveDays` (total histórico de dias que já bateram o critério
   mínimo, mesmo com sequências quebradas no meio — métrica distinta de
@@ -331,14 +343,16 @@ uma feature de UI pronta (ver seção de testes abaixo).
 `quests` (agenda diária de missões, navegável por dia — não é mais uma lista
 fixa, gera via `PdmHM.ensureMissionsForDate`), `habits` (lista de hábitos +
 CRUD), `goals` (lista de objetivos + CRUD), `pass` (passe de batalha com
-tiers — também hospeda Habilidades e Frase do dia, que saíram da Home pra
-manter ela enxuta), `evolution` (fotos mensais), `secret` (Projeto Zero).
-Detalhe/formulário de hábito, missão e objetivo são modais
+tiers + Frase do dia), `perfil` (Perfil/Habilidades/Conquistas — ver seção
+"Gamificação"; o mini-perfil do header, antes um atalho redundante pra Home,
+agora aponta pra cá), `evolution` (fotos mensais), `secret` (Projeto Zero).
+Detalhe/formulário de hábito, missão, objetivo e habilidade são modais
 (`pdmHabitFormModal`, `pdmHabitDetailModal`, `pdmMissionModal`,
-`pdmGoalFormModal`, `pdmGoalDetailModal`), não views próprias — segue o
-padrão de modal já usado pra foto/tier/confirmação. Uma feature nova
-normalmente é uma dessas views/modais, ou uma seção dentro de uma delas —
-raramente justifica uma view nova.
+`pdmGoalFormModal`, `pdmGoalDetailModal`, `pdmSkillFormModal`), não views
+próprias — segue o padrão de modal já usado pra foto/tier/confirmação. Uma
+feature nova normalmente é uma dessas views/modais, ou uma seção dentro de
+uma delas — raramente justifica uma view nova (Perfil foi uma exceção
+deliberada, pedida explicitamente pelo usuário).
 
 Modais empilhados: o modal de confirmação genérico (`pdmConfirmModal`,
 usado por `pdmConfirmGeneric()`) precisa ficar **por último no `<body>`**

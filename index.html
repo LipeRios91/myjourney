@@ -277,12 +277,20 @@ html, body {
 .pdm-skill-card {
   background: var(--void-2); border:1px solid var(--line-soft); padding: 16px 18px; position:relative;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  cursor: pointer;
 }
 .pdm-skill-card::before {
-  content:''; position:absolute; top:0; left:0; width:26px; height:3px; background: var(--gold);
+  content:''; position:absolute; top:0; left:0; width:26px; height:3px; background: var(--habit-color, var(--gold));
 }
+.pdm-skill-card-add {
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  border-style:dashed; color:var(--dim); min-height:96px;
+}
+.pdm-skill-card-add:hover { color: var(--gold-pale); border-color: var(--gold); }
+.pdm-skill-add-icon { font-size:22px; line-height:1; }
+.pdm-skill-add-label { font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; }
 .pdm-skill-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-.pdm-skill-icon { width:24px; height:24px; flex-shrink:0; color: var(--gold); }
+.pdm-skill-icon { width:24px; height:24px; flex-shrink:0; color: var(--habit-color, var(--gold)); }
 .pdm-skill-name { font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:var(--fog); }
 .pdm-skill-lvl { font-family:'Anton',sans-serif; font-size:15px; color: var(--gold-pale); margin-left:auto; }
 .pdm-skill-bar { height:6px; background: var(--void); border:1px solid var(--line-soft); overflow:hidden; margin-top:8px; clip-path: polygon(0 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
@@ -768,7 +776,7 @@ if ('serviceWorker' in navigator) {
           <div class="pdm-brand-mark"><span>M</span></div>
           <div class="pdm-brand-text">PASSE DA DISCIPLINA<b>MESTRE</b></div>
         </div>
-        <div class="pdm-mini-profile" onclick="pdmGoto('home')">
+        <div class="pdm-mini-profile" onclick="pdmGoto('perfil')">
           <div class="pdm-mini-name" id="pdmMiniName"><b>—</b>—</div>
           <div class="pdm-mini-avatar" id="pdmMiniAvatar">M</div>
         </div>
@@ -795,6 +803,10 @@ if ('serviceWorker' in navigator) {
         <button class="pdm-nav-btn" data-view="pass" onclick="pdmGoto('pass')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l2.6 6.6L21 9l-5 4.5L17.5 21 12 17.3 6.5 21 8 13.5 3 9l6.4-.4z"/></svg>
           Passe
+        </button>
+        <button class="pdm-nav-btn" data-view="perfil" onclick="pdmGoto('perfil')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/></svg>
+          Perfil
         </button>
         <button class="pdm-nav-btn" data-view="evolution" onclick="pdmGoto('evolution')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="1"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
@@ -946,11 +958,6 @@ if ('serviceWorker' in navigator) {
       <!-- ===== BATTLE PASS ===== -->
       <div class="pdm-view" data-view="pass">
         <div class="pdm-panel">
-          <div class="pdm-eyebrow">Perfil</div>
-          <div class="pdm-stat-grid" id="pdmProfileStats" style="margin-top:6px;"></div>
-        </div>
-
-        <div class="pdm-panel">
           <div class="pdm-pass-header">
             <div class="pdm-pass-badge">NÍVEL <b id="pdmPassLevelNum">1</b></div>
             <div class="pdm-pass-barwrap">
@@ -972,21 +979,30 @@ if ('serviceWorker' in navigator) {
         </div>
 
         <div class="pdm-panel">
+          <div class="pdm-eyebrow">Frase do dia</div>
+          <div class="pdm-quote">
+            <p id="pdmQuoteText">—</p>
+            <span id="pdmQuoteAuthor">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PERFIL ===== -->
+      <div class="pdm-view" data-view="perfil">
+        <div class="pdm-panel">
+          <div class="pdm-eyebrow">Perfil</div>
+          <div class="pdm-stat-grid" id="pdmProfileStats" style="margin-top:6px;"></div>
+        </div>
+
+        <div class="pdm-panel">
           <div class="pdm-eyebrow">Habilidades</div>
+          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Toque numa habilidade pra editar, ou em "Nova habilidade" pra criar a sua.</p>
           <div class="pdm-skills-grid" id="pdmSkillsGrid"></div>
         </div>
 
         <div class="pdm-panel">
           <div class="pdm-eyebrow">Conquistas</div>
           <div class="pdm-achievements-grid" id="pdmAchievementsGrid"></div>
-        </div>
-
-        <div class="pdm-panel">
-          <div class="pdm-eyebrow">Frase do dia</div>
-          <div class="pdm-quote">
-            <p id="pdmQuoteText">—</p>
-            <span id="pdmQuoteAuthor">—</span>
-          </div>
         </div>
       </div>
 
@@ -1102,6 +1118,18 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 
+  <!-- Skill form modal (create/edit habilidade) -->
+  <div class="pdm-modal-bg" id="pdmSkillFormModal">
+    <div class="pdm-modal">
+      <h3 id="pdmSkillFormTitle">Nova habilidade</h3>
+      <div id="pdmSkillFormBody"></div>
+      <div class="pdm-modal-row" style="margin-top:16px;">
+        <button class="pdm-btn-ghost" onclick="pdmCloseModal('pdmSkillFormModal')">Cancelar</button>
+        <button class="pdm-btn" onclick="pdmSubmitSkillForm()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Google Calendar config modal (Client ID) -->
   <div class="pdm-modal-bg" id="pdmGCalConfigModal">
     <div class="pdm-modal">
@@ -1197,11 +1225,9 @@ const QUOTES = [
   {q:'Não é sobre motivação. É sobre se tornar alguém que não precisa dela.', a:'Original'},
 ];
 
-const SKILL_META = {
-  saude: {name:'Saúde e Força', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6.5 6.5l11 11M4 8l4-4M20 16l-4 4M2 6l4-4M22 18l-4 4M9 4L4 9l11 11 5-5z"/></svg>'},
-  hobbies: {name:'Hobbies', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="16" r="4"/><path d="M11 13L19 5m0 0h-4m4 0v4"/></svg>'},
-  trabalho: {name:'Trabalho', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>'},
-};
+// Habilidades (nome/ícone/cor, padrão + personalizadas) moraram pra
+// js/gamification-data.js (window.PdmGamification) — mesmo padrão de
+// GOAL_CATEGORIES em js/goals-data.js.
 
 // ---------------------------------------------------------------
 // STATE
@@ -1273,6 +1299,7 @@ function pdmGoto(view) {
   if (view === 'habits' && window.pdmRenderHabitsList) window.pdmRenderHabitsList();
   if (view === 'goals' && window.pdmRenderGoalsList) window.pdmRenderGoalsList();
   if (view === 'home' && window.pdmRenderHome) window.pdmRenderHome();
+  if (view === 'perfil' && window.pdmRenderPerfil) window.pdmRenderPerfil();
 }
 
 let pdmToastTimer = null;
@@ -1317,29 +1344,6 @@ function renderQuote() {
   const item = QUOTES[idx];
   document.getElementById('pdmQuoteText').textContent = '"' + item.q + '"';
   document.getElementById('pdmQuoteAuthor').textContent = '— ' + item.a;
-}
-
-function renderSkills() {
-  const grid = document.getElementById('pdmSkillsGrid');
-  grid.innerHTML = '';
-  Object.keys(SKILL_META).forEach(key => {
-    const meta = SKILL_META[key];
-    const skillInfo = PdmGamification.getSkillLevelInfo(key);
-    const xp = skillInfo.xp;
-    const lvl = skillInfo.level;
-    const pct = skillInfo.progressPct;
-    const card = document.createElement('div');
-    card.className = 'pdm-skill-card';
-    card.innerHTML =
-      '<div class="pdm-skill-head">' +
-        '<div class="pdm-skill-icon">'+meta.icon+'</div>' +
-        '<div class="pdm-skill-name">'+meta.name+'</div>' +
-        '<div class="pdm-skill-lvl">LV '+lvl+'</div>' +
-      '</div>' +
-      '<div class="pdm-skill-bar"><div class="pdm-skill-bar-fill" style="width:'+pct+'%"></div></div>' +
-      '<div class="pdm-skill-xp">'+xp+' XP</div>';
-    grid.appendChild(card);
-  });
 }
 
 function splitReward(str) {
@@ -1456,13 +1460,12 @@ async function pdmMarkClean() {
 function renderAll() {
   renderHeader();
   renderQuote();
-  renderSkills();
   if (window.pdmRenderAgenda) window.pdmRenderAgenda();
   if (window.pdmRenderHabitsList) window.pdmRenderHabitsList();
   if (window.pdmRenderGoalsList) window.pdmRenderGoalsList();
   if (window.pdmRenderHome) window.pdmRenderHome();
   renderPass();
-  if (window.pdmRenderGamificationProfile) window.pdmRenderGamificationProfile();
+  if (window.pdmRenderPerfil) window.pdmRenderPerfil();
   renderEvolution();
   renderSecret();
 }
