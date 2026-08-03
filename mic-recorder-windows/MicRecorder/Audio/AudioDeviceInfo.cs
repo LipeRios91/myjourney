@@ -3,7 +3,7 @@ using NAudio.CoreAudioApi;
 
 namespace MicRecorder.Audio;
 
-public sealed class MicDevice
+public sealed class AudioDeviceInfo
 {
     public required string Id { get; init; }
     public required string FriendlyName { get; init; }
@@ -11,13 +11,14 @@ public sealed class MicDevice
 
     public override string ToString() => FriendlyName;
 
-    public static List<MicDevice> ListActive()
+    /// <summary>Lista dispositivos ativos. Use DataFlow.Capture para microfones e DataFlow.Render para saídas (alto-falantes/fones).</summary>
+    public static List<AudioDeviceInfo> List(DataFlow flow)
     {
         using var enumerator = new MMDeviceEnumerator();
-        var result = new List<MicDevice>();
-        foreach (var device in enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
+        var result = new List<AudioDeviceInfo>();
+        foreach (var device in enumerator.EnumerateAudioEndPoints(flow, DeviceState.Active))
         {
-            result.Add(new MicDevice
+            result.Add(new AudioDeviceInfo
             {
                 Id = device.ID,
                 FriendlyName = device.FriendlyName,
@@ -27,12 +28,12 @@ public sealed class MicDevice
         return result;
     }
 
-    public static MMDevice? GetDefault()
+    public static MMDevice? GetDefault(DataFlow flow, Role role = Role.Multimedia)
     {
         using var enumerator = new MMDeviceEnumerator();
         try
         {
-            return enumerator.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
+            return enumerator.GetDefaultAudioEndpoint(flow, role);
         }
         catch (COMException)
         {

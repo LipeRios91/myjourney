@@ -6,6 +6,7 @@
     <RootNamespace>MicRecorder</RootNamespace>
     <AssemblyName>MicRecorder</AssemblyName>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
