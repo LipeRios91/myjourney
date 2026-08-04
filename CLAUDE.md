@@ -366,8 +366,14 @@ Paleta (custom properties em `.pdm-root`):
   redefine `--void`/`--void-2`/`--panel`/`--panel-2`/`--line`/`--line-soft`/
   `--fog`/`--dim`/`--rose`/`--rose-pale`/`--blue-pop` pra uma paleta pastel
   clara (fundo rosa/lavanda bem claro, cards brancos, texto ameixa escuro).
-  **Não** muda os `text-shadow` decorativos dourado+azul dos títulos grandes
-  — são a assinatura visual fixa do app nos dois modos.
+  O `text-shadow` duplo dourado+azul (offset pra lados opostos) dos títulos
+  grandes é a assinatura visual do app no escuro, mas sobre fundo claro lê
+  como um efeito "tremido"/fantasma incômodo (baixo contraste entre sombra e
+  fundo realça o desalinhamento) — por isso `[data-theme="light"]` troca
+  esse conjunto de seletores (`.pdm-eyebrow`, `.pdm-level-name`,
+  `.pdm-home-greeting` etc.) por uma sombra única e suave, sem offset
+  lateral. Qualquer título novo em Anton/Oswald grande que reuse o padrão
+  de sombra dupla precisa entrar nessa lista de overrides pro claro.
 - **`--on-accent`**: token novo, sempre escuro nos dois modos, usado como cor
   de texto/ícone em cima de preenchimentos sólidos de destaque (`.pdm-btn`,
   `.pdm-fab`, badges cheios, nav ativa, etc.). Existe porque esses elementos

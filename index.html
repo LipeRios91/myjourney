@@ -86,6 +86,20 @@ html, body {
     radial-gradient(ellipse at 100% 110%, #F1E9FB 0%, transparent 50%),
     var(--void);
 }
+/* No escuro, títulos grandes usam uma sombra dupla (dourado+azul, offset
+   pra lados opostos) como assinatura visual — sobre um fundo claro esse
+   mesmo efeito lê como um "fantasma"/tremido incômodo (baixo contraste
+   entre sombra e fundo realça o desalinhamento em vez de disfarçar).
+   No claro trocamos por uma sombra única, suave e sem offset lateral —
+   mesma ideia de destaque, sem o efeito de vibração. */
+.pdm-root[data-theme="light"] .pdm-brand-text b,
+.pdm-root[data-theme="light"] .pdm-eyebrow,
+.pdm-root[data-theme="light"] .pdm-level-name,
+.pdm-root[data-theme="light"] .pdm-levelup-name,
+.pdm-root[data-theme="light"] .pdm-secret-count,
+.pdm-root[data-theme="light"] .pdm-home-greeting {
+  text-shadow: 0 1px 0 rgba(255,255,255,.6), 0 2px 6px rgba(74,47,66,.12);
+}
 .pdm-root::before {
   content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
   background-image: radial-gradient(circle, rgba(212,175,55,.5) 1px, transparent 1.4px);
