@@ -4,7 +4,7 @@ using MicRecorder.Tray;
 
 namespace MicRecorder;
 
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
     private TrayIconManager? _tray;
     private MainWindow? _mainWindow;
