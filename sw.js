@@ -1,4 +1,4 @@
-const CACHE_NAME = 'passe-do-mestre-v8';
+const CACHE_NAME = 'passe-do-mestre-v9';
 const APP_SHELL = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const APP_SHELL = [
   './icons/apple-touch-icon.png',
   './js/utils.js',
   './js/icons.js',
+  './js/theme.js',
   './js/gamification-data.js',
   './js/habits-missions-data.js',
   './js/goals-data.js',

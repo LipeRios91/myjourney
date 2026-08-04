@@ -44,12 +44,19 @@ Tudo roda 100% client-side:
 - `index.html` — shell da aplicação (HTML + CSS + o script legado original:
   dashboard/XP/passe de batalha/evolução/Projeto Zero, tudo numa IIFE só).
   Views trocadas via `data-view` + classe `.active` (`pdmGoto()`), sem router.
+  `MONTHLY_PHOTOS[mês]` guarda `{ photo, weight }` (uma foto + um peso por
+  mês, ambos opcionais) — formato antigo salvava só a dataURL da foto direto
+  no valor; `loadState()` migra isso pra `{photo, weight}` na leitura, sem
+  apagar nada de quem já tinha fotos salvas.
 - `js/utils.js` — datas/formatação/ids, funções globais (não são módulo ES,
   viram propriedades de `window` automaticamente). Carrega primeiro.
 - `js/icons.js` — `HABIT_ICONS`, `HABIT_COLORS` (paleta/ícones compartilhados
   por hábito, objetivo e habilidade). A taxonomia de categoria/habilidade em
   si (antes fixa aqui como `HM_CATEGORIES`) hoje é dinâmica — ver
   `PdmGamification.getSkills()`/`getActiveSkills()` (seção "Gamificação").
+- `js/theme.js` — cor de destaque personalizável (`window.PdmTheme`), ver
+  seção "Design system" abaixo. Carrega cedo (antes dos módulos de dados)
+  porque `PdmTheme.init()` roda primeiro no boot, sem depender de nada.
 - `js/gamification-data.js` — camada de Gamificação (ver seção própria
   abaixo), expõe `window.PdmGamification`. É a fonte da verdade de XP,
   nível, Battle Pass, habilidades, streak e conquistas — hábitos/missões/
@@ -325,6 +332,26 @@ Paleta (custom properties em `.pdm-root`):
 - `--fog`: texto principal, `--dim`: texto secundário
 - `--line` / `--line-soft`: bordas
 
+**Cor de destaque é personalizável** (`js/theme.js`, `window.PdmTheme`,
+painel "Aparência" na view `perfil`): `--gold`/`--gold-pale`/`--gold-dim`
+viram `var(--user-gold, <hex padrão>)` em `.pdm-root`, e `PdmTheme.apply(hex)`
+seta `--user-gold`/`--user-gold-pale`/`--user-gold-dim` em `:root` — como
+praticamente todo elemento interativo (botões, nav ativa, barras de XP,
+badges, bordas de destaque) já usa o token `--gold`, trocar esse valor
+retema o app inteiro sem tocar em cada componente. `deriveShades(hex)`
+calcula pale/dim automaticamente (mistura com branco/preto), então o
+usuário escolhe uma cor só (picker livre ou preset) e as 3 variações saem
+consistentes. **Não** muda `--void`/`--panel` (base do modo escuro) nem os
+`text-shadow` decorativos dourado+azul dos títulos grandes (`--level-name`,
+etc.) — esses usam `rgba()` literal de propósito, são a assinatura visual
+fixa do app, não o destaque funcional. É preferência de dispositivo, não
+progresso: `PdmTheme.setAccent`/`resetAccent` gravam em `localStorage`
+direto (`mestre-theme`), fora do fluxo de `window.storage`/`STATE`, e
+"Zerar todo o progresso" não mexe nela (mesmo tratamento da foto de perfil).
+`PdmTheme.init()` roda logo no início do boot (`init()` no script legado,
+antes até de `loadState()`), pra a cor já estar aplicada quando a tela
+carrega.
+
 Tipografia: `Anton`/`Oswald` para títulos e números grandes (tudo uppercase),
 `Inter` para corpo, `Space Mono` para metadados/labels técnicos.
 
@@ -345,7 +372,7 @@ fixa, gera via `PdmHM.ensureMissionsForDate`), `habits` (lista de hábitos +
 CRUD), `goals` (lista de objetivos + CRUD), `pass` (passe de batalha com
 tiers + Frase do dia), `perfil` (Perfil/Habilidades/Conquistas — ver seção
 "Gamificação"; o mini-perfil do header, antes um atalho redundante pra Home,
-agora aponta pra cá), `evolution` (fotos mensais), `secret` (Projeto Zero).
+agora aponta pra cá), `evolution` (foto + peso mensais), `secret` (Projeto Zero).
 Detalhe/formulário de hábito, missão, objetivo e habilidade são modais
 (`pdmHabitFormModal`, `pdmHabitDetailModal`, `pdmMissionModal`,
 `pdmGoalFormModal`, `pdmGoalDetailModal`, `pdmSkillFormModal`), não views

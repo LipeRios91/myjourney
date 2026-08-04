@@ -35,9 +35,9 @@ html, body {
   --panel-2: #1B2447;
   --line: #33417A;
   --line-soft: #232C54;
-  --gold: #D4AF37;
-  --gold-pale: #F0DFA0;
-  --gold-dim: #8A7530;
+  --gold: var(--user-gold, #D4AF37);
+  --gold-pale: var(--user-gold-pale, #F0DFA0);
+  --gold-dim: var(--user-gold-dim, #8A7530);
   --fog: #E7E4D8;
   --dim: #8B93BC;
   --rose: #8C4A56;
@@ -468,6 +468,11 @@ html, body {
   font-size:10px; color: var(--gold-pale); padding: 5px; text-align:center;
   font-family:'Space Mono',monospace; text-transform:uppercase; letter-spacing:0.05em;
 }
+.pdm-photo-weight {
+  position:absolute; top:0; left:0; right:0; background: rgba(10,13,24,.8);
+  font-size:10.5px; color: var(--fog); padding: 4px; text-align:center;
+  font-family:'Space Mono',monospace; font-weight:700; letter-spacing:0.03em;
+}
 .pdm-photo-slot.empty { color: var(--dim); font-size: 26px; }
 .pdm-photo-slot.empty span.pdm-plus-label { font-size:10px; margin-top:4px; font-family:'Space Mono',monospace; }
 
@@ -679,6 +684,12 @@ html, body {
 .pdm-color-picker, .pdm-icon-picker { display:flex; flex-wrap:wrap; gap:9px; }
 .pdm-color-swatch { width:32px; height:32px; border-radius:50%; cursor:pointer; border:2px solid transparent; }
 .pdm-color-swatch.active { border-color: var(--fog); box-shadow: 0 0 0 2px var(--void), 0 0 0 3px var(--fog); }
+.pdm-color-input {
+  width:100%; height:44px; background: var(--void); border:1px solid var(--line-soft);
+  cursor:pointer; padding:3px; appearance:none;
+}
+.pdm-color-input::-webkit-color-swatch-wrapper { padding:0; }
+.pdm-color-input::-webkit-color-swatch { border:none; }
 .pdm-icon-swatch {
   width:38px; height:38px; border-radius:50%; background:var(--void); border:1px solid var(--line-soft); color:var(--dim);
   display:flex; align-items:center; justify-content:center; cursor:pointer;
@@ -995,6 +1006,20 @@ if ('serviceWorker' in navigator) {
         </div>
 
         <div class="pdm-panel">
+          <div class="pdm-eyebrow">Aparência</div>
+          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Escolha a cor de destaque do app — botões, barras de progresso, navegação e badges usam essa cor.</p>
+          <div class="pdm-field">
+            <label>Cor personalizada</label>
+            <input class="pdm-color-input" type="color" id="pdmThemeColorInput" onchange="pdmApplyThemeAccent(this.value)">
+          </div>
+          <div class="pdm-field">
+            <label>Ou escolha um preset</label>
+            <div class="pdm-color-picker" id="pdmThemePresets"></div>
+          </div>
+          <button class="pdm-btn-ghost" onclick="pdmResetThemeAccent()">Restaurar cor padrão</button>
+        </div>
+
+        <div class="pdm-panel">
           <div class="pdm-eyebrow">Habilidades</div>
           <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Toque numa habilidade pra editar, ou em "Nova habilidade" pra criar a sua.</p>
           <div class="pdm-skills-grid" id="pdmSkillsGrid"></div>
@@ -1010,7 +1035,8 @@ if ('serviceWorker' in navigator) {
       <div class="pdm-view" data-view="evolution">
         <div class="pdm-panel">
           <div class="pdm-eyebrow">Registro mensal</div>
-          <p style="font-size:12.5px;color:var(--dim);margin:-4px 0 14px;">Uma foto por mês. Só você vê essas imagens.</p>
+          <p style="font-size:12.5px;color:var(--dim);margin:-4px 0 14px;">Uma foto e um peso por mês. Só você vê esses dados.</p>
+          <div class="pdm-stat-grid" id="pdmWeightSummary" style="display:none;margin-bottom:16px;"></div>
           <div class="pdm-photo-grid" id="pdmPhotoGrid"></div>
         </div>
       </div>
@@ -1043,6 +1069,13 @@ if ('serviceWorker' in navigator) {
       <h3 id="pdmPhotoModalTitle">Foto</h3>
       <img id="pdmPhotoModalImg" style="display:none;" />
       <p id="pdmPhotoModalText"></p>
+      <div class="pdm-field" id="pdmPhotoModalWeightField" style="display:none;">
+        <label>Peso registrado (kg, opcional)</label>
+        <div style="display:flex;gap:8px;">
+          <input class="pdm-input" type="number" step="0.1" min="0" id="pdmPhotoModalWeightInput" placeholder="Ex: 78.4">
+          <button type="button" class="pdm-btn-ghost" style="margin-top:0;white-space:nowrap;" onclick="pdmSaveMonthWeight()">Salvar</button>
+        </div>
+      </div>
       <input type="file" accept="image/*" class="pdm-file-input" id="pdmFileInput" onchange="pdmHandleFile(event)" />
       <div class="pdm-modal-row">
         <button class="pdm-btn-ghost" onclick="pdmCloseModal('pdmPhotoModal')">Fechar</button>
@@ -1181,6 +1214,7 @@ if ('serviceWorker' in navigator) {
 
 <script src="./js/utils.js"></script>
 <script src="./js/icons.js"></script>
+<script src="./js/theme.js"></script>
 <script src="./js/gamification-data.js"></script>
 <script src="./js/habits-missions-data.js"></script>
 <script src="./js/goals-data.js"></script>
@@ -1260,6 +1294,11 @@ async function loadState() {
   try {
     const m = await window.storage.get('mestre-monthly-photos');
     MONTHLY_PHOTOS = m ? JSON.parse(m.value) : {};
+    // Formato antigo guardava só a dataURL da foto direto no valor —
+    // migra pra {photo, weight} sem perder o que já existia.
+    Object.keys(MONTHLY_PHOTOS).forEach((k) => {
+      if (typeof MONTHLY_PHOTOS[k] === 'string') MONTHLY_PHOTOS[k] = { photo: MONTHLY_PHOTOS[k], weight: null };
+    });
   } catch(e) { MONTHLY_PHOTOS = {}; }
 }
 
@@ -1410,6 +1449,19 @@ function pdmOpenTierModal(t) {
   document.getElementById('pdmTierModal').classList.add('open');
 }
 
+function renderWeightSummary(sortedMonthsDesc) {
+  const wrap = document.getElementById('pdmWeightSummary');
+  if (!wrap) return;
+  const withWeight = sortedMonthsDesc.filter((m) => MONTHLY_PHOTOS[m] && MONTHLY_PHOTOS[m].weight != null);
+  if (!withWeight.length) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+  const latest = MONTHLY_PHOTOS[withWeight[0]].weight;
+  const oldest = MONTHLY_PHOTOS[withWeight[withWeight.length - 1]].weight;
+  const delta = latest - oldest;
+  const deltaLabel = withWeight.length > 1 ? (delta > 0 ? '+' : '') + delta.toFixed(1) + ' kg' : '—';
+  wrap.style.display = 'grid';
+  wrap.innerHTML = statTile(latest.toLocaleString('pt-BR') + ' kg', 'Peso atual') + statTile(deltaLabel, 'Desde o 1º registro');
+}
+
 function renderEvolution() {
   const grid = document.getElementById('pdmPhotoGrid');
   grid.innerHTML = '';
@@ -1417,17 +1469,21 @@ function renderEvolution() {
   const months = new Set(Object.keys(MONTHLY_PHOTOS));
   months.add(cm);
   const sorted = Array.from(months).sort().reverse();
+  renderWeightSummary(sorted);
   sorted.forEach(m => {
     const [y, mm] = m.split('-');
     const label = new Date(y, mm-1, 1).toLocaleDateString('pt-BR', {month:'short', year:'numeric'});
-    const photo = MONTHLY_PHOTOS[m];
+    const entry = MONTHLY_PHOTOS[m];
+    const photo = entry && entry.photo;
+    const weight = entry && entry.weight;
+    const weightBadge = weight != null ? '<div class="pdm-photo-weight">'+weight.toLocaleString('pt-BR')+' kg</div>' : '';
     const slot = document.createElement('div');
     slot.className = 'pdm-photo-slot' + (photo ? '' : ' empty');
     slot.onclick = () => pdmOpenPhotoPicker('month', m);
     if (photo) {
-      slot.innerHTML = '<img src="'+photo+'"><div class="pdm-photo-label">'+label+'</div>';
+      slot.innerHTML = '<img src="'+photo+'">'+weightBadge+'<div class="pdm-photo-label">'+label+'</div>';
     } else {
-      slot.innerHTML = '<div>+</div><span class="pdm-plus-label">'+label+'</span>';
+      slot.innerHTML = weightBadge+'<div>+</div><span class="pdm-plus-label">'+label+'</span>';
     }
     grid.appendChild(slot);
   });
@@ -1479,18 +1535,36 @@ function pdmOpenPhotoPicker(target, month) {
   const img = document.getElementById('pdmPhotoModalImg');
   const title = document.getElementById('pdmPhotoModalTitle');
   const text = document.getElementById('pdmPhotoModalText');
+  const weightField = document.getElementById('pdmPhotoModalWeightField');
+  const weightInput = document.getElementById('pdmPhotoModalWeightInput');
   if (target === 'profile') {
     title.textContent = 'Foto de perfil';
     text.textContent = 'Essa imagem aparece na sua moldura, que evolui conforme seu nível sobe.';
     if (PROFILE_PHOTO) { img.src = PROFILE_PHOTO; img.style.display='block'; } else { img.style.display='none'; }
+    weightField.style.display = 'none';
   } else {
     const [y,mm] = month.split('-');
     const label = new Date(y, mm-1, 1).toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
     title.textContent = 'Registro — ' + label;
-    text.textContent = 'Só você vê essa foto. Ela fica salva na sua linha do tempo de evolução.';
-    if (MONTHLY_PHOTOS[month]) { img.src = MONTHLY_PHOTOS[month]; img.style.display='block'; } else { img.style.display='none'; }
+    text.textContent = 'Só você vê essa foto e esse peso. Ficam salvos na sua linha do tempo de evolução.';
+    const entry = MONTHLY_PHOTOS[month];
+    if (entry && entry.photo) { img.src = entry.photo; img.style.display='block'; } else { img.style.display='none'; }
+    weightField.style.display = 'block';
+    weightInput.value = (entry && entry.weight != null) ? entry.weight : '';
   }
   modal.classList.add('open');
+}
+
+async function pdmSaveMonthWeight() {
+  const month = pendingPhotoTarget && pendingPhotoTarget.month;
+  if (!month) return;
+  const val = document.getElementById('pdmPhotoModalWeightInput').value;
+  const entry = MONTHLY_PHOTOS[month] || { photo: null, weight: null };
+  entry.weight = val === '' ? null : Number(val);
+  MONTHLY_PHOTOS[month] = entry;
+  await saveMonthlyPhotos();
+  pdmToast('Peso registrado.');
+  renderEvolution();
 }
 
 function resizeImage(file, maxDim) {
@@ -1524,7 +1598,10 @@ async function pdmHandleFile(evt) {
       PROFILE_PHOTO = dataUrl;
       await saveProfilePhoto();
     } else {
-      MONTHLY_PHOTOS[pendingPhotoTarget.month] = dataUrl;
+      const month = pendingPhotoTarget.month;
+      const entry = MONTHLY_PHOTOS[month] || { photo: null, weight: null };
+      entry.photo = dataUrl;
+      MONTHLY_PHOTOS[month] = entry;
       await saveMonthlyPhotos();
     }
     pdmToast('Foto salva.');
@@ -1620,6 +1697,7 @@ window.pdmGoto = pdmGoto;
 window.pdmOpenTierModal = pdmOpenTierModal;
 window.pdmOpenPhotoPicker = pdmOpenPhotoPicker;
 window.pdmHandleFile = pdmHandleFile;
+window.pdmSaveMonthWeight = pdmSaveMonthWeight;
 window.pdmCloseModal = pdmCloseModal;
 window.pdmMarkClean = pdmMarkClean;
 window.pdmConfirmReset = pdmConfirmReset;
@@ -1629,6 +1707,7 @@ window.pdmRenderAll = renderAll;
 window.pdmToast = pdmToast;
 
 (async function init() {
+  window.PdmTheme.init();
   await loadState();
   await window.PdmGamification.init();
   await window.PdmGoals.init();
