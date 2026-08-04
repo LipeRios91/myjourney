@@ -1,0 +1,23 @@
+{
+  "name": "zendesk-mcp-server",
+  "version": "1.0.0",
+  "description": "Servidor MCP para acesso ao ambiente Zendesk (Ticketing API + Help Center API), baseado na referência oficial https://developer.zendesk.com/api-reference/",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "zendesk-mcp-server": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "inspector": "npx @modelcontextprotocol/inspector node src/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.0.0"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}
