@@ -348,25 +348,39 @@ Paleta (custom properties em `.pdm-root`):
 - `--fog`: texto principal, `--dim`: texto secundário
 - `--line` / `--line-soft`: bordas
 
-**Cor de destaque é personalizável** (`js/theme.js`, `window.PdmTheme`,
-painel "Aparência" na view `perfil`): `--gold`/`--gold-pale`/`--gold-dim`
-viram `var(--user-gold, <hex padrão>)` em `.pdm-root`, e `PdmTheme.apply(hex)`
-seta `--user-gold`/`--user-gold-pale`/`--user-gold-dim` em `:root` — como
-praticamente todo elemento interativo (botões, nav ativa, barras de XP,
-badges, bordas de destaque) já usa o token `--gold`, trocar esse valor
-retema o app inteiro sem tocar em cada componente. `deriveShades(hex)`
-calcula pale/dim automaticamente (mistura com branco/preto), então o
-usuário escolhe uma cor só (picker livre ou preset) e as 3 variações saem
-consistentes. **Não** muda `--void`/`--panel` (base do modo escuro) nem os
-`text-shadow` decorativos dourado+azul dos títulos grandes (`--level-name`,
-etc.) — esses usam `rgba()` literal de propósito, são a assinatura visual
-fixa do app, não o destaque funcional. É preferência de dispositivo, não
-progresso: `PdmTheme.setAccent`/`resetAccent` gravam em `localStorage`
-direto (`mestre-theme`), fora do fluxo de `window.storage`/`STATE`, e
-"Zerar todo o progresso" não mexe nela (mesmo tratamento da foto de perfil).
-`PdmTheme.init()` roda logo no início do boot (`init()` no script legado,
-antes até de `loadState()`), pra a cor já estar aplicada quando a tela
-carrega.
+**Modo (escuro/claro) e cor de destaque são personalizáveis** (`js/theme.js`,
+`window.PdmTheme`, painel "Aparência" na view `perfil`).
+
+- **Cor de destaque**: `--gold`/`--gold-pale`/`--gold-dim` viram
+  `var(--user-gold, <hex padrão>)` em `.pdm-root`, e `PdmTheme.apply(hex)`
+  seta `--user-gold`/`--user-gold-pale`/`--user-gold-dim` em `:root` — como
+  praticamente todo elemento interativo (botões, nav ativa, barras de XP,
+  badges, bordas de destaque) já usa o token `--gold`, trocar esse valor
+  retema o app inteiro sem tocar em cada componente. `deriveShades(hex, modo)`
+  calcula pale/dim automaticamente (mistura com branco/preto), então o
+  usuário escolhe uma cor só (picker livre ou preset) e as 3 variações saem
+  consistentes. Cada modo guarda sua própria cor (`accentDark`/`accentLight`
+  separados em `mestre-theme`) — trocar de modo não perde a escolha feita
+  no outro, e cada um tem seus próprios presets/padrão (pastéis no claro).
+- **Modo claro** (`.pdm-root[data-theme="light"]`, `PdmTheme.setMode('light')`):
+  redefine `--void`/`--void-2`/`--panel`/`--panel-2`/`--line`/`--line-soft`/
+  `--fog`/`--dim`/`--rose`/`--rose-pale`/`--blue-pop` pra uma paleta pastel
+  clara (fundo rosa/lavanda bem claro, cards brancos, texto ameixa escuro).
+  **Não** muda os `text-shadow` decorativos dourado+azul dos títulos grandes
+  — são a assinatura visual fixa do app nos dois modos.
+- **`--on-accent`**: token novo, sempre escuro nos dois modos, usado como cor
+  de texto/ícone em cima de preenchimentos sólidos de destaque (`.pdm-btn`,
+  `.pdm-fab`, badges cheios, nav ativa, etc.). Existe porque esses elementos
+  usavam `color: var(--void)` — funcionava no escuro (void = quase preto),
+  mas quebraria a legibilidade no claro (void vira um rosa bem claro). Ao
+  criar um componente novo com preenchimento sólido de `--gold`, o texto por
+  cima usa `--on-accent`, nunca `--void` direto.
+- É preferência de dispositivo, não progresso: `PdmTheme.setAccent`/
+  `setMode`/`resetAccent` gravam em `localStorage` direto (`mestre-theme`),
+  fora do fluxo de `window.storage`/`STATE`, e "Zerar todo o progresso" não
+  mexe nisso (mesmo tratamento da foto de perfil). `PdmTheme.init()` roda
+  logo no início do boot (`init()` no script legado, antes até de
+  `loadState()`), pra o tema já estar aplicado quando a tela carrega.
 
 Tipografia: `Anton`/`Oswald` para títulos e números grandes (tudo uppercase),
 `Inter` para corpo, `Space Mono` para metadados/labels técnicos.

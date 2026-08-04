@@ -46,6 +46,10 @@ html, body {
   --teal: #4FA890;
   --purple: #8B6FD4;
   --orange: #D98A4A;
+  /* Texto sobre preenchimento sólido de destaque (botões, badges cheios) —
+     sempre escuro, independente do modo, pra continuar legível mesmo
+     quando --void deixa de ser escuro no modo claro. */
+  --on-accent: #0A0D18;
   font-family: 'Inter', sans-serif;
   color: var(--fog);
   background:
@@ -58,6 +62,29 @@ html, body {
   position: relative;
   overflow-x: hidden;
   isolation: isolate;
+  transition: background-color .3s ease;
+}
+/* ---------- MODO CLARO (pastel) ---------- */
+.pdm-root[data-theme="light"] {
+  --void: #FDF3F8;
+  --void-2: #FBE8F1;
+  --panel: #FFFFFF;
+  --panel-2: #FDF0F8;
+  --line: #EFC3DE;
+  --line-soft: #F6DEEC;
+  --gold: var(--user-gold, #E0A6C9);
+  --gold-pale: var(--user-gold-pale, #B8508C);
+  --gold-dim: var(--user-gold-dim, #F3D9EA);
+  --fog: #4A2F42;
+  --dim: #9B7C93;
+  --rose: #D14D74;
+  --rose-pale: #B8265A;
+  --blue-pop: #6B7FD1;
+  --on-accent: #2A1A24;
+  background:
+    radial-gradient(ellipse at 20% -10%, #FDEAF3 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 110%, #F1E9FB 0%, transparent 50%),
+    var(--void);
 }
 .pdm-root::before {
   content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
@@ -111,7 +138,7 @@ html, body {
   display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-right:12px;
   transform: rotate(-6deg);
 }
-.pdm-brand-mark span { color: var(--void); font-size: 17px; font-weight:700; font-family:'Anton',sans-serif; transform: rotate(6deg); }
+.pdm-brand-mark span { color: var(--on-accent); font-size: 17px; font-weight:700; font-family:'Anton',sans-serif; transform: rotate(6deg); }
 .pdm-brand-text { font-size: 10px; color: var(--dim); letter-spacing: 0.22em; line-height:1; }
 .pdm-brand-text b {
   color: var(--fog); display:block; font-size:26px; letter-spacing:0.01em;
@@ -144,7 +171,7 @@ html, body {
 }
 .pdm-nav-btn:hover { color: var(--fog); border-color: var(--line); }
 .pdm-nav-btn.active {
-  color: var(--void); background: var(--gold); border-color: var(--gold);
+  color: var(--on-accent); background: var(--gold); border-color: var(--gold);
   box-shadow: 3px 3px 0 rgba(92,127,224,.4);
 }
 .pdm-nav-btn.pdm-nav-secret { margin-left: auto; opacity: 0.5; padding: 10px 12px; background:transparent; border-color:transparent; }
@@ -232,7 +259,7 @@ html, body {
 .pdm-avatar-hint {
   position:absolute; bottom:-4px; right:-4px; width:24px; height:24px;
   background: var(--gold); border-radius:50%; display:flex; align-items:center; justify-content:center;
-  font-size:12px; color: var(--void); border: 2px solid var(--void);
+  font-size:12px; color: var(--on-accent); border: 2px solid var(--void);
 }
 
 .pdm-hero-info { flex: 1; min-width: 220px; }
@@ -350,14 +377,14 @@ html, body {
   transition: all .15s; clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
 }
 .pdm-quest-check:hover { border-color: var(--gold); }
-.pdm-quest.done .pdm-quest-check { background: var(--gold); border-color: var(--gold); color: var(--void); }
+.pdm-quest.done .pdm-quest-check { background: var(--gold); border-color: var(--gold); color: var(--on-accent); }
 
 /* ---------- BATTLE PASS ---------- */
 .pdm-pass-header {
   display:flex; align-items:center; gap:0; margin-bottom:4px; flex-wrap:wrap;
 }
 .pdm-pass-badge {
-  background: var(--gold); color: var(--void); font-family:'Anton',sans-serif;
+  background: var(--gold); color: var(--on-accent); font-family:'Anton',sans-serif;
   font-size: clamp(15px, 1.6vw, 19px); padding: 12px 20px; white-space:nowrap; flex-shrink:0;
   clip-path: polygon(0 0, 100% 0, 88% 100%, 0% 100%);
   display:flex; align-items:center; gap:8px;
@@ -376,7 +403,7 @@ html, body {
 .pdm-pass-wrap::after { right:0; background: linear-gradient(270deg, var(--panel-2) 10%, transparent); }
 .pdm-pass-arrow {
   position:absolute; top:50%; transform:translateY(-50%); z-index:3; width:38px; height:56px;
-  background: var(--gold); color: var(--void); border:none; cursor:pointer;
+  background: var(--gold); color: var(--on-accent); border:none; cursor:pointer;
   display:flex; align-items:center; justify-content:center; transition: background .15s;
 }
 .pdm-pass-arrow:hover { background: var(--gold-pale); }
@@ -439,7 +466,7 @@ html, body {
 }
 .pdm-pass-ribbon {
   position:absolute; top:-11px; left:50%; transform:translateX(-50%); background: var(--gold);
-  color: var(--void); font-family:'Oswald',sans-serif; font-weight:700; font-size: clamp(8.5px,0.85vw,10.5px);
+  color: var(--on-accent); font-family:'Oswald',sans-serif; font-weight:700; font-size: clamp(8.5px,0.85vw,10.5px);
   letter-spacing:0.06em; padding: 3px 10px; text-transform:uppercase; white-space:nowrap;
   clip-path: polygon(6% 0,94% 0,100% 100%,50% 80%,0% 100%);
 }
@@ -450,7 +477,7 @@ html, body {
 }
 .pdm-pass-season-col span {
   writing-mode: vertical-rl; transform: rotate(180deg); font-family:'Anton',sans-serif;
-  font-size:12px; color: var(--void); letter-spacing:0.05em; white-space:nowrap;
+  font-size:12px; color: var(--on-accent); letter-spacing:0.05em; white-space:nowrap;
 }
 .pdm-tier-modal-rewards { font-size:13px; line-height:2; color: var(--fog); margin-bottom:6px; }
 
@@ -486,7 +513,7 @@ html, body {
 .pdm-secret-best { font-family:'Space Mono',monospace; font-size:11px; color: var(--dim); margin-top:12px; }
 .pdm-btn {
   font-family:'Oswald',sans-serif; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; font-size:12px;
-  background: var(--gold); color: var(--void); border:none; padding: 12px 24px;
+  background: var(--gold); color: var(--on-accent); border:none; padding: 12px 24px;
   cursor:pointer; margin-top:18px; transition: background .2s, transform .15s;
   clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
 }
@@ -516,7 +543,7 @@ html, body {
 
 .pdm-toast {
   position: fixed; bottom: 20px; left:50%; transform: translateX(-50%) translateY(20px);
-  background: var(--gold); color: var(--void); font-family:'Oswald',sans-serif; font-size:12px;
+  background: var(--gold); color: var(--on-accent); font-family:'Oswald',sans-serif; font-size:12px;
   letter-spacing:0.05em; text-transform:uppercase; padding: 10px 20px; opacity:0; pointer-events:none;
   transition: all .35s; z-index: 1000;
 }
@@ -569,7 +596,7 @@ html, body {
 
 .pdm-fab {
   position:fixed; right:calc(20px + env(safe-area-inset-right)); bottom:calc(24px + env(safe-area-inset-bottom));
-  width:54px; height:54px; border-radius:50%; background:var(--gold); color:var(--void); border:none;
+  width:54px; height:54px; border-radius:50%; background:var(--gold); color:var(--on-accent); border:none;
   display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:60;
   box-shadow: 0 6px 18px rgba(0,0,0,.4), 0 0 0 4px rgba(212,175,55,.15);
   transition: transform .15s;
@@ -594,7 +621,7 @@ html, body {
 .pdm-mission-next {
   border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 6px 16px rgba(212,175,55,.18);
 }
-.pdm-mission-badge.pdm-mission-next-badge { background: var(--gold); color: var(--void); border-color: var(--gold); font-weight: 700; }
+.pdm-mission-badge.pdm-mission-next-badge { background: var(--gold); color: var(--on-accent); border-color: var(--gold); font-weight: 700; }
 .pdm-mission.status-cancelada .pdm-mission-name { text-decoration: line-through; }
 .pdm-mission.status-concluida .pdm-mission-name { text-decoration: line-through; text-decoration-color: var(--gold-dim); }
 .pdm-mission.status-perdida .pdm-mission-name { text-decoration: line-through; text-decoration-color: var(--rose); }
@@ -616,7 +643,7 @@ html, body {
   transition: all .15s; clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
 }
 .pdm-mission-check:hover { border-color: var(--gold); }
-.pdm-mission.status-concluida .pdm-mission-check { background: var(--gold); border-color: var(--gold); color: var(--void); }
+.pdm-mission.status-concluida .pdm-mission-check { background: var(--gold); border-color: var(--gold); color: var(--on-accent); }
 .pdm-mission-check.is-future { opacity: .35; border-style: dashed; }
 
 /* habit card */
@@ -675,14 +702,14 @@ html, body {
   font-family:'Oswald',sans-serif; font-weight:600; font-size:11px; letter-spacing:0.04em; text-transform:uppercase;
   padding: 8px 12px; cursor:pointer; transition: all .15s;
 }
-.pdm-segmented button.active { background: var(--gold); color:var(--void); border-color:var(--gold); }
+.pdm-segmented button.active { background: var(--gold); color:var(--on-accent); border-color:var(--gold); }
 
 .pdm-weekday-picker { display:flex; gap:6px; flex-wrap:wrap; }
 .pdm-weekday-picker button {
   width:36px; height:36px; border-radius:50%; background:var(--void); border:1px solid var(--line-soft); color:var(--dim);
   font-family:'Space Mono',monospace; font-size:11px; cursor:pointer; flex-shrink:0;
 }
-.pdm-weekday-picker button.active { background: var(--gold); color:var(--void); border-color:var(--gold); }
+.pdm-weekday-picker button.active { background: var(--gold); color:var(--on-accent); border-color:var(--gold); }
 
 .pdm-color-picker, .pdm-icon-picker { display:flex; flex-wrap:wrap; gap:9px; }
 .pdm-color-swatch { width:32px; height:32px; border-radius:50%; cursor:pointer; border:2px solid transparent; }
@@ -1011,7 +1038,14 @@ if ('serviceWorker' in navigator) {
 
         <div class="pdm-panel">
           <div class="pdm-eyebrow">Aparência</div>
-          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Escolha a cor de destaque do app — botões, barras de progresso, navegação e badges usam essa cor.</p>
+          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Escolha o modo e a cor de destaque do app — botões, barras de progresso, navegação e badges usam essa cor.</p>
+          <div class="pdm-field">
+            <label>Modo</label>
+            <div class="pdm-segmented">
+              <button type="button" id="pdmThemeModeEscuro" onclick="pdmSetThemeMode('dark')">Escuro</button>
+              <button type="button" id="pdmThemeModeClaro" onclick="pdmSetThemeMode('light')">Claro (pastel)</button>
+            </div>
+          </div>
           <div class="pdm-field">
             <label>Cor personalizada</label>
             <input class="pdm-color-input" type="color" id="pdmThemeColorInput" onchange="pdmApplyThemeAccent(this.value)">
@@ -1204,7 +1238,7 @@ if ('serviceWorker' in navigator) {
 
   <div class="pdm-toast" id="pdmToast">
     <span id="pdmToastMsg">—</span>
-    <button id="pdmToastAction" style="display:none; background:none; border:none; color:var(--void); font-weight:700; text-decoration:underline; margin-left:10px; cursor:pointer; font-family:inherit; font-size:inherit;"></button>
+    <button id="pdmToastAction" style="display:none; background:none; border:none; color:var(--on-accent); font-weight:700; text-decoration:underline; margin-left:10px; cursor:pointer; font-family:inherit; font-size:inherit;"></button>
   </div>
 
   <!-- Animação de subida de nível — discreta, não bloqueia interação -->
