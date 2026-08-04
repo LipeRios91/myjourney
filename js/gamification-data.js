@@ -19,7 +19,7 @@
   // mesma progressão, e essa camada é quem calcula nível).
   // ---------------------------------------------------------------
   const TIERS = [
-    {t:1, xp:0, name:'Fracassado', rewards:[]},
+    {t:1, xp:0, name:'Perdido', rewards:[]},
     {t:2, xp:100, name:null, rewards:['🎸 Palhetas e cordas novas de guitarra','💪 Whey/barra de proteína (dose pequena)','👕 Camiseta de treino simples','☕ Café especial + algo doce','🥋 Acessório pequeno de treino']},
     {t:3, xp:150, name:'Aprendiz', rewards:['👕 Camiseta fitness de marca boa','💊 Suplemento (whey ou creatina)','🎮 Jogo indie ou em promoção','🍕 Rolê casual','🎸 Kit de cordas premium']},
     {t:4, xp:300, name:null, rewards:['🥋 Kimono inicial para começar a praticar','💊 Combo de suplementos (tamanho grande)','🎮 Jogo de médio orçamento','🍽️ Rolê em restaurante novo','🎸 Afinador ou capotraste']},
@@ -378,6 +378,33 @@
     save();
   }
 
+  // Uma missão que passou da data sem ser concluída nem cancelada perde o
+  // próprio XP configurado nela — o mesmo valor que teria sido ganho se
+  // tivesse sido feita. Não mexe em streak (que já quebra sozinha, de
+  // forma preguiçosa, na próxima vez que uma missão for concluída depois
+  // do intervalo) nem em conquistas/contadores vitalícios.
+  function recordMissionMissed(opts) {
+    const loss = Math.max(0, Math.round(opts.xp || 0));
+    STATE.totalXP = Math.max(0, STATE.totalXP - loss);
+    if (opts.category) {
+      STATE.skills[opts.category] = Math.max(0, (STATE.skills[opts.category] || 0) - loss);
+    }
+    pushHistory('mission_missed', -loss, (opts.label || 'Missão') + ' — perdida');
+    save();
+    return { xpLost: loss, totalXP: STATE.totalXP };
+  }
+
+  // Estorna a penalidade de uma missão "perdida" que foi reaberta (o
+  // usuário decidiu fazê-la tarde, em vez de deixar como perdida).
+  function revertMissionMissed(opts) {
+    const amount = Math.max(0, opts.xpLost || 0);
+    STATE.totalXP += amount;
+    if (opts.category) STATE.skills[opts.category] = (STATE.skills[opts.category] || 0) + amount;
+    pushHistory('mission_missed_reverted', amount, 'Penalidade estornada' + (opts.label ? ' — ' + opts.label : ''));
+    save();
+    return { xpRefunded: amount, totalXP: STATE.totalXP };
+  }
+
   function recordHabitCreated() {
     STATE.lifetime.habitsCreated += 1;
     const achievementsUnlocked = evaluateAchievements();
@@ -450,6 +477,8 @@
     restoreSkill,
     recordMissionCompleted,
     revertMissionCompletion,
+    recordMissionMissed,
+    revertMissionMissed,
     recordHabitCreated,
     recordGoalCompleted,
     revertGoalCompletion,

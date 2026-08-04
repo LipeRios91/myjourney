@@ -127,6 +127,19 @@ real numa data, gerada de um hábito OU criada manualmente — só ela é conclu
   PWA sem backend não tem push notification real. Se pedirem lembrete
   confiável de verdade (app fechado), isso precisa de Web Push + servidor:
   pare e avise antes de implementar, é a mesma regra de "backend" acima.
+- **Status `perdida`**: uma missão de um dia passado que nunca foi concluída
+  nem cancelada custa o próprio XP dela (`PdmHM.processMissedMissions`,
+  chamado uma vez a cada boot do app — sem backend/cron, é o mais perto que
+  dá de "avaliar o fim do dia"). Idempotente: só processa missões ainda em
+  `nao_iniciada`/`em_andamento`, então não penaliza duas vezes em boots
+  seguintes. "Reabrir" uma missão perdida estorna a penalidade
+  (`mission.xpPenaltyApplied`) e volta ela pra `nao_iniciada` — só depois
+  disso dá pra concluir de novo (`completeMission` bloqueia `perdida`
+  direto, força passar pelo reabrir); o toque rápido no checkbox da agenda
+  faz reabrir+concluir num gesto só. Não mexe em streak (que já quebra
+  sozinha, de forma preguiçosa, da próxima vez que uma missão for concluída
+  depois do intervalo) nem em conquistas/contadores vitalícios já
+  desbloqueados.
 
 ## Objetivos (camada estratégica)
 
@@ -174,20 +187,23 @@ vez de criar um conceito paralelo.
 `js/gamification-data.js` (`window.PdmGamification`) + `js/gamification-ui.js`.
 Camada **completamente desacoplada** de Objetivos/Hábitos/Missões: eles só a
 chamam pra informar que uma ação aconteceu (`recordMissionCompleted`,
-`recordHabitCreated`, `recordGoalCompleted` e seus reversos `revert*`) — nunca
-leem nem gravam XP/streak/nível diretamente. `PdmGamification` não depende de
-`PdmHM`/`PdmGoals` (sentido único, mesma regra de `PdmGoals` → `PdmHM`): tudo
-que ela precisa pra decidir (categoria da missão, se é oriunda de hábito, se
-o dia inteiro foi resolvido) é passado pelo chamador como parâmetro, nunca
-buscado de volta nos outros módulos.
+`recordHabitCreated`, `recordGoalCompleted`, `recordMissionMissed` e seus
+reversos `revert*`) — nunca leem nem gravam XP/streak/nível diretamente.
+`PdmGamification` não depende de `PdmHM`/`PdmGoals` (sentido único, mesma
+regra de `PdmGoals` → `PdmHM`): tudo que ela precisa pra decidir (categoria
+da missão, se é oriunda de hábito, se o dia inteiro foi resolvido) é passado
+pelo chamador como parâmetro, nunca buscado de volta nos outros módulos.
 
 - **XP** é configurável por tipo de ação: missão/hábito usam o próprio
-  `mission.xp`/`habit.xp` (cadastro); as demais ações vivem centralizadas em
-  `XP_RULES` no topo do arquivo (`goalCompleted`, `dailyPlanCompleted`,
-  `skillLevelUp`). Concluir uma missão soma XP tanto ao total geral quanto à
-  habilidade da categoria dela (`STATE.skills[categoria]`) — é assim que "o
-  XP contribui pro nível geral e pra habilidade correspondente" sem precisar
-  de lógica duplicada.
+  `mission.xp`/`habit.xp` (cadastro, positivo ao concluir, negativo — o
+  mesmo valor — se virar `perdida`, ver seção "Hábitos & Missões"); as
+  demais ações vivem centralizadas em `XP_RULES` no topo do arquivo
+  (`goalCompleted`, `dailyPlanCompleted`, `skillLevelUp`). Concluir uma
+  missão soma XP tanto ao total geral quanto à habilidade da categoria dela
+  (`STATE.skills[categoria]`) — é assim que "o XP contribui pro nível geral
+  e pra habilidade correspondente" sem precisar de lógica duplicada. Nem
+  XP nem skill XP descem abaixo de 0 (clamp), então uma sequência de perdas
+  não deixa o total negativo.
 - **Nível do usuário = o próprio Battle Pass**: não existem duas progressões
   paralelas. `TIERS`/`NAMED_TIERS` (27 tiers, 9 com nome) moraram pra cá
   (antes viviam soltos no script legado); `getLevelInfo(xp)` acha o tier

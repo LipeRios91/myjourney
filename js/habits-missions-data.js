@@ -141,6 +141,7 @@
       status: 'nao_iniciada',
       completedAt: null,
       xpAwarded: 0,
+      xpPenaltyApplied: 0,
       rescheduleHistory: [],
       createdAt: new Date().toISOString(),
     };
@@ -157,6 +158,33 @@
     });
     if (created) saveMissions();
     return created;
+  }
+
+  // Missões de dias passados que nunca foram concluídas nem canceladas
+  // viram "perdidas" e custam o próprio XP configurado nelas — chamado uma
+  // vez a cada boot (não há backend/cron: isso é o mais perto que dá de
+  // "avaliar o fim do dia" sem servidor). Idempotente: uma missão só é
+  // processada enquanto está em nao_iniciada/em_andamento, então rodar de
+  // novo no mesmo boot ou em boots seguintes não penaliza duas vezes.
+  function processMissedMissions() {
+    const today = todayISO();
+    let count = 0, xpLost = 0;
+    const affectedHabitIds = new Set();
+    MISSIONS.forEach((m) => {
+      if (m.date < today && (m.status === 'nao_iniciada' || m.status === 'em_andamento')) {
+        const result = window.PdmGamification.recordMissionMissed({ xp: m.xp || 0, category: m.category, label: m.name });
+        m.status = 'perdida';
+        m.xpPenaltyApplied = result.xpLost;
+        count++;
+        xpLost += result.xpLost;
+        if (m.habitId) affectedHabitIds.add(m.habitId);
+      }
+    });
+    if (count) {
+      saveMissions();
+      affectedHabitIds.forEach((id) => recomputeAndPersistHabitStats(id));
+    }
+    return { count, xpLost };
   }
 
   // Quando a config de um hábito muda de forma estrutural, missões futuras
@@ -370,6 +398,7 @@
       status: 'nao_iniciada',
       completedAt: null,
       xpAwarded: 0,
+      xpPenaltyApplied: 0,
       rescheduleHistory: [],
       createdAt: now,
     };
@@ -413,15 +442,18 @@
   // negócio, não só uma restrição de tela.
   function startMission(id) {
     const m = MISSIONS.find((x) => x.id === id);
-    if (!m || ['concluida', 'cancelada'].includes(m.status) || m.date > todayISO()) return null;
+    if (!m || ['concluida', 'cancelada', 'perdida'].includes(m.status) || m.date > todayISO()) return null;
     m.status = 'em_andamento';
     saveMissions();
     return m;
   }
 
+  // Uma missão "perdida" precisa ser reaberta antes de poder ser concluída
+  // de novo (estorna a penalidade e volta pra não-iniciada) — evita
+  // completar por cima da penalidade sem passar pelo fluxo de reabrir.
   function completeMission(id) {
     const m = MISSIONS.find((x) => x.id === id);
-    if (!m || m.status === 'concluida' || m.date > todayISO()) return null;
+    if (!m || ['concluida', 'perdida'].includes(m.status) || m.date > todayISO()) return null;
     m.status = 'concluida';
     m.completedAt = new Date().toISOString();
 
@@ -445,17 +477,22 @@
     return result;
   }
 
-  // Reabre uma missão concluída OU cancelada, voltando pra "não iniciada".
-  // Se ela tinha XP concedido (caso 'concluida'), o XP é estornado.
+  // Reabre uma missão concluída, cancelada OU perdida, voltando pra "não
+  // iniciada". Se ela tinha XP concedido (caso 'concluida') ou penalidade
+  // aplicada (caso 'perdida'), o XP é estornado.
   function reopenMission(id) {
     const m = MISSIONS.find((x) => x.id === id);
-    if (!m || !['concluida', 'cancelada'].includes(m.status)) return null;
+    if (!m || !['concluida', 'cancelada', 'perdida'].includes(m.status)) return null;
     if (m.status === 'concluida' && m.xpAwarded) {
       window.PdmGamification.revertMissionCompletion({ category: m.category, xpAwarded: m.xpAwarded });
+    }
+    if (m.status === 'perdida' && m.xpPenaltyApplied) {
+      window.PdmGamification.revertMissionMissed({ category: m.category, xpLost: m.xpPenaltyApplied, label: m.name });
     }
     m.status = 'nao_iniciada';
     m.completedAt = null;
     m.xpAwarded = 0;
+    m.xpPenaltyApplied = 0;
     saveMissions();
     if (m.habitId) recomputeAndPersistHabitStats(m.habitId);
     return true;
@@ -476,6 +513,9 @@
     const m = MISSIONS[idx];
     if (m.status === 'concluida' && m.xpAwarded) {
       window.PdmGamification.revertMissionCompletion({ category: m.category, xpAwarded: m.xpAwarded });
+    }
+    if (m.status === 'perdida' && m.xpPenaltyApplied) {
+      window.PdmGamification.revertMissionMissed({ category: m.category, xpLost: m.xpPenaltyApplied, label: m.name });
     }
     const habitId = m.habitId;
     MISSIONS.splice(idx, 1);
@@ -500,6 +540,7 @@
     init,
     habitOccursOnDate,
     ensureMissionsForDate,
+    processMissedMissions,
     listHabits,
     getHabit,
     createHabit,

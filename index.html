@@ -590,12 +590,14 @@ html, body {
 }
 .pdm-mission.status-concluida { opacity:.55; }
 .pdm-mission.status-cancelada { opacity:.4; }
+.pdm-mission.status-perdida { opacity:.55; border-left-color: var(--rose); }
 .pdm-mission-next {
   border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 6px 16px rgba(212,175,55,.18);
 }
 .pdm-mission-badge.pdm-mission-next-badge { background: var(--gold); color: var(--void); border-color: var(--gold); font-weight: 700; }
 .pdm-mission.status-cancelada .pdm-mission-name { text-decoration: line-through; }
 .pdm-mission.status-concluida .pdm-mission-name { text-decoration: line-through; text-decoration-color: var(--gold-dim); }
+.pdm-mission.status-perdida .pdm-mission-name { text-decoration: line-through; text-decoration-color: var(--rose); }
 .pdm-mission-icon { width:26px; height:26px; flex-shrink:0; color: var(--habit-color, var(--gold)); }
 .pdm-mission-body { flex:1; min-width:0; }
 .pdm-mission-name { font-family:'Oswald',sans-serif; font-weight:600; font-size:13.5px; letter-spacing:0.02em; color:var(--fog); text-transform:uppercase; }
@@ -606,6 +608,7 @@ html, body {
 }
 .pdm-mission-badge.prioridade-alta { color: var(--rose-pale); border-color: var(--rose); }
 .pdm-mission-badge.status-adiada { color: var(--blue-pop); border-color: var(--blue-pop); }
+.pdm-mission-badge.status-perdida { color: var(--rose-pale); border-color: var(--rose); }
 .pdm-mission-xp { font-family:'Anton',sans-serif; font-size:13px; color: var(--gold-pale); white-space:nowrap; }
 .pdm-mission-check {
   width:28px; height:28px; border:2px solid var(--line); flex-shrink:0; cursor:pointer;
@@ -713,6 +716,7 @@ html, body {
 .pdm-history-status { font-family:'Oswald',sans-serif; font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em; }
 .pdm-history-status.concluida { color: var(--gold-pale); }
 .pdm-history-status.cancelada { color: var(--rose-pale); }
+.pdm-history-status.perdida { color: var(--rose-pale); }
 .pdm-history-status.adiada { color: var(--blue-pop); }
 .pdm-history-status.nao_iniciada, .pdm-history-status.em_andamento { color: var(--dim); }
 
@@ -844,7 +848,7 @@ if ('serviceWorker' in navigator) {
                 <div class="pdm-avatar-hint">+</div>
               </div>
               <div class="pdm-hero-info">
-                <div class="pdm-level-name" id="pdmLevelName">Fracassado</div>
+                <div class="pdm-level-name" id="pdmLevelName">Perdido</div>
                 <div class="pdm-level-sub" id="pdmLevelSub">Nível geral — 0 XP</div>
                 <div class="pdm-xpbar-row"><span>Próximo tier</span><b id="pdmXpToNext">—</b></div>
                 <div class="pdm-xpbar"><div class="pdm-xpbar-fill" id="pdmXpFill" style="width:0%"></div></div>
@@ -1712,11 +1716,15 @@ window.pdmToast = pdmToast;
   await window.PdmGamification.init();
   await window.PdmGoals.init();
   await window.PdmHM.init();
+  const missed = window.PdmHM.processMissedMissions();
   document.getElementById('pdmLoading').style.display = 'none';
   document.getElementById('pdmApp').style.display = 'block';
   renderAll();
   pdmInitPassDrag();
   pdmGoto('home');
+  if (missed && missed.count) {
+    pdmToast(missed.count + (missed.count === 1 ? ' missão perdida' : ' missões perdidas') + ' — -' + missed.xpLost + ' XP');
+  }
   if (window.PdmReminders) window.PdmReminders.scheduleTodayReminders();
 })();
 

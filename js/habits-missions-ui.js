@@ -12,6 +12,7 @@
     concluida: 'Concluída',
     adiada: 'Adiada',
     cancelada: 'Cancelada',
+    perdida: 'Perdida',
   };
   const PRIORITY_LABELS = { baixa: 'Baixa', media: 'Média', alta: 'Alta' };
   const REMINDER_LABELS = { none: 'Sem lembrete', '10min': '10 min antes', '30min': '30 min antes', '1h': '1h antes', custom: 'Personalizado' };
@@ -68,6 +69,7 @@
     if (m.status === 'adiada') badges.push('<span class="pdm-mission-badge status-adiada">Adiada</span>');
     if (m.status === 'cancelada') badges.push('<span class="pdm-mission-badge">Cancelada</span>');
     if (m.status === 'em_andamento') badges.push('<span class="pdm-mission-badge">Em andamento</span>');
+    if (m.status === 'perdida') badges.push('<span class="pdm-mission-badge status-perdida">Perdida' + (m.xpPenaltyApplied ? ' · -' + m.xpPenaltyApplied + ' XP' : '') + '</span>');
     const metaParts = [];
     if (m.time) metaParts.push(m.time);
     if (m.durationMin) metaParts.push(m.durationMin + ' min');
@@ -125,6 +127,9 @@
       pdmToast('Essa missão é de um dia futuro — só dá pra concluir a partir da data.');
       return;
     }
+    // Missão perdida: reabre (estorna a penalidade) e já completa em
+    // seguida, num toque só — evita o usuário ter que tocar duas vezes.
+    if (m.status === 'perdida') PdmHM.reopenMission(id);
     const result = PdmHM.completeMission(id);
     if (result == null) return;
     window.pdmRenderAll();
@@ -572,7 +577,7 @@
     html += '<div style="font-size:11px;color:var(--dim);margin-top:2px;">' + escapeHtml(metaParts.join(' · ')) + '</div></div></div>';
 
     html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">';
-    html += '<span class="pdm-mission-badge">' + MISSION_STATUS_LABELS[m.status] + '</span>';
+    html += '<span class="pdm-mission-badge' + (m.status === 'perdida' ? ' status-perdida' : '') + '">' + MISSION_STATUS_LABELS[m.status] + (m.status === 'perdida' && m.xpPenaltyApplied ? ' · -' + m.xpPenaltyApplied + ' XP' : '') + '</span>';
     html += '<span class="pdm-mission-badge">Prioridade ' + PRIORITY_LABELS[m.priority] + '</span>';
     html += '<span class="pdm-mission-badge">+' + m.xp + ' XP</span>';
     html += '<span class="pdm-mission-badge">' + escapeHtml(catName) + '</span>';
@@ -608,7 +613,7 @@
     const btns = [];
     if (m.status === 'concluida') {
       btns.push('<button class="pdm-btn-ghost" onclick="pdmUIReopenMission(\'' + m.id + '\')">Desfazer conclusão</button>');
-    } else if (m.status === 'cancelada') {
+    } else if (m.status === 'cancelada' || m.status === 'perdida') {
       btns.push('<button class="pdm-btn-ghost" onclick="pdmUIReopenMission(\'' + m.id + '\')">Reabrir</button>');
     } else {
       if (m.status !== 'em_andamento') btns.push('<button class="pdm-btn-ghost"' + (isFuture ? ' disabled' : '') + ' onclick="pdmUIStartMission(\'' + m.id + '\')">Iniciar</button>');
