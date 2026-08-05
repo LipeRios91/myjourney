@@ -1,0 +1,74 @@
+{
+  "manifest_version": "0.3",
+  "name": "zendesk-mcp-server",
+  "display_name": "Zendesk (Via Consulting)",
+  "version": "1.0.0",
+  "description": "Acesso ao ambiente Zendesk (tickets, usuários, organizações, central de ajuda) via API oficial.",
+  "long_description": "Servidor MCP que expõe a Zendesk Ticketing API e a Help Center API como ferramentas, baseado exclusivamente na documentação oficial (developer.zendesk.com/api-reference). Permite listar, criar e atualizar tickets, buscar usuários e organizações, e consultar a central de ajuda diretamente pelo Claude, em português.",
+  "author": {
+    "name": "Via Consulting"
+  },
+  "license": "UNLICENSED",
+  "keywords": ["zendesk", "suporte", "tickets", "helpdesk", "central de ajuda"],
+  "server": {
+    "type": "node",
+    "entry_point": "src/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/src/index.js"],
+      "env": {
+        "ZENDESK_SUBDOMAIN": "${user_config.zendesk_subdomain}",
+        "ZENDESK_EMAIL": "${user_config.zendesk_email}",
+        "ZENDESK_API_TOKEN": "${user_config.zendesk_api_token}"
+      }
+    }
+  },
+  "user_config": {
+    "zendesk_subdomain": {
+      "type": "string",
+      "title": "Subdomínio Zendesk",
+      "description": "Se sua URL é https://minhaempresa.zendesk.com, use apenas \"minhaempresa\".",
+      "required": true,
+      "default": "z3nviaconsultingdemo1769796970"
+    },
+    "zendesk_email": {
+      "type": "string",
+      "title": "E-mail do agente",
+      "description": "E-mail da conta Zendesk usada para autenticar.",
+      "required": true,
+      "default": "taina.rios@viaconsulting.com.br"
+    },
+    "zendesk_api_token": {
+      "type": "string",
+      "title": "Token de API",
+      "description": "Gere em: Admin Center > Apps e integrações > APIs > API do Zendesk > Adicionar token de API.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "tools": [
+    { "name": "zendesk_list_tickets", "description": "Lista tickets" },
+    { "name": "zendesk_get_ticket", "description": "Busca um ticket pelo ID" },
+    { "name": "zendesk_create_ticket", "description": "Cria um novo ticket" },
+    { "name": "zendesk_update_ticket", "description": "Atualiza status/prioridade/tags/atribuição de um ticket" },
+    { "name": "zendesk_add_comment", "description": "Adiciona comentário público ou nota interna a um ticket" },
+    { "name": "zendesk_list_ticket_comments", "description": "Lista o histórico de comentários de um ticket" },
+    { "name": "zendesk_list_users", "description": "Lista usuários" },
+    { "name": "zendesk_get_user", "description": "Busca um usuário pelo ID" },
+    { "name": "zendesk_search_users", "description": "Busca usuários por nome/e-mail/termo" },
+    { "name": "zendesk_create_user", "description": "Cria um novo usuário" },
+    { "name": "zendesk_list_organizations", "description": "Lista organizações" },
+    { "name": "zendesk_get_organization", "description": "Busca uma organização pelo ID" },
+    { "name": "zendesk_list_groups", "description": "Lista grupos de agentes" },
+    { "name": "zendesk_search", "description": "Busca unificada (tickets, usuários, organizações, grupos)" },
+    { "name": "zendesk_list_categories", "description": "Lista categorias da central de ajuda" },
+    { "name": "zendesk_list_sections", "description": "Lista seções da central de ajuda" },
+    { "name": "zendesk_list_articles", "description": "Lista artigos da central de ajuda" },
+    { "name": "zendesk_get_article", "description": "Busca um artigo pelo ID" },
+    { "name": "zendesk_search_articles", "description": "Busca artigos por texto livre" }
+  ],
+  "compatibility": {
+    "platforms": ["win32", "darwin", "linux"],
+    "runtimes": { "node": ">=18.0.0" }
+  }
+}

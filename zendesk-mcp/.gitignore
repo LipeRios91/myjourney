@@ -2,3 +2,7 @@ node_modules/
 .env
 .env.local
 *.log
+
+# Bundle .mcpb é gerado sob demanda (npm run package) — não versionar o
+# binário, só o manifest.json que o descreve.
+*.mcpb

@@ -26,7 +26,34 @@ documentação oficial: https://developer.zendesk.com/api-reference/
 - Subdomínio: `z3nviaconsultingdemo1769796970` (`https://z3nviaconsultingdemo1769796970.zendesk.com`)
 - Autenticação: e-mail do agente admin + token de API (ver `.env.example`)
 
-## Setup
+## Instalação (recomendada) — pacote `.mcpb`, sem terminal
+
+O jeito mais simples de instalar isso no **Claude Desktop**, sem editar
+nenhum arquivo de configuração manualmente: gerar um pacote `.mcpb`
+([Desktop Extensions](https://github.com/modelcontextprotocol/mcpb) — o
+formato oficial de "instale com um clique" da Anthropic) e instalar pela
+própria interface do app.
+
+1. Gerar o pacote (uma vez, requer Node.js):
+   ```bash
+   cd zendesk-mcp
+   npm install
+   npm run package
+   ```
+   Isso cria `zendesk-mcp.mcpb` na pasta.
+2. No Claude Desktop: **Settings → Extensions → Advanced settings →
+   Extension Developer → Install Extension…** e selecione esse arquivo.
+3. O próprio app vai pedir o **subdomínio**, **e-mail** e **token de API**
+   numa tela com campos (o token fica mascarado/criptografado pelo sistema
+   operacional — não precisa editar JSON nem `.env`).
+4. Reinicie o Claude Desktop se ele pedir.
+
+Como gerar um token de API (documentação oficial):
+https://developer.zendesk.com/api-reference/introduction/security-and-auth/#api-token
+— em resumo: Admin Center → **Apps e integrações** → **APIs** → **API do
+Zendesk** → habilitar "Autenticação por token" → **Adicionar token de API**.
+
+## Instalação alternativa (Claude Code, ou edição manual de config)
 
 ```bash
 cd zendesk-mcp
@@ -35,11 +62,6 @@ cp .env.example .env
 # edite .env com ZENDESK_SUBDOMAIN, ZENDESK_EMAIL e ZENDESK_API_TOKEN
 npm start
 ```
-
-Como gerar um token de API (documentação oficial):
-https://developer.zendesk.com/api-reference/introduction/security-and-auth/#api-token
-— em resumo: Admin Center → **Apps e integrações** → **APIs** → **API do
-Zendesk** → habilitar "Autenticação por token" → **Adicionar token de API**.
 
 ### Testar com o MCP Inspector
 
