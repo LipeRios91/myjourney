@@ -25,8 +25,12 @@ import { registerHelpCenterTools } from "./tools/helpCenter.js";
 // variáveis já definidas via o campo "env" da configuração do cliente MCP,
 // então as duas formas de configurar credenciais (.env ou "env" no JSON)
 // funcionam ao mesmo tempo sem conflito.
+// quiet:true é essencial aqui: por padrão o dotenv escreve uma linha
+// informativa em stdout, mas o MCP usa stdout exclusivamente pra mensagens
+// JSON-RPC — qualquer texto extra ali quebra o protocolo com o cliente
+// ("Invalid JSON-RPC message from child").
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, "..", ".env") });
+dotenv.config({ path: path.join(__dirname, "..", ".env"), quiet: true });
 
 const server = new McpServer({
   name: "zendesk-mcp-server",
