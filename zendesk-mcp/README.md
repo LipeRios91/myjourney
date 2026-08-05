@@ -110,6 +110,13 @@ e requisições que recebem `429 Too Many Requests` respeitam o header
 `Retry-After` automaticamente
 ([rate limits](https://developer.zendesk.com/api-reference/introduction/rate-limits/)).
 
+**Sobre listar "tudo"**: a Zendesk API só devolve até 100 registros por
+requisição — cada ferramenta de listagem já segue o cursor de paginação
+sozinha, buscando página atrás de página dentro da mesma chamada, até o
+limite pedido em `max_items` (até 1000). Se ainda sobrar mais do que isso
+na conta, a resposta vem com `"has_more": true` — chame a ferramenta de
+novo com um `max_items` maior em vez de assumir que já veio tudo.
+
 ### Tickets
 
 | Tool | Descrição |

@@ -54,6 +54,15 @@ function authHeader({ email, apiToken, password }) {
 const MAX_RETRIES = 3;
 
 /**
+ * Teto de segurança pra `max_items` nas ferramentas de listagem — evita uma
+ * chamada acidental disparar centenas de requisições em sequência. 1000 já
+ * cobre folgadamente uma conta de teste/demo; se um dia isso for pouco pra
+ * um caso real, é só subir esse número (custo é só mais chamadas HTTP em
+ * série dentro da mesma tool call, a API não tem esse limite).
+ */
+export const MAX_LIST_ITEMS = 1000;
+
+/**
  * Executa uma requisição autenticada contra a Zendesk API.
  * Trata automaticamente 429 (rate limit) respeitando o header Retry-After,
  * conforme https://developer.zendesk.com/api-reference/introduction/rate-limits/
@@ -132,30 +141,36 @@ function safeJsonParse(text) {
 
 /**
  * Helper para listar recursos com paginação por cursor, seguindo `links.next`
- * até o limite de páginas pedido. Ver
+ * automaticamente até acumular `maxItems` (ou acabarem as páginas). Ver
  * https://developer.zendesk.com/api-reference/introduction/pagination/#cursor-pagination
+ *
+ * Cada página busca até 100 itens (máximo permitido pela Zendesk API por
+ * requisição) — `maxItems` maior só significa mais requisições em sequência
+ * dentro desta mesma chamada, não um limite da API em si.
  *
  * @param {string} path
  * @param {string} rootKey - Chave do array na resposta (ex: "tickets").
  * @param {object} [options]
  * @param {URLSearchParams|Record<string,string>} [options.query]
  * @param {number} [options.maxItems] - Máximo de itens a retornar no total.
+ * @returns {Promise<{items: any[], hasMore: boolean}>} `hasMore` indica se
+ *   existem mais registros na conta além dos `maxItems` retornados aqui.
  */
 export async function zendeskListPaginated(path, rootKey, options = {}) {
   const { query, maxItems = 100 } = options;
   let nextUrl = null;
   let items = [];
-  let currentQuery = query;
 
   do {
     const { data } = await zendeskRequest(nextUrl ?? path, {
-      query: nextUrl ? undefined : currentQuery,
+      query: nextUrl ? undefined : query,
     });
     items = items.concat(data?.[rootKey] ?? []);
     nextUrl = data?.links?.next ?? data?.next_page ?? null;
   } while (nextUrl && items.length < maxItems);
 
-  return items.slice(0, maxItems);
+  const hasMore = items.length > maxItems || Boolean(nextUrl);
+  return { items: items.slice(0, maxItems), hasMore };
 }
 
 export function getConfiguredSubdomain() {

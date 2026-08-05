@@ -3,8 +3,8 @@
  * Referência oficial: https://developer.zendesk.com/api-reference/ticketing/users/users/
  */
 import { z } from "zod";
-import { zendeskRequest, zendeskListPaginated } from "../zendeskClient.js";
-import { toJsonResult } from "./shared.js";
+import { zendeskRequest, zendeskListPaginated, MAX_LIST_ITEMS } from "../zendeskClient.js";
+import { toJsonResult, toListResult } from "./shared.js";
 
 const ROLES = ["end-user", "agent", "admin"];
 
@@ -13,21 +13,23 @@ export function registerUserTools(server) {
     "zendesk_list_users",
     {
       title: "Listar usuários",
-      description: "Lista usuários (agentes, admins e end-users) da conta Zendesk.",
+      description:
+        `Lista usuários (agentes, admins e end-users) da conta Zendesk. Paginação é tratada ` +
+        `automaticamente — use max_items alto (até ${MAX_LIST_ITEMS}) pra trazer todos de uma vez.`,
       inputSchema: {
-        max_items: z.number().int().min(1).max(100).default(25),
+        max_items: z.number().int().min(1).max(MAX_LIST_ITEMS).default(25),
         role: z.enum(ROLES).optional().describe("Filtra por papel do usuário."),
       },
     },
     async ({ max_items, role }) => {
-      const items = await zendeskListPaginated("/api/v2/users.json", "users", {
+      const { items, hasMore } = await zendeskListPaginated("/api/v2/users.json", "users", {
         maxItems: max_items,
         query: {
           "page[size]": String(Math.min(max_items, 100)),
           ...(role ? { role } : {}),
         },
       });
-      return toJsonResult(items);
+      return toListResult(items, hasMore);
     }
   );
 
@@ -53,15 +55,15 @@ export function registerUserTools(server) {
         "Referência: https://developer.zendesk.com/api-reference/ticketing/users/users/#search-users",
       inputSchema: {
         query: z.string().min(1).describe("Nome, e-mail (ex: nome@dominio.com) ou termo de busca."),
-        max_items: z.number().int().min(1).max(100).default(25),
+        max_items: z.number().int().min(1).max(MAX_LIST_ITEMS).default(25),
       },
     },
     async ({ query, max_items }) => {
-      const items = await zendeskListPaginated("/api/v2/users/search.json", "users", {
+      const { items, hasMore } = await zendeskListPaginated("/api/v2/users/search.json", "users", {
         maxItems: max_items,
-        query: { query },
+        query: { query, "page[size]": String(Math.min(max_items, 100)) },
       });
-      return toJsonResult(items);
+      return toListResult(items, hasMore);
     }
   );
 

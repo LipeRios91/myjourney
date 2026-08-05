@@ -5,23 +5,25 @@
  *   https://developer.zendesk.com/api-reference/ticketing/groups/groups/
  */
 import { z } from "zod";
-import { zendeskRequest, zendeskListPaginated } from "../zendeskClient.js";
-import { toJsonResult } from "./shared.js";
+import { zendeskRequest, zendeskListPaginated, MAX_LIST_ITEMS } from "../zendeskClient.js";
+import { toJsonResult, toListResult } from "./shared.js";
 
 export function registerOrganizationTools(server) {
   server.registerTool(
     "zendesk_list_organizations",
     {
       title: "Listar organizações",
-      description: "Lista as organizações (empresas/clientes) cadastradas na conta Zendesk.",
-      inputSchema: { max_items: z.number().int().min(1).max(100).default(25) },
+      description:
+        `Lista as organizações (empresas/clientes) cadastradas na conta Zendesk. Paginação é tratada ` +
+        `automaticamente — use max_items alto (até ${MAX_LIST_ITEMS}) pra trazer todas de uma vez.`,
+      inputSchema: { max_items: z.number().int().min(1).max(MAX_LIST_ITEMS).default(25) },
     },
     async ({ max_items }) => {
-      const items = await zendeskListPaginated("/api/v2/organizations.json", "organizations", {
+      const { items, hasMore } = await zendeskListPaginated("/api/v2/organizations.json", "organizations", {
         maxItems: max_items,
         query: { "page[size]": String(Math.min(max_items, 100)) },
       });
-      return toJsonResult(items);
+      return toListResult(items, hasMore);
     }
   );
 
@@ -44,15 +46,16 @@ export function registerOrganizationTools(server) {
       title: "Listar grupos",
       description:
         "Lista os grupos de agentes da conta (usados para atribuição/roteamento de tickets). " +
+        "Paginação é tratada automaticamente. " +
         "Referência: https://developer.zendesk.com/api-reference/ticketing/groups/groups/",
-      inputSchema: { max_items: z.number().int().min(1).max(100).default(25) },
+      inputSchema: { max_items: z.number().int().min(1).max(MAX_LIST_ITEMS).default(25) },
     },
     async ({ max_items }) => {
-      const items = await zendeskListPaginated("/api/v2/groups.json", "groups", {
+      const { items, hasMore } = await zendeskListPaginated("/api/v2/groups.json", "groups", {
         maxItems: max_items,
         query: { "page[size]": String(Math.min(max_items, 100)) },
       });
-      return toJsonResult(items);
+      return toListResult(items, hasMore);
     }
   );
 }

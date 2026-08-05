@@ -4,8 +4,8 @@
  *                      https://developer.zendesk.com/api-reference/ticketing/tickets/ticket_comments/
  */
 import { z } from "zod";
-import { zendeskRequest, zendeskListPaginated } from "../zendeskClient.js";
-import { toJsonResult } from "./shared.js";
+import { zendeskRequest, zendeskListPaginated, MAX_LIST_ITEMS } from "../zendeskClient.js";
+import { toJsonResult, toListResult } from "./shared.js";
 
 const PRIORITIES = ["urgent", "high", "normal", "low"];
 const STATUSES = ["new", "open", "pending", "hold", "solved", "closed"];
@@ -17,15 +17,24 @@ export function registerTicketTools(server) {
     {
       title: "Listar tickets",
       description:
-        "Lista tickets do Zendesk (paginação por cursor). Use zendesk_search para filtrar por critérios específicos.",
+        `Lista tickets do Zendesk (paginação por cursor tratada automaticamente — até ${MAX_LIST_ITEMS} ` +
+        "de uma vez). Pra listar TODOS os tickets da conta, chame com max_items alto (ex: 1000); a " +
+        "resposta traz has_more:true se ainda sobrar mais do que isso. Use zendesk_search para filtrar " +
+        "por critérios específicos.",
       inputSchema: {
-        max_items: z.number().int().min(1).max(100).default(25).describe("Máximo de tickets a retornar."),
+        max_items: z
+          .number()
+          .int()
+          .min(1)
+          .max(MAX_LIST_ITEMS)
+          .default(25)
+          .describe(`Máximo de tickets a retornar (até ${MAX_LIST_ITEMS}).`),
         sort_by: z.enum(SORT_FIELDS).optional().describe("Campo de ordenação."),
         sort_order: z.enum(["asc", "desc"]).optional(),
       },
     },
     async ({ max_items, sort_by, sort_order }) => {
-      const items = await zendeskListPaginated("/api/v2/tickets.json", "tickets", {
+      const { items, hasMore } = await zendeskListPaginated("/api/v2/tickets.json", "tickets", {
         maxItems: max_items,
         query: {
           "page[size]": String(Math.min(max_items, 100)),
@@ -33,7 +42,7 @@ export function registerTicketTools(server) {
           ...(sort_order ? { sort_order } : {}),
         },
       });
-      return toJsonResult(items);
+      return toListResult(items, hasMore);
     }
   );
 
@@ -174,14 +183,14 @@ export function registerTicketTools(server) {
         "Referência: https://developer.zendesk.com/api-reference/ticketing/tickets/ticket_comments/",
       inputSchema: {
         ticket_id: z.number().int(),
-        max_items: z.number().int().min(1).max(100).default(50),
+        max_items: z.number().int().min(1).max(MAX_LIST_ITEMS).default(50),
       },
     },
     async ({ ticket_id, max_items }) => {
-      const items = await zendeskListPaginated(`/api/v2/tickets/${ticket_id}/comments.json`, "comments", {
+      const { items, hasMore } = await zendeskListPaginated(`/api/v2/tickets/${ticket_id}/comments.json`, "comments", {
         maxItems: max_items,
       });
-      return toJsonResult(items);
+      return toListResult(items, hasMore);
     }
   );
 }
