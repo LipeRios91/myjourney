@@ -34,9 +34,8 @@
     "zendesk_email": {
       "type": "string",
       "title": "E-mail do agente",
-      "description": "E-mail da conta Zendesk usada para autenticar.",
-      "required": true,
-      "default": "taina.rios@viaconsulting.com.br"
+      "description": "E-mail da conta Zendesk usada para autenticar (o mesmo login do Zendesk).",
+      "required": true
     },
     "zendesk_api_token": {
       "type": "string",
