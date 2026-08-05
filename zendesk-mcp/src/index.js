@@ -7,6 +7,9 @@
  * Configuração: variáveis de ambiente ZENDESK_SUBDOMAIN, ZENDESK_EMAIL, ZENDESK_API_TOKEN.
  * Veja README.md para instruções completas.
  */
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
@@ -15,6 +18,15 @@ import { registerUserTools } from "./tools/users.js";
 import { registerOrganizationTools } from "./tools/organizations.js";
 import { registerSearchTools } from "./tools/search.js";
 import { registerHelpCenterTools } from "./tools/helpCenter.js";
+
+// Carrega o .env da pasta do projeto (caminho absoluto, não depende do cwd de
+// quem chamou "node src/index.js" — Claude Desktop/Claude Code costumam
+// lançar o processo com outro diretório de trabalho). Não sobrescreve
+// variáveis já definidas via o campo "env" da configuração do cliente MCP,
+// então as duas formas de configurar credenciais (.env ou "env" no JSON)
+// funcionam ao mesmo tempo sem conflito.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
 const server = new McpServer({
   name: "zendesk-mcp-server",

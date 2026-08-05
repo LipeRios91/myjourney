@@ -50,13 +50,18 @@ npm run inspector
 Abre uma UI local para chamar as tools manualmente e inspecionar
 request/response antes de plugar num cliente de verdade.
 
+`src/index.js` carrega o `.env` da pasta do projeto automaticamente (caminho
+absoluto, não depende do diretório de onde o processo foi lançado), então
+basta ter preenchido o `.env` no passo de Setup acima — não é obrigatório
+repetir as credenciais na configuração do cliente MCP. Se preferir (ou
+precisar rodar sem um `.env` no disco), também dá pra passar as mesmas
+variáveis via o campo `env` do cliente, como nos exemplos abaixo — as duas
+formas funcionam juntas sem conflito (o `env` do cliente tem prioridade).
+
 ### Configurar no Claude Code
 
 ```bash
-claude mcp add zendesk --env ZENDESK_SUBDOMAIN=SEU_SUBDOMINIO \
-  --env ZENDESK_EMAIL=seu-email@empresa.com \
-  --env ZENDESK_API_TOKEN=seu_token \
-  -- node /caminho/absoluto/para/zendesk-mcp/src/index.js
+claude mcp add zendesk -- node /caminho/absoluto/para/zendesk-mcp/src/index.js
 ```
 
 ### Configurar no Claude Desktop
@@ -68,12 +73,7 @@ Adicione em `claude_desktop_config.json`:
   "mcpServers": {
     "zendesk": {
       "command": "node",
-      "args": ["/caminho/absoluto/para/zendesk-mcp/src/index.js"],
-      "env": {
-        "ZENDESK_SUBDOMAIN": "seu-subdominio",
-        "ZENDESK_EMAIL": "seu-email@empresa.com",
-        "ZENDESK_API_TOKEN": "seu_token"
-      }
+      "args": ["/caminho/absoluto/para/zendesk-mcp/src/index.js"]
     }
   }
 }
