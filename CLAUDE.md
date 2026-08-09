@@ -406,16 +406,18 @@ uma feature de UI pronta (ver seção de testes abaixo).
 `quests` (agenda diária de missões, navegável por dia — não é mais uma lista
 fixa, gera via `PdmHM.ensureMissionsForDate`), `habits` (lista de hábitos +
 CRUD), `goals` (lista de objetivos + CRUD), `pass` (passe de batalha com
-tiers + Frase do dia), `perfil` (Perfil/Habilidades/Conquistas — ver seção
+tiers + Frase do dia), `perfil` (Perfil/Aparência/Conquistas — ver seção
 "Gamificação"; o mini-perfil do header, antes um atalho redundante pra Home,
-agora aponta pra cá), `evolution` (foto + peso mensais), `secret` (Projeto Zero).
+agora aponta pra cá), `habilidades` (grid de habilidades editável — saiu de
+`perfil` pra ficar num lugar só dela, pedido explícito do usuário),
+`evolution` (foto + peso mensais), `secret` (Projeto Zero).
 Detalhe/formulário de hábito, missão, objetivo e habilidade são modais
 (`pdmHabitFormModal`, `pdmHabitDetailModal`, `pdmMissionModal`,
 `pdmGoalFormModal`, `pdmGoalDetailModal`, `pdmSkillFormModal`), não views
 próprias — segue o padrão de modal já usado pra foto/tier/confirmação. Uma
 feature nova normalmente é uma dessas views/modais, ou uma seção dentro de
-uma delas — raramente justifica uma view nova (Perfil foi uma exceção
-deliberada, pedida explicitamente pelo usuário).
+uma delas — raramente justifica uma view nova (Perfil e Habilidades foram
+exceções deliberadas, pedidas explicitamente pelo usuário).
 
 Modais empilhados: o modal de confirmação genérico (`pdmConfirmModal`,
 usado por `pdmConfirmGeneric()`) precisa ficar **por último no `<body>`**

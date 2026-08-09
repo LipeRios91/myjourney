@@ -864,6 +864,10 @@ if ('serviceWorker' in navigator) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/></svg>
           Perfil
         </button>
+        <button class="pdm-nav-btn" data-view="habilidades" onclick="pdmGoto('habilidades')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20V14M10 20V8M16 20V12M22 20V4"/></svg>
+          Habilidades
+        </button>
         <button class="pdm-nav-btn" data-view="evolution" onclick="pdmGoto('evolution')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="1"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
           Evolução
@@ -1072,14 +1076,17 @@ if ('serviceWorker' in navigator) {
         </div>
 
         <div class="pdm-panel">
+          <div class="pdm-eyebrow">Conquistas</div>
+          <div class="pdm-achievements-grid" id="pdmAchievementsGrid"></div>
+        </div>
+      </div>
+
+      <!-- ===== HABILIDADES ===== -->
+      <div class="pdm-view" data-view="habilidades">
+        <div class="pdm-panel">
           <div class="pdm-eyebrow">Habilidades</div>
           <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Toque numa habilidade pra editar, ou em "Nova habilidade" pra criar a sua.</p>
           <div class="pdm-skills-grid" id="pdmSkillsGrid"></div>
-        </div>
-
-        <div class="pdm-panel">
-          <div class="pdm-eyebrow">Conquistas</div>
-          <div class="pdm-achievements-grid" id="pdmAchievementsGrid"></div>
         </div>
       </div>
 
@@ -1391,6 +1398,7 @@ function pdmGoto(view) {
   if (view === 'goals' && window.pdmRenderGoalsList) window.pdmRenderGoalsList();
   if (view === 'home' && window.pdmRenderHome) window.pdmRenderHome();
   if (view === 'perfil' && window.pdmRenderPerfil) window.pdmRenderPerfil();
+  if (view === 'habilidades' && window.pdmRenderSkills) window.pdmRenderSkills();
 }
 
 let pdmToastTimer = null;
@@ -1574,6 +1582,7 @@ function renderAll() {
   if (window.pdmRenderHome) window.pdmRenderHome();
   renderPass();
   if (window.pdmRenderPerfil) window.pdmRenderPerfil();
+  if (window.pdmRenderSkills) window.pdmRenderSkills();
   renderEvolution();
   renderSecret();
 }

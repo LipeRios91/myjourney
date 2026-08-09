@@ -153,7 +153,6 @@
   // VIEW PERFIL — stats + habilidades + conquistas, tudo num lugar só
   // ---------------------------------------------------------------
   function pdmRenderPerfil() {
-    pdmRenderSkills();
     pdmRenderGamificationProfile();
     if (window.pdmRenderThemeSettings) window.pdmRenderThemeSettings();
   }
