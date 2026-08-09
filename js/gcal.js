@@ -107,7 +107,7 @@
     const descParts = [];
     if (m.description) descParts.push(m.description);
     if (m.notes) descParts.push('Observações: ' + m.notes);
-    descParts.push('Criado pelo Passe do Mestre.');
+    descParts.push('Criado pela Jornada do Herói.');
     return { summary: m.name, description: descParts.join('\n\n'), start, end };
   }
 

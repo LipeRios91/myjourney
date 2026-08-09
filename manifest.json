@@ -1,7 +1,7 @@
 {
-  "name": "Passe do Mestre",
-  "short_name": "Mestre",
-  "description": "Painel de disciplina, missões diárias e passe de batalha pessoal.",
+  "name": "Jornada do Herói",
+  "short_name": "Herói",
+  "description": "Suba de nível. Todo dia. Painel de disciplina, missões diárias e passe de batalha pessoal.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

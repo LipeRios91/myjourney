@@ -1,4 +1,4 @@
-const CACHE_NAME = 'passe-do-mestre-v16';
+const CACHE_NAME = 'jornada-do-heroi-v17';
 const APP_SHELL = [
   './',
   './index.html',

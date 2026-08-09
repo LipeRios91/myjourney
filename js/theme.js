@@ -22,20 +22,24 @@
 
 (function () {
   const KEY = 'mestre-theme';
-  const DEFAULT_HEX_DARK = '#D4AF37';
-  const DEFAULT_HEX_LIGHT = '#D9639D';
+  // Roxo da marca (Jornada do Herói) — vira o padrão em ambos os modos desde
+  // o rebrand. Quem já tinha personalizado a própria cor não é afetado (só
+  // muda o padrão de instalações novas ou de quem clicar em "Restaurar cor
+  // padrão").
+  const DEFAULT_HEX_DARK = '#8B7BFF';
+  const DEFAULT_HEX_LIGHT = '#A88BD9';
 
   const PRESETS_DARK = [
+    { key: 'purple', name: 'Roxo (marca)', hex: '#8B7BFF' },
     { key: 'gold', name: 'Dourado', hex: '#D4AF37' },
     { key: 'blue', name: 'Azul', hex: '#5C7FE0' },
     { key: 'rose', name: 'Rosa', hex: '#C9515F' },
     { key: 'teal', name: 'Verde-água', hex: '#3FB88F' },
-    { key: 'purple', name: 'Roxo', hex: '#8B6FD4' },
     { key: 'orange', name: 'Laranja', hex: '#D98A4A' },
   ];
   const PRESETS_LIGHT = [
+    { key: 'lilac', name: 'Lilás (marca)', hex: '#A88BD9' },
     { key: 'rose', name: 'Rosa', hex: '#D9639D' },
-    { key: 'lilac', name: 'Lilás', hex: '#A88BD9' },
     { key: 'peach', name: 'Pêssego', hex: '#E8996B' },
     { key: 'mint', name: 'Menta', hex: '#3FA98A' },
     { key: 'sky', name: 'Céu', hex: '#6690D9' },

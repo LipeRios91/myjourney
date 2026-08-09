@@ -109,7 +109,7 @@
     el.innerHTML =
       '<div class="pdm-panel" style="text-align:center;padding:40px 20px;">' +
         '<div class="pdm-eyebrow" style="justify-content:center;">Comece por aqui</div>' +
-        '<p style="font-size:13px;color:var(--dim);margin:0 0 20px;">Ainda não há nada cadastrado. O Passe do Mestre funciona assim: um Objetivo dá propósito aos seus Hábitos, que geram Missões — as ações do dia a dia.</p>' +
+        '<p style="font-size:13px;color:var(--dim);margin:0 0 20px;">Ainda não há nada cadastrado. A Jornada do Herói funciona assim: um Objetivo dá propósito aos seus Hábitos, que geram Missões — as ações do dia a dia.</p>' +
         '<div style="display:flex;flex-direction:column;gap:10px;max-width:280px;margin:0 auto;">' +
           '<button class="pdm-btn" onclick="pdmOpenGoalForm()">Criar meu primeiro objetivo</button>' +
           '<button class="pdm-btn-ghost" onclick="pdmOpenHabitForm()">Criar meu primeiro hábito</button>' +

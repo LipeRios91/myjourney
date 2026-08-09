@@ -43,7 +43,7 @@
       const delay = target.getTime() - mins * 60000 - now;
       if (delay <= 0 || delay > 24 * 3600000) return;
       const timer = setTimeout(() => {
-        try { new Notification('Passe do Mestre', { body: m.name + ' às ' + m.time, tag: m.id }); }
+        try { new Notification('Jornada do Herói', { body: m.name + ' às ' + m.time, tag: m.id }); }
         catch (e) { /* navegador pode bloquear notificação com a aba em foco */ }
       }, delay);
       scheduledTimers.push(timer);

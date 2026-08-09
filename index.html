@@ -5,19 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0A0D18">
-<meta name="description" content="Passe do Mestre — painel de disciplina, missões diárias e passe de batalha pessoal.">
+<meta name="description" content="Jornada do Herói — painel de disciplina, missões diárias e passe de batalha pessoal.">
 
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Mestre">
+<meta name="apple-mobile-web-app-title" content="Herói">
 
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icons/icon-512.png" sizes="512x512" type="image/png">
 <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 
-<title>Passe do Mestre</title>
+<title>Jornada do Herói</title>
 <style>
 html, body {
   margin: 0;
@@ -147,11 +147,13 @@ html, body {
 .pdm-brand { display:flex; align-items:center; gap:0; position:relative; }
 .pdm-brand-mark {
   width: 40px; height: 40px; background: var(--gold);
-  clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
   display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-right:12px;
-  transform: rotate(-6deg);
 }
-.pdm-brand-mark span { color: var(--on-accent); font-size: 17px; font-weight:700; font-family:'Anton',sans-serif; transform: rotate(6deg); }
+.pdm-brand-mark span {
+  width: 15px; height: 15px; background: var(--on-accent);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
 .pdm-brand-text { font-size: 10px; color: var(--dim); letter-spacing: 0.22em; line-height:1; }
 .pdm-brand-text b {
   color: var(--fog); display:block; font-size:26px; letter-spacing:0.01em;
@@ -822,12 +824,12 @@ if ('serviceWorker' in navigator) {
     <div id="pdmApp" style="display:none;">
       <div class="pdm-header">
         <div class="pdm-brand">
-          <div class="pdm-brand-mark"><span>M</span></div>
-          <div class="pdm-brand-text">PASSE DA DISCIPLINA<b>MESTRE</b></div>
+          <div class="pdm-brand-mark"><span></span></div>
+          <div class="pdm-brand-text">SUBA DE NÍVEL. TODO DIA.<b>HERÓI</b></div>
         </div>
         <div class="pdm-mini-profile" onclick="pdmGoto('perfil')">
           <div class="pdm-mini-name" id="pdmMiniName"><b>—</b>—</div>
-          <div class="pdm-mini-avatar" id="pdmMiniAvatar">M</div>
+          <div class="pdm-mini-avatar" id="pdmMiniAvatar">H</div>
         </div>
       </div>
       <div class="pdm-torn"></div>
@@ -879,7 +881,7 @@ if ('serviceWorker' in navigator) {
               <div class="pdm-hero-wedge"></div>
               <div class="pdm-frame-wrap" data-stage="0" id="pdmFrameWrap" onclick="pdmOpenPhotoPicker('profile')">
                 <div class="pdm-frame-ring"></div>
-                <div class="pdm-avatar" id="pdmAvatar">M</div>
+                <div class="pdm-avatar" id="pdmAvatar">H</div>
                 <div class="pdm-avatar-hint">+</div>
               </div>
               <div class="pdm-hero-info">
@@ -1004,7 +1006,7 @@ if ('serviceWorker' in navigator) {
               Novo objetivo
             </button>
           </div>
-          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Todo hábito existe pra contribuir com um objetivo — essa é a camada estratégica do Passe do Mestre.</p>
+          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Todo hábito existe pra contribuir com um objetivo — essa é a camada estratégica da Jornada do Herói.</p>
           <div id="pdmGoalsList"></div>
           <div id="pdmGoalsArchivedWrap" style="display:none;">
             <p class="pdm-btn-ghost" style="clip-path:none; display:inline-block; margin-top:14px;" onclick="pdmToggleArchivedGoals()" id="pdmGoalsArchivedToggle">Mostrar arquivados</p>
@@ -1420,7 +1422,7 @@ function renderHeader() {
   const totalXP = PdmGamification.getTotalXP();
   const info = PdmGamification.getLevelInfo(totalXP);
   const streak = PdmGamification.getStreak();
-  const avatarHtml = PROFILE_PHOTO ? '<img src="'+PROFILE_PHOTO+'">' : 'M';
+  const avatarHtml = PROFILE_PHOTO ? '<img src="'+PROFILE_PHOTO+'">' : 'H';
   document.getElementById('pdmMiniAvatar').innerHTML = avatarHtml;
   document.getElementById('pdmMiniName').innerHTML = '<b>' + info.current.name + '</b>' + totalXP + ' XP';
   document.getElementById('pdmAvatar').innerHTML = avatarHtml;

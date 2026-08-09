@@ -1,4 +1,4 @@
-# Passe do Mestre — instruções do projeto
+# Jornada do Herói — instruções do projeto
 
 ## Seu papel
 
@@ -26,10 +26,26 @@ Antes de implementar qualquer feature:
 
 ## Visão de produto
 
-O Passe do Mestre é um sistema operacional pessoal para disciplina e evolução:
-XP, streaks, missões diárias e um "passe de batalha" com recompensas reais.
+A Jornada do Herói (rebrand de agosto/2026, antigo "Passe do Mestre" — nome,
+tagline "Suba de nível. Todo dia." e logo/ícone mudaram; ver "Rebrand" logo
+abaixo) é um sistema operacional pessoal para disciplina e evolução: XP,
+streaks, missões diárias e um "passe de batalha" com recompensas reais.
 Antes de construir uma feature, pergunte: isso aumenta execução, consistência
 ou evolução do usuário? Se não, questione se vale a pena.
+
+### Rebrand (agosto/2026): o que mudou e o que ficou
+
+Só a superfície visível ao usuário mudou — nome do app (título da aba,
+manifest, notificações, textos de UI), tagline, cor de destaque padrão
+(roxo `#8B7BFF`/`#A88BD9` no lugar do dourado, ver "Design system" abaixo)
+e o ícone/logo (losango roxo, `icons/*.png` regenerados). **De propósito,
+não foi tocado**: os prefixos internos `mestre-` (chaves do `localStorage`,
+ex. `mestre-habits`) e `Pdm`/`pdm-` (namespaces `window.PdmXxx`, classes
+CSS) — renomear isso quebraria a leitura do progresso já salvo de todo
+usuário existente (as chaves são lidas literalmente no boot) pra zero
+ganho visível. Se uma feature nova pedir mexer nesses nomes internos, é o
+mesmo tipo de decisão arquitetural de alto risco que já se aplica a
+backend/sincronização — pare e confirme antes, não renomeie silenciosamente.
 
 IA e integração com Google Agenda (sincronização bidirecional) são recursos
 **complementares** hoje ainda não implementados — não são o foco do produto.
