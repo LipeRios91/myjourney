@@ -461,16 +461,32 @@ não chamam `PdmGamification` nem são chamados por ela.
   depois (forte em industrializado/marca) — resultado da base local nunca
   desaparece mesmo se a rede falhar. Busca por palavra (`ovo mexido` acha
   `Ovos mexidos`, singular/plural não trava), sem acento/case (`pao`
-  acha `Pão`). Modo Manual continua disponível pra qualquer prato que nem
-  assim apareça.
+  acha `Pão`).
+- **3º nível de fallback — estimativa por IA a partir só do nome**
+  (`PdmDietAI.estimateFromName`, `pdmDietAskAI` em `js/diet-ui.js`): se nem a
+  base local nem o Open Food Facts acham nada (ou o usuário quer conferir uma
+  alternativa), um botão "Perguntar à IA" no próprio passo de busca manda o
+  texto digitado pro Gemini com um prompt pedindo estimativa nutricional —
+  mesma chave/config do reconhecimento por foto (`callGemini`, helper
+  compartilhado entre as duas features em `js/diet-ai.js`), mesmo formato de
+  retorno ("por 100g + porção", cai na mesma tela de confirmação). Existe
+  porque não há uma API de busca de texto livre gratuita/sem-chave que
+  devolva número pronto de nutriente (a Google Custom Search, por exemplo,
+  devolveria links de página, não um JSON estruturado) — uma IA generativa
+  resolve isso direto. Se a chave ainda não estiver configurada,
+  `pdmOpenGeminiConfigModal()` abre e, ao salvar, **retoma sozinho** a
+  pergunta pendente (`pdmSubmitGeminiConfig` chama `pdmDietAskAI()` de volta)
+  em vez de forçar o usuário a clicar de novo. Modo Manual continua
+  disponível como último recurso pra qualquer prato que nem assim resolva.
 - **Reconhecimento por foto — Gemini (Google AI)**: diferente do Client ID
   do Google Agenda ou da config do Firebase, uma chave de API do Gemini
   autoriza chamadas **cobráveis** (mesmo que dentro da faixa gratuita) — só é
   seguro colar no app se o usuário **restringir a própria chave por
   referenciador HTTP (HTTP referrer)** ao domínio publicado, no Google AI
-  Studio/Cloud Console. O modal de config (`#pdmGeminiConfigModal`) explica
-  esse passo explicitamente — não é opcional pular essa parte da explicação.
-  Chave guardada em `localStorage` (`mestre-gemini-api-key`, preferência de
+  Studio/Cloud Console. O modal de config (`#pdmGeminiConfigModal`, hoje
+  compartilhado entre foto e estimativa por nome) explica esse passo
+  explicitamente — não é opcional pular essa parte da explicação. Chave
+  guardada em `localStorage` (`mestre-gemini-api-key`, preferência de
   dispositivo, mesmo tratamento do `mestre-gcal-client-id`), nunca em
   `window.storage`. Sem SDK carregado sob demanda (diferente do Firebase) —
   a API do Gemini é um REST simples, `fetch` direto. Modelo fixo numa

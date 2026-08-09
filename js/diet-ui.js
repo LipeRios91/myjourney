@@ -121,8 +121,9 @@
       mealType: 'outro',
       mode: 'search',
       query: '', results: [], searching: false, searched: false, searchError: false,
-      picked: null, grams: 100,
+      picked: null, pickedSource: null, grams: 100,
       cameraPreview: null, cameraLoading: false, cameraError: false,
+      aiTextLoading: false, aiTextError: false,
     };
   }
 
@@ -170,7 +171,7 @@
     PdmDiet.addEntry({
       date: dietAdd.date, mealType: dietAdd.mealType, name: dietAdd.picked.name, grams: dietAdd.grams,
       kcal: totals.kcal, protein: totals.protein, carbs: totals.carbs, fat: totals.fat,
-      source: dietAdd.mode === 'camera' ? 'photo' : 'search',
+      source: dietAdd.pickedSource || 'search',
     });
     pdmCloseModal('pdmDietAddModal');
     window.pdmRenderAll();
@@ -195,8 +196,25 @@
         '</div>'
       ).join('') + '</div>';
     } else if (dietAdd.searched) {
-      html += '<p style="font-size:12.5px;color:var(--dim);">Nenhum resultado. Tente outro nome ou use o modo Manual.</p>';
+      html += '<p style="font-size:12.5px;color:var(--dim);">Nenhum resultado na base nem no Open Food Facts.</p>';
     }
+    if (dietAdd.searched && !dietAdd.searching) html += renderAiFallback();
+    return html;
+  }
+  // Quando a base local + Open Food Facts não bastam, deixa perguntar pra
+  // própria IA (Gemini) estimar os valores só a partir do nome digitado —
+  // mesma chave/config do reconhecimento por foto.
+  function renderAiFallback() {
+    let html = '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft);">';
+    if (dietAdd.aiTextLoading) {
+      html += '<p style="font-size:12.5px;color:var(--dim);">Perguntando à IA...</p>';
+    } else {
+      html += '<p style="font-size:12.5px;color:var(--dim);margin-bottom:8px;">' +
+        (dietAdd.results.length ? 'Não achou o que queria?' : 'Não achou nada? Peça uma estimativa pra IA.') + '</p>';
+      if (dietAdd.aiTextError) html += '<p style="font-size:12.5px;color:var(--rose-pale);">Não consegui estimar esse alimento. Tente outro nome ou use o modo Manual.</p>';
+      html += '<button type="button" class="pdm-btn-ghost" onclick="pdmDietAskAI()">Perguntar à IA</button>';
+    }
+    html += '</div>';
     return html;
   }
   async function pdmDietSearchSubmit() {
@@ -204,6 +222,7 @@
     const q = input ? input.value.trim() : '';
     if (!q) { pdmToast('Digite o nome de um alimento.'); return; }
     dietAdd.query = q; dietAdd.searching = true; dietAdd.searchError = false; dietAdd.searched = false;
+    dietAdd.aiTextError = false;
     renderDietAddBody();
     try {
       dietAdd.results = await PdmFoodSearch.searchByName(q);
@@ -218,7 +237,25 @@
     const r = dietAdd.results[i];
     if (!r) return;
     dietAdd.picked = r;
+    dietAdd.pickedSource = 'search';
     dietAdd.grams = 100;
+    renderDietAddBody();
+  }
+  async function pdmDietAskAI() {
+    if (!dietAdd || !dietAdd.query) { pdmToast('Digite o nome de um alimento primeiro.'); return; }
+    if (!window.PdmDietAI || !PdmDietAI.isConfigured()) { pdmOpenGeminiConfigModal(); return; }
+    dietAdd.aiTextLoading = true;
+    dietAdd.aiTextError = false;
+    renderDietAddBody();
+    try {
+      const result = await PdmDietAI.estimateFromName(dietAdd.query);
+      dietAdd.picked = result;
+      dietAdd.pickedSource = 'ai_text';
+      dietAdd.grams = result.estimatedGrams || 100;
+    } catch (e) {
+      dietAdd.aiTextError = true;
+    }
+    dietAdd.aiTextLoading = false;
     renderDietAddBody();
   }
 
@@ -246,6 +283,7 @@
       try {
         const result = await PdmDietAI.recognizeFood(reader.result);
         dietAdd.picked = result;
+        dietAdd.pickedSource = 'photo';
         dietAdd.grams = result.estimatedGrams || 100;
       } catch (e) {
         dietAdd.cameraError = true;
@@ -322,9 +360,15 @@
     if (!key) { pdmToast('Cole sua chave da API do Gemini.'); return; }
     PdmDietAI.setApiKey(key);
     pdmCloseModal('pdmGeminiConfigModal');
-    pdmToast('IA de fotos configurada.');
+    pdmToast('IA configurada.');
     const addModal = document.getElementById('pdmDietAddModal');
-    if (addModal && addModal.classList.contains('open') && dietAdd) { dietAdd.mode = 'camera'; renderDietAddBody(); }
+    if (addModal && addModal.classList.contains('open') && dietAdd) {
+      // Retoma o fluxo que pediu a config: câmera volta pro modo câmera já
+      // pronto pra tirar foto; busca por texto já dispara a estimativa da
+      // consulta que o usuário tinha acabado de digitar.
+      if (dietAdd.mode === 'search' && dietAdd.query) pdmDietAskAI();
+      else renderDietAddBody();
+    }
   }
   function pdmGeminiDisconnect() {
     PdmDietAI.clearApiKey();
@@ -336,7 +380,7 @@
     pdmRenderDiet, pdmDietShift, pdmDietGoToday, pdmDietConfirmDelete,
     pdmOpenDietGoalsModal, pdmSubmitDietGoals,
     pdmOpenDietAddModal, pdmDietSetMode, pdmDietSetMealType,
-    pdmDietSearchSubmit, pdmDietPickResult, pdmDietCameraCapture,
+    pdmDietSearchSubmit, pdmDietPickResult, pdmDietAskAI, pdmDietCameraCapture,
     pdmDietRecalcPortion, pdmDietBackToPick, pdmDietConfirmPortion, pdmDietSubmitManual,
     pdmOpenGeminiConfigModal, pdmSubmitGeminiConfig, pdmGeminiDisconnect,
   });
