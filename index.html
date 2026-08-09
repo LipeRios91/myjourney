@@ -395,12 +395,12 @@ html, body {
 }
 .pdm-pass-badge {
   background: var(--gold); color: var(--on-accent); font-family:'Anton',sans-serif;
-  font-size: clamp(15px, 1.6vw, 19px); padding: 12px 20px; white-space:nowrap; flex-shrink:0;
+  font-size: clamp(16px, 1.8vw, 21px); padding: 14px 22px; white-space:nowrap; flex-shrink:0;
   clip-path: polygon(0 0, 100% 0, 88% 100%, 0% 100%);
   display:flex; align-items:center; gap:8px;
 }
-.pdm-pass-badge b { font-size: clamp(22px, 2.4vw, 28px); }
-.pdm-pass-barwrap { flex:1; min-width: 160px; background: var(--void-2); border:1px solid var(--line); height: 44px; position:relative; margin-left:-14px; padding: 0 16px 0 30px; display:flex; align-items:center; }
+.pdm-pass-badge b { font-size: clamp(24px, 2.6vw, 31px); }
+.pdm-pass-barwrap { flex:1; min-width: 160px; background: var(--void-2); border:1px solid var(--line); height: 48px; position:relative; margin-left:-14px; padding: 0 16px 0 30px; display:flex; align-items:center; }
 .pdm-pass-barwrap .pdm-xpbar { flex:1; height:11px; }
 .pdm-pass-sub { font-family:'Space Mono',monospace; font-size:11px; color:var(--dim); position:absolute; top:4px; left:32px; }
 .pdm-pass-xpnum { font-family:'Space Mono',monospace; font-size:12px; color: var(--gold-pale); margin-left:12px; white-space:nowrap; }
@@ -422,7 +422,7 @@ html, body {
 .pdm-pass-arrow svg { width:16px; height:16px; }
 
 .pdm-pass-scroll {
-  display:flex; align-items:flex-start; gap: clamp(10px, 1.4vw, 16px); overflow-x:auto; padding: 22px 8px 16px;
+  display:flex; align-items:flex-start; gap: clamp(10px, 1.4vw, 16px); overflow-x:auto; padding: 26px 8px 20px;
   -webkit-overflow-scrolling: touch; scroll-behavior: smooth;
   scroll-snap-type: x mandatory; cursor: grab;
 }
@@ -431,7 +431,7 @@ html, body {
 .pdm-pass-scroll::-webkit-scrollbar-thumb { background: var(--gold-dim); }
 .pdm-pass-scroll::-webkit-scrollbar-track { background: var(--void-2); }
 .pdm-pass-col {
-  flex: 0 0 clamp(240px, 72vw, 300px); width: clamp(240px, 72vw, 300px);
+  flex: 0 0 clamp(260px, 80vw, 340px); width: clamp(260px, 80vw, 340px);
   background: var(--void-2); border:1px solid var(--line-soft);
   cursor:pointer; position:relative; transition: transform .18s, box-shadow .18s;
   scroll-snap-align: center;
@@ -447,32 +447,32 @@ html, body {
 }
 .pdm-pass-col.current:hover { transform: translateY(-11px) scale(1.02); }
 .pdm-pass-col-head {
-  background: var(--panel-2); text-align:center; padding: clamp(12px,1.6vw,16px) 8px 10px;
+  background: var(--panel-2); text-align:center; padding: clamp(16px,2vw,20px) 10px 14px;
   border-bottom: 1px solid var(--line-soft); position:relative;
 }
 .pdm-pass-col.reached .pdm-pass-col-head { background: linear-gradient(180deg, var(--gold-dim), var(--panel-2)); }
-.pdm-pass-col-lv { font-family:'Anton',sans-serif; font-size: clamp(20px, 2.4vw, 26px); color: var(--fog); line-height:1; }
-.pdm-pass-col-name { font-family:'Space Mono',monospace; font-size: clamp(9.5px, 1vw, 11.5px); color: var(--gold-pale); text-transform:uppercase; letter-spacing:0.03em; margin-top:5px; min-height:13px; }
+.pdm-pass-col-lv { font-family:'Anton',sans-serif; font-size: clamp(24px, 2.8vw, 30px); color: var(--fog); line-height:1; }
+.pdm-pass-col-name { font-family:'Space Mono',monospace; font-size: clamp(10.5px, 1.1vw, 12.5px); color: var(--gold-pale); text-transform:uppercase; letter-spacing:0.03em; margin-top:6px; min-height:14px; }
 .pdm-pass-col-lock {
-  position:absolute; top:7px; right:7px; width:16px; height:16px; color: var(--dim);
+  position:absolute; top:8px; right:8px; width:17px; height:17px; color: var(--dim);
 }
-.pdm-pass-col-body { padding: clamp(8px,1vw,12px); display:flex; flex-direction:column; gap: clamp(5px,0.7vw,7px); }
+.pdm-pass-col-body { padding: clamp(10px,1.3vw,14px); display:flex; flex-direction:column; gap: clamp(6px,0.8vw,9px); }
 .pdm-pass-cell {
-  background: var(--void); border:1px solid var(--line-soft); padding: 7px 10px;
-  display:flex; align-items:center; gap:8px; min-height: clamp(38px,4vw,46px); overflow:hidden;
+  background: var(--void); border:1px solid var(--line-soft); padding: 9px 12px;
+  display:flex; align-items:center; gap:9px; min-height: clamp(44px,4.8vw,54px); overflow:hidden;
   transition: border-color .15s;
 }
 .pdm-pass-col:hover .pdm-pass-cell { border-color: var(--line); }
 .pdm-pass-col.reached .pdm-pass-cell { border-color: rgba(212,175,55,.25); }
-.pdm-pass-cell-icon { font-size: clamp(17px,1.8vw,21px); flex-shrink:0; line-height:1; }
+.pdm-pass-cell-icon { font-size: clamp(19px,2vw,24px); flex-shrink:0; line-height:1; }
 .pdm-pass-cell-text {
-  font-size: clamp(10.5px,1.1vw,12.5px); line-height:1.25; color: var(--dim); overflow:hidden; text-overflow:ellipsis;
+  font-size: clamp(11.5px,1.2vw,13.5px); line-height:1.3; color: var(--dim); overflow:hidden; text-overflow:ellipsis;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
 }
 .pdm-pass-col.reached .pdm-pass-cell-text { color: var(--fog); }
 .pdm-pass-col-xp {
-  text-align:center; font-family:'Space Mono',monospace; font-size: clamp(10px,1vw,12px); color: var(--dim);
-  padding: 8px 4px 11px; border-top: 1px dashed var(--line-soft);
+  text-align:center; font-family:'Space Mono',monospace; font-size: clamp(11px,1.1vw,13px); color: var(--dim);
+  padding: 10px 4px 13px; border-top: 1px dashed var(--line-soft);
 }
 .pdm-pass-ribbon {
   position:absolute; top:-11px; left:50%; transform:translateX(-50%); background: var(--gold);
@@ -481,7 +481,7 @@ html, body {
   clip-path: polygon(6% 0,94% 0,100% 100%,50% 80%,0% 100%);
 }
 .pdm-pass-season-col {
-  flex: 0 0 clamp(48px,5vw,64px); width: clamp(48px,5vw,64px); align-self:stretch; min-height:220px;
+  flex: 0 0 clamp(48px,5vw,64px); width: clamp(48px,5vw,64px); align-self:stretch; min-height:260px;
   display:flex; align-items:center; justify-content:center;
   background: linear-gradient(180deg, var(--blue-pop), var(--gold-dim)); opacity:.55; position:relative;
   scroll-snap-align: center;
@@ -845,13 +845,13 @@ if ('serviceWorker' in navigator) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
           Objetivos
         </button>
-        <button class="pdm-nav-btn" data-view="pass" onclick="pdmGoto('pass')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l2.6 6.6L21 9l-5 4.5L17.5 21 12 17.3 6.5 21 8 13.5 3 9l6.4-.4z"/></svg>
-          Passe
-        </button>
         <button class="pdm-nav-btn" data-view="habilidades" onclick="pdmGoto('habilidades')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20V14M10 20V8M16 20V12M22 20V4"/></svg>
           Habilidades
+        </button>
+        <button class="pdm-nav-btn" data-view="pass" onclick="pdmGoto('pass')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l2.6 6.6L21 9l-5 4.5L17.5 21 12 17.3 6.5 21 8 13.5 3 9l6.4-.4z"/></svg>
+          Passe
         </button>
         <button class="pdm-nav-btn" data-view="evolution" onclick="pdmGoto('evolution')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="1"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
@@ -1009,6 +1009,15 @@ if ('serviceWorker' in navigator) {
         </div>
       </div>
 
+      <!-- ===== HABILIDADES ===== -->
+      <div class="pdm-view" data-view="habilidades">
+        <div class="pdm-panel">
+          <div class="pdm-eyebrow">Habilidades</div>
+          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Toque numa habilidade pra editar, ou em "Nova habilidade" pra criar a sua.</p>
+          <div class="pdm-skills-grid" id="pdmSkillsGrid"></div>
+        </div>
+      </div>
+
       <!-- ===== BATTLE PASS ===== -->
       <div class="pdm-view" data-view="pass">
         <div class="pdm-panel">
@@ -1030,15 +1039,6 @@ if ('serviceWorker' in navigator) {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg>
             </button>
           </div>
-        </div>
-      </div>
-
-      <!-- ===== HABILIDADES ===== -->
-      <div class="pdm-view" data-view="habilidades">
-        <div class="pdm-panel">
-          <div class="pdm-eyebrow">Habilidades</div>
-          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Toque numa habilidade pra editar, ou em "Nova habilidade" pra criar a sua.</p>
-          <div class="pdm-skills-grid" id="pdmSkillsGrid"></div>
         </div>
       </div>
 
@@ -1084,10 +1084,10 @@ if ('serviceWorker' in navigator) {
           <div class="pdm-eyebrow">Conquistas</div>
           <div class="pdm-achievements-grid" id="pdmAchievementsGrid"></div>
         </div>
-      </div>
 
-      <div style="text-align:center; margin-top: 30px;">
-        <button class="pdm-btn-ghost" onclick="pdmConfirmFullReset()">Zerar todo o progresso</button>
+        <div style="text-align:center; margin-top: 10px;">
+          <button class="pdm-btn-ghost" onclick="pdmConfirmFullReset()">Zerar todo o progresso</button>
+        </div>
       </div>
     </div>
   </div>

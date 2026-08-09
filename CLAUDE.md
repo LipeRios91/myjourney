@@ -410,19 +410,22 @@ uma feature de UI pronta (ver seção de testes abaixo).
 também hospeda a Frase do dia, que saiu do Passe), `quests` (agenda diária
 de missões, navegável por dia — não é mais uma lista fixa, gera via
 `PdmHM.ensureMissionsForDate`), `habits` (lista de hábitos + CRUD), `goals`
-(lista de objetivos + CRUD), `pass` (passe de batalha com tiers),
-`habilidades` (grid de habilidades editável — tem lugar só dela, pedido
-explícito do usuário), `evolution` (foto + peso mensais), `perfil`
-(Perfil/Aparência/Conquistas — ver seção "Gamificação"; é a **última** página
-do menu, pedido explícito do usuário; o mini-perfil do header, antes um
-atalho redundante pra Home, agora aponta pra cá). Detalhe/formulário de
-hábito, missão, objetivo e habilidade são modais (`pdmHabitFormModal`,
-`pdmHabitDetailModal`, `pdmMissionModal`, `pdmGoalFormModal`,
-`pdmGoalDetailModal`, `pdmSkillFormModal`), não views próprias — segue o
-padrão de modal já usado pra foto/tier/confirmação. Uma feature nova
-normalmente é uma dessas views/modais, ou uma seção dentro de uma delas —
-raramente justifica uma view nova (Perfil e Habilidades foram exceções
-deliberadas, pedidas explicitamente pelo usuário).
+(lista de objetivos + CRUD), `habilidades` (grid de habilidades editável —
+tem lugar só dela, pedido explícito do usuário), `pass` (passe de batalha
+com tiers), `evolution` (foto + peso mensais), `perfil` (Perfil/Aparência/
+Conquistas — ver seção "Gamificação"; é a **última** página do menu, pedido
+explícito do usuário; o mini-perfil do header, antes um atalho redundante
+pra Home, agora aponta pra cá). "Zerar todo o progresso" vive só dentro da
+view `perfil` (não é mais global/fixo no fim da página) — se um botão
+"perigoso" novo for parecido, mesma regra: fica dentro da view dona dele,
+não solto fora de todas. Detalhe/formulário de hábito, missão, objetivo e
+habilidade são modais (`pdmHabitFormModal`, `pdmHabitDetailModal`,
+`pdmMissionModal`, `pdmGoalFormModal`, `pdmGoalDetailModal`,
+`pdmSkillFormModal`), não views próprias — segue o padrão de modal já usado
+pra foto/tier/confirmação. Uma feature nova normalmente é uma dessas
+views/modais, ou uma seção dentro de uma delas — raramente justifica uma
+view nova (Perfil e Habilidades foram exceções deliberadas, pedidas
+explicitamente pelo usuário).
 
 Modais empilhados: o modal de confirmação genérico (`pdmConfirmModal`,
 usado por `pdmConfirmGeneric()`) precisa ficar **por último no `<body>`**
