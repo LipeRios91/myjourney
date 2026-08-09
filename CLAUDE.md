@@ -448,10 +448,21 @@ não chamam `PdmGamification` nem são chamados por ela.
   vivo, `pdmDietRecalcPortion`): busca por nome (Open Food Facts) e foto (IA).
   Um terceiro modo, Manual, pula esse passo — usuário digita os totais direto
   (é o fallback pra prato caseiro/genérico que a busca não cobre bem).
-- **Busca por nome — Open Food Facts**: API pública, **sem chave nenhuma**
-  (nem client ID restrito por domínio, como o Google Agenda — aqui é
-  totalmente anônima). Cobertura forte pra industrializados, mais fraca pra
-  pratos caseiros — daí o modo Manual sempre disponível como saída.
+- **Busca por nome — duas fontes combinadas** (`js/diet-foodsearch.js`):
+  uma base própria de ~70 pratos/alimentos brasileiros comuns (`BR_FOODS`,
+  valores por 100g tipo TACO/USDA, embutida no arquivo — sem rede, nunca
+  falha) **+** Open Food Facts (API pública, **sem chave nenhuma**, nem
+  client ID restrito por domínio como o Google Agenda — aqui é totalmente
+  anônima). A base local existe porque o Open Food Facts sozinho é fraco
+  pra comida caseira/genérica em português (é montado principalmente por
+  leitura de rótulo de industrializado) — "ovos mexidos" ou "pão com
+  manteiga" não existiam lá. `searchByName()` busca nas duas e mostra a
+  base local primeiro (mais relevante pra prato caseiro), Open Food Facts
+  depois (forte em industrializado/marca) — resultado da base local nunca
+  desaparece mesmo se a rede falhar. Busca por palavra (`ovo mexido` acha
+  `Ovos mexidos`, singular/plural não trava), sem acento/case (`pao`
+  acha `Pão`). Modo Manual continua disponível pra qualquer prato que nem
+  assim apareça.
 - **Reconhecimento por foto — Gemini (Google AI)**: diferente do Client ID
   do Google Agenda ou da config do Firebase, uma chave de API do Gemini
   autoriza chamadas **cobráveis** (mesmo que dentro da faixa gratuita) — só é
