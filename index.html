@@ -902,6 +902,10 @@ if ('serviceWorker' in navigator) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
           Dieta
         </button>
+        <button class="pdm-nav-btn" data-view="config" onclick="pdmGoto('config')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Configurações
+        </button>
         <button class="pdm-nav-btn" data-view="perfil" onclick="pdmGoto('perfil')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/></svg>
           Perfil
@@ -1118,13 +1122,8 @@ if ('serviceWorker' in navigator) {
         </button>
       </div>
 
-      <!-- ===== PERFIL (última página) ===== -->
-      <div class="pdm-view" data-view="perfil">
-        <div class="pdm-panel">
-          <div class="pdm-eyebrow">Perfil</div>
-          <div class="pdm-stat-grid" id="pdmProfileStats" style="margin-top:6px;"></div>
-        </div>
-
+      <!-- ===== CONFIGURAÇÕES (chaves de API, integrações, aparência) ===== -->
+      <div class="pdm-view" data-view="config">
         <div class="pdm-panel">
           <div class="pdm-eyebrow">Aparência</div>
           <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Escolha o modo e a cor de destaque do app — botões, barras de progresso, navegação e badges usam essa cor.</p>
@@ -1147,9 +1146,29 @@ if ('serviceWorker' in navigator) {
         </div>
 
         <div class="pdm-panel">
-          <div class="pdm-eyebrow">Sincronização</div>
+          <div class="pdm-eyebrow">Sincronização em nuvem</div>
           <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Mantenha seu progresso igual no celular e na web, usando um projeto Firebase gratuito e só seu — os dados continuam privados, só passam a viver também na sua conta Google. Não é em tempo real: envia a cada mudança e busca ao abrir o app.</p>
           <div class="pdm-sync-status" id="pdmSyncStatus"></div>
+        </div>
+
+        <div class="pdm-panel">
+          <div class="pdm-eyebrow">Google Agenda</div>
+          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Envia suas missões pro Google Agenda (só nesse sentido — edições feitas direto no Google não voltam pro app). Usa um Client ID OAuth seu, gratuito.</p>
+          <div class="pdm-sync-status" id="pdmGCalConfigStatus"></div>
+        </div>
+
+        <div class="pdm-panel">
+          <div class="pdm-eyebrow">IA (reconhecimento de foto e estimativa de alimento)</div>
+          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Usada na Dieta pra reconhecer alimento por foto e estimar valores nutricionais quando a busca não acha nada. Usa a API do Gemini (Google AI) com uma chave sua.</p>
+          <div class="pdm-sync-status" id="pdmGeminiConfigStatus"></div>
+        </div>
+      </div>
+
+      <!-- ===== PERFIL (última página) ===== -->
+      <div class="pdm-view" data-view="perfil">
+        <div class="pdm-panel">
+          <div class="pdm-eyebrow">Perfil</div>
+          <div class="pdm-stat-grid" id="pdmProfileStats" style="margin-top:6px;"></div>
         </div>
 
         <div class="pdm-panel">
@@ -1505,6 +1524,7 @@ function pdmGoto(view) {
   if (view === 'perfil' && window.pdmRenderPerfil) window.pdmRenderPerfil();
   if (view === 'habilidades' && window.pdmRenderSkills) window.pdmRenderSkills();
   if (view === 'diet' && window.pdmRenderDiet) window.pdmRenderDiet();
+  if (view === 'config') pdmRenderConfig();
 }
 
 let pdmToastTimer = null;
@@ -1655,6 +1675,17 @@ function renderEvolution() {
   });
 }
 
+// Agrega os painéis de Configurações — aparência, sincronização, Google
+// Agenda e IA não pertencem a um módulo "dono" único, então essa view fica
+// aqui no script legado (mesmo tratamento de renderAll/renderPass), cada
+// painel delegando pro render próprio do módulo correspondente.
+function pdmRenderConfig() {
+  if (window.pdmRenderThemeSettings) window.pdmRenderThemeSettings();
+  if (window.pdmRenderSyncStatus) window.pdmRenderSyncStatus();
+  if (window.pdmRenderGCalConfigStatus) window.pdmRenderGCalConfigStatus();
+  if (window.pdmRenderGeminiConfigStatus) window.pdmRenderGeminiConfigStatus();
+}
+
 function renderAll() {
   renderHeader();
   renderQuote();
@@ -1667,6 +1698,7 @@ function renderAll() {
   if (window.pdmRenderSkills) window.pdmRenderSkills();
   renderEvolution();
   if (window.pdmRenderDiet) window.pdmRenderDiet();
+  pdmRenderConfig();
 }
 
 // ---------------------------------------------------------------
@@ -1826,6 +1858,7 @@ window.pdmHandleFile = pdmHandleFile;
 window.pdmSaveMonthWeight = pdmSaveMonthWeight;
 window.pdmCloseModal = pdmCloseModal;
 window.pdmConfirmFullReset = pdmConfirmFullReset;
+window.pdmRenderConfig = pdmRenderConfig;
 window.pdmScrollPass = pdmScrollPass;
 window.pdmRenderAll = renderAll;
 window.pdmToast = pdmToast;

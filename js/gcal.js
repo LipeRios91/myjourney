@@ -26,6 +26,7 @@
 
   function getClientId() { return (localStorage.getItem(CLIENT_ID_KEY) || '').trim(); }
   function setClientId(id) { localStorage.setItem(CLIENT_ID_KEY, (id || '').trim()); }
+  function clearClientId() { localStorage.removeItem(CLIENT_ID_KEY); }
   function isConfigured() { return !!getClientId(); }
   function isConnected() { return !!accessToken && Date.now() < tokenExpiresAt; }
 
@@ -129,7 +130,7 @@
   }
 
   window.PdmGCal = {
-    isConfigured, isConnected, getClientId, setClientId,
+    isConfigured, isConnected, getClientId, setClientId, clearClientId,
     connect, disconnect, pushMission,
   };
 })();

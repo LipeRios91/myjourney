@@ -105,7 +105,7 @@ Tudo roda 100% client-side:
   `window.PdmReminders`. Só dispara com o app aberto (ver limitação abaixo).
 - `js/sync.js` — sincronização em nuvem OPCIONAL via Firebase (ver seção
   "Sincronização em nuvem" abaixo), expõe `window.PdmSync`. `js/sync-ui.js`
-  — painel/modal na view `perfil`, mesma convenção `window.pdmXxx`.
+  — painel/modal na view `config`, mesma convenção `window.pdmXxx`.
 - `window.PdmCore` — ponte definida no script legado (dentro de `index.html`),
   hoje só expõe `toast()` pros módulos externos dispararem o toast genérico
   de erro. XP/nível/streak não vivem mais aqui — são responsabilidade de
@@ -334,10 +334,13 @@ delega pros handlers que já existem nos outros módulos.
 
 ## Google Agenda (integração unidirecional)
 
-`js/gcal.js` (`window.PdmGCal`) + `js/gcal-ui.js`. Status/ações vivem no
-header da view `quests` (`#pdmGCalStatus`, populado por
+`js/gcal.js` (`window.PdmGCal`) + `js/gcal-ui.js`. Status/ações do dia a dia
+vivem no header da view `quests` (`#pdmGCalStatus`, populado por
 `pdmRenderGCalStatus()`), e cada missão ganha um botão de envio individual
-(`buildMissionActionsHtml` em `habits-missions-ui.js`).
+(`buildMissionActionsHtml` em `habits-missions-ui.js`). A gestão da
+credencial em si (configurar/trocar/remover o Client ID) tem painel próprio
+na view `config` (`#pdmGCalConfigStatus`, `pdmRenderGCalConfigStatus()`) —
+ver "Configurações (gestão de chaves de API)".
 
 - **Só EMPURRA** (app → Google): cria/atualiza evento por missão via
   `POST`/`PATCH` em `/calendars/primary/events`. Não traz de volta edições
@@ -366,8 +369,8 @@ header da view `quests` (`#pdmGCalStatus`, populado por
 
 ## Sincronização em nuvem (opcional)
 
-`js/sync.js` (`window.PdmSync`) + `js/sync-ui.js`. Painel "Sincronização" na
-view `perfil` (`#pdmSyncStatus`, populado por `pdmRenderSyncStatus()`) +
+`js/sync.js` (`window.PdmSync`) + `js/sync-ui.js`. Painel "Sincronização em
+nuvem" na view `config` (`#pdmSyncStatus`, populado por `pdmRenderSyncStatus()`) +
 `#pdmSyncConfigModal`. Único ponto do app que introduz "backend" de fato —
 foi implementado só depois de perguntar ao usuário (ver regra em "Estado
 real da arquitetura" acima) e ele escolher explicitamente essa opção em vez
@@ -518,7 +521,7 @@ Paleta (custom properties em `.pdm-root`):
 - `--line` / `--line-soft`: bordas
 
 **Modo (escuro/claro) e cor de destaque são personalizáveis** (`js/theme.js`,
-`window.PdmTheme`, painel "Aparência" na view `perfil`).
+`window.PdmTheme`, painel "Aparência" na view `config`).
 
 - **Cor de destaque**: `--gold`/`--gold-pale`/`--gold-dim` viram
   `var(--user-gold, <hex padrão>)` em `.pdm-root`, e `PdmTheme.apply(hex)`
@@ -578,21 +581,58 @@ de missões, navegável por dia — não é mais uma lista fixa, gera via
 (lista de objetivos + CRUD), `habilidades` (grid de habilidades editável —
 tem lugar só dela, pedido explícito do usuário), `pass` (passe de batalha
 com tiers), `evolution` (foto + peso mensais), `diet` (registro diário de
-calorias/macros — ver seção "Dieta"), `perfil` (Perfil/Aparência/
-Conquistas/Sincronização — ver seções "Gamificação" e "Sincronização em
-nuvem"; é a **última** página do menu, pedido explícito do usuário; o
-mini-perfil do header, antes um atalho redundante pra Home, agora aponta pra
-cá). "Zerar todo o progresso" vive só dentro da view `perfil` (não é mais
-global/fixo no fim da página) — se um botão "perigoso" novo for parecido,
-mesma regra: fica dentro da view dona dele, não solto fora de todas.
-Detalhe/formulário de hábito, missão, objetivo e habilidade são modais
-(`pdmHabitFormModal`, `pdmHabitDetailModal`, `pdmMissionModal`,
-`pdmGoalFormModal`, `pdmGoalDetailModal`, `pdmSkillFormModal`,
-`pdmDietAddModal`, `pdmDietGoalsModal`), não views próprias — segue o padrão
-de modal já usado pra foto/tier/confirmação. Uma feature nova normalmente é
-uma dessas views/modais, ou uma seção dentro de uma delas — raramente
-justifica uma view nova (Perfil, Habilidades e Dieta foram exceções
+calorias/macros — ver seção "Dieta"), `config` (Configurações — Aparência,
+Sincronização em nuvem, Google Agenda, IA/Gemini; ver "Configurações
+(gestão de chaves de API)" abaixo — pedido explícito do usuário depois de
+notar que essas configurações estavam espalhadas e sem jeito fácil de
+refazer), `perfil` (Perfil/Conquistas — ver seção "Gamificação"; é a
+**última** página do menu, pedido explícito do usuário; o mini-perfil do
+header, antes um atalho redundante pra Home, agora aponta pra cá). "Zerar
+todo o progresso" vive só dentro da view `perfil` (não é mais global/fixo no
+fim da página) — se um botão "perigoso" novo for parecido, mesma regra: fica
+dentro da view dona dele, não solto fora de todas. Detalhe/formulário de
+hábito, missão, objetivo e habilidade são modais (`pdmHabitFormModal`,
+`pdmHabitDetailModal`, `pdmMissionModal`, `pdmGoalFormModal`,
+`pdmGoalDetailModal`, `pdmSkillFormModal`, `pdmDietAddModal`,
+`pdmDietGoalsModal`), não views próprias — segue o padrão de modal já usado
+pra foto/tier/confirmação. Uma feature nova normalmente é uma dessas
+views/modais, ou uma seção dentro de uma delas — raramente justifica uma
+view nova (Perfil, Habilidades, Dieta e Configurações foram exceções
 deliberadas, pedidas explicitamente pelo usuário).
+
+### Configurações (gestão de chaves de API)
+
+Toda integração que depende de uma credencial colada pelo usuário
+(`mestre-gcal-client-id`, `mestre-sync-config`, `mestre-gemini-api-key`) tem
+um painel próprio na view `config`, além de continuar acessível nos pontos
+de uso (ex: status do Google Agenda no cabeçalho da Agenda, "Trocar chave da
+IA" dentro do modal de registro de alimento) — os dois caminhos não são
+duplicação, são propósitos diferentes: a view `config` é onde você
+**gerencia** a credencial em si (configurar pela primeira vez, trocar,
+remover), os pontos de uso são onde você **usa** a integração no dia a dia.
+
+- **Toda config precisa dar pra refazer, não só criar uma vez**: cada
+  painel (`pdmRenderGCalConfigStatus`/`pdmRenderSyncStatus`/
+  `pdmRenderGeminiConfigStatus`) mostra "Configurar X" quando ainda não
+  tem nada salvo, e quando já tem, mostra o status + botão pra **trocar**
+  (reabre o mesmo modal, agora pré-preenchido com o valor atual — nunca um
+  formulário em branco escondendo o que já está salvo) e, quando faz
+  sentido (Google Agenda, Gemini), um botão pra **remover** a config por
+  completo. Esse padrão nasceu de um bug real: o usuário colou uma chave
+  do Gemini errada, e não tinha nenhum jeito de abrir o modal de novo pra
+  corrigir (o botão só existia no estado "ainda não configurado") — ficou
+  travado. Qualquer config nova precisa nascer já com o caminho de
+  "refazer" incluído, não só o de "configurar pela primeira vez".
+- `js/gcal.js` ganhou `clearClientId()` especificamente pra isso (antes só
+  tinha `setClientId`, sem remover). `PdmDietAI`/`PdmSync` já tinham
+  `clearApiKey`/`clearConfig` — só faltava expor na UI.
+- `pdmRenderConfig()` (função global, definida no script legado junto de
+  `renderAll()`/`renderPass()` — não pertence a um módulo de dados só, é
+  agregador cross-cutting dos 4 painéis) é chamado tanto em `pdmGoto('config')`
+  quanto dentro de `renderAll()`, mesmo padrão das outras views.
+- Aparência e Sincronização **saíram do Perfil** e foram pra cá — o Perfil
+  agora é só identidade/progresso (stats, conquistas, zerar progresso), sem
+  nenhuma configuração técnica misturada.
 
 Modais empilhados: o modal de confirmação genérico (`pdmConfirmModal`,
 usado por `pdmConfirmGeneric()`) precisa ficar **por último no `<body>`**

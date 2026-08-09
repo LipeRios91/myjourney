@@ -353,8 +353,25 @@
   }
 
   // ---------------------------------------------------------------
-  // CONFIG DA IA DE FOTOS (Gemini)
+  // CONFIG DA IA (Gemini) — reconhecimento por foto + estimativa por nome
   // ---------------------------------------------------------------
+  // Painel na view Configurações — gerenciar a chave em si (configurar,
+  // trocar, remover), sempre acessível independente de já estar configurada.
+  function pdmRenderGeminiConfigStatus() {
+    const el = document.getElementById('pdmGeminiConfigStatus');
+    if (!el || !window.PdmDietAI) return;
+    if (!PdmDietAI.isConfigured()) {
+      el.innerHTML = '<button class="pdm-head-btn" onclick="pdmOpenGeminiConfigModal()">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v6M12 16v6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M2 12h6M16 12h6M4.9 19.1l4.2-4.2M14.9 9.1l4.2-4.2"/></svg>' +
+          'Configurar IA' +
+        '</button>';
+      return;
+    }
+    el.innerHTML =
+      '<span class="pdm-mission-badge" style="border-color:var(--gold);color:var(--gold-pale);">Configurada</span>' +
+      '<button class="pdm-btn-ghost" style="margin-top:0;" onclick="pdmOpenGeminiConfigModal()">Trocar chave</button>' +
+      '<button class="pdm-btn-ghost" style="margin-top:0;" onclick="pdmGeminiDisconnect()">Remover chave</button>';
+  }
   function pdmOpenGeminiConfigModal() {
     document.getElementById('geminiApiKeyInput').value = window.PdmDietAI ? PdmDietAI.getApiKey() : '';
     document.getElementById('pdmGeminiConfigModal').classList.add('open');
@@ -365,6 +382,7 @@
     PdmDietAI.setApiKey(key);
     pdmCloseModal('pdmGeminiConfigModal');
     pdmToast('IA configurada.');
+    pdmRenderGeminiConfigStatus();
     const addModal = document.getElementById('pdmDietAddModal');
     if (addModal && addModal.classList.contains('open') && dietAdd) {
       // Retoma o fluxo que pediu a config: câmera volta pro modo câmera já
@@ -376,7 +394,9 @@
   }
   function pdmGeminiDisconnect() {
     PdmDietAI.clearApiKey();
-    document.getElementById('geminiApiKeyInput').value = '';
+    const input = document.getElementById('geminiApiKeyInput');
+    if (input) input.value = '';
+    pdmRenderGeminiConfigStatus();
     pdmToast('Chave da IA removida.');
   }
 
@@ -386,6 +406,6 @@
     pdmOpenDietAddModal, pdmDietSetMode, pdmDietSetMealType,
     pdmDietSearchSubmit, pdmDietPickResult, pdmDietAskAI, pdmDietCameraCapture,
     pdmDietRecalcPortion, pdmDietBackToPick, pdmDietConfirmPortion, pdmDietSubmitManual,
-    pdmOpenGeminiConfigModal, pdmSubmitGeminiConfig, pdmGeminiDisconnect,
+    pdmRenderGeminiConfigStatus, pdmOpenGeminiConfigModal, pdmSubmitGeminiConfig, pdmGeminiDisconnect,
   });
 })();
