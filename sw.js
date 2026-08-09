@@ -1,4 +1,4 @@
-const CACHE_NAME = 'passe-do-mestre-v15';
+const CACHE_NAME = 'passe-do-mestre-v16';
 const APP_SHELL = [
   './',
   './index.html',
@@ -20,6 +20,8 @@ const APP_SHELL = [
   './js/gamification-ui.js',
   './js/home-ui.js',
   './js/reminders.js',
+  './js/sync.js',
+  './js/sync-ui.js',
 ];
 
 self.addEventListener('install', (event) => {

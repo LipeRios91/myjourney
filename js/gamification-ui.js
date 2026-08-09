@@ -155,6 +155,7 @@
   function pdmRenderPerfil() {
     pdmRenderGamificationProfile();
     if (window.pdmRenderThemeSettings) window.pdmRenderThemeSettings();
+    if (window.pdmRenderSyncStatus) window.pdmRenderSyncStatus();
   }
 
   // ---------------------------------------------------------------

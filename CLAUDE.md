@@ -82,18 +82,23 @@ Tudo roda 100% client-side:
   na Agenda, mesma convenção `window.pdmXxx`.
 - `js/reminders.js` — lembretes best-effort via Notification API, expõe
   `window.PdmReminders`. Só dispara com o app aberto (ver limitação abaixo).
+- `js/sync.js` — sincronização em nuvem OPCIONAL via Firebase (ver seção
+  "Sincronização em nuvem" abaixo), expõe `window.PdmSync`. `js/sync-ui.js`
+  — painel/modal na view `perfil`, mesma convenção `window.pdmXxx`.
 - `window.PdmCore` — ponte definida no script legado (dentro de `index.html`),
   hoje só expõe `toast()` pros módulos externos dispararem o toast genérico
   de erro. XP/nível/streak não vivem mais aqui — são responsabilidade de
   `window.PdmGamification` (ver seção "Gamificação" abaixo).
 - `window.storage` — shim que grava em `localStorage` do navegador (bloco de
   script logo após `<body>`). Formato: `get(key)` retorna `{value}` ou `null`;
-  `set(key, value)` grava string.
-- **Isso significa que hoje o progresso não sincroniza entre dispositivos.**
-  Se uma feature nova exigir isso (multi-dispositivo, backup na nuvem, IA que
-  precise rodar server-side, etc.), isso é uma decisão arquitetural real —
-  pare e comunique antes de introduzir um backend, não faça isso silenciosamente
-  no meio de uma feature não relacionada.
+  `set(key, value)` grava string, e também dispara `PdmSync.pushKey()`
+  (melhor esforço, no-op se a sincronização não estiver configurada).
+- **Por padrão o progresso não sincroniza entre dispositivos** — isso só
+  muda se o usuário configurar a sincronização opcional (`js/sync.js`, ver
+  seção própria). Qualquer OUTRA feature nova que precise de mais do que
+  isso (IA que precise rodar server-side, etc.) continua sendo uma decisão
+  arquitetural real — pare e comunique antes de introduzir mais backend, não
+  faça isso silenciosamente no meio de uma feature não relacionada.
 - `manifest.json` + `sw.js` — PWA instalável (cache-first do app shell).
   Qualquer novo arquivo estático (JS, imagem, ícone) precisa entrar em
   `APP_SHELL` no `sw.js` e ter o `CACHE_NAME` incrementado na versão pra
@@ -337,6 +342,71 @@ header da view `quests` (`#pdmGCalStatus`, populado por
 - `sw.js` tem guarda de mesma origem no handler de `fetch` — pedidos pro
   GIS/Calendar API (terceiros) sempre vão direto pra rede, nunca passam
   pelo cache-first do app shell.
+
+## Sincronização em nuvem (opcional)
+
+`js/sync.js` (`window.PdmSync`) + `js/sync-ui.js`. Painel "Sincronização" na
+view `perfil` (`#pdmSyncStatus`, populado por `pdmRenderSyncStatus()`) +
+`#pdmSyncConfigModal`. Único ponto do app que introduz "backend" de fato —
+foi implementado só depois de perguntar ao usuário (ver regra em "Estado
+real da arquitetura" acima) e ele escolher explicitamente essa opção em vez
+de backup manual exportar/importar.
+
+- **Continua sem backend próprio**: usa um projeto **Firebase gratuito do
+  próprio usuário** (Auth + Firestore), criado por ele no Firebase Console —
+  o app não tem servidor nenhum, só fala direto com a API do Firebase do
+  navegador, mesmo modelo do Google Agenda. O usuário cola os 6 campos de
+  config do Firebase (apiKey/authDomain/projectId/storageBucket/
+  messagingSenderId/appId) em `#pdmSyncConfigModal`, guardados em
+  `localStorage` (`mestre-sync-config`, mesmo tratamento de preferência de
+  dispositivo do `mestre-gcal-client-id`).
+- **SDK carregado sob demanda**: os 3 scripts do Firebase compat (`firebase-
+  app-compat.js`/`firebase-auth-compat.js`/`firebase-firestore-compat.js`,
+  via CDN `gstatic.com`) só são injetados quando a sincronização já está
+  configurada (no boot) ou quando o usuário inicia a conexão — mesmo padrão
+  do `loadGis()` em `gcal.js`. Quem não usa a feature não paga o custo
+  (~150-300KB) de baixar esse SDK. É por isso que `js/sync.js` é script
+  clássico (não `type="module"`) — teria que carregar depois do script
+  legado (`defer` implícito de módulos), o que quebraria o `await
+  window.PdmSync.init()` síncrono no boot.
+- **Autenticação via Firebase Auth + provedor Google** (`signInWithPopup`),
+  fluxo separado do Google Agenda (tokens/propósitos diferentes, sem relação
+  entre si). Sessão persiste entre recarregamentos (padrão do próprio SDK),
+  então normalmente reconecta sozinho ao abrir o app de novo.
+- **O que sincroniza**: toda chave que já passa por `window.storage.get`/
+  `set` (`mestre-habits`, `mestre-missions`, `mestre-goals`,
+  `mestre-goal-categories`, `mestre-gamification`, `mestre-skills`,
+  `mestre-profile-photo`, `mestre-monthly-photos`) — lista em
+  `PdmSync.SYNCED_KEYS`. **O que fica de fora, de propósito** (preferência
+  de dispositivo, não progresso — mesmo raciocínio do tema): `mestre-theme`,
+  `mestre-gcal-client-id`, `mestre-sync-config`.
+- **Modelo no Firestore**: um documento por chave, em
+  `users/{uid}/data/{key}`, com `{ value: <a mesma string que já ia pro
+  localStorage>, updatedAt: serverTimestamp() }` — passthrough direto, sem
+  reformatar nada, então nenhum outro módulo (`PdmHM`/`PdmGoals`/
+  `PdmGamification`/etc.) precisou mudar pra existir sincronização.
+- **Não é tempo real**: sem `onSnapshot`/listeners — só **push a cada
+  escrita local** (`window.storage.set()` chama `PdmSync.pushKey()` depois
+  de gravar no `localStorage`, melhor esforço, silencioso se falhar — mesma
+  filosofia do `js/reminders.js`) e **pull uma vez no boot**
+  (`PdmSync.init()`, chamado antes de `PdmGamification.init()`/
+  `PdmGoals.init()`/`PdmHM.init()` pra esses módulos já lerem dado fresco).
+  Editar em dois aparelhos abertos ao mesmo tempo não converge na hora, só
+  no próximo carregamento de cada um.
+- **Resolução de conflito: "primeiro aparelho manda"**, não é por timestamp
+  por campo. Flag local `mestre-sync-first-done` (por aparelho, fora do
+  `window.storage`): se ausente, é a primeira vez que ESTE aparelho conecta
+  essa conta — ele **empurra tudo que já tinha pra nuvem** (vira a fonte da
+  verdade) e marca a flag. Se já presente, esse aparelho **sempre baixa da
+  nuvem** no connect/boot (nuvem manda a partir daí). **Risco conhecido e
+  documentado na UI** (`pdmSyncConnectFlow` mostra um confirm antes do
+  primeiro connect): conectar um SEGUNDO aparelho que já tinha progresso
+  próprio nunca sincronizado faz esse progresso local ser **substituído**
+  pelo que já está na nuvem — por isso conecte primeiro o aparelho com o
+  progresso que você quer manter.
+- `sw.js` tem a mesma guarda de mesma origem do Google Agenda — pedidos pro
+  Firebase (terceiro) sempre vão direto pra rede, nunca passam pelo
+  cache-first do app shell.
 
 ## Design system
 

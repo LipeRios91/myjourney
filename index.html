@@ -570,8 +570,8 @@ html, body {
 .pdm-home-quick-actions button:hover { border-color: var(--gold); color: var(--gold-pale); }
 .pdm-home-quick-actions svg { width:18px; height:18px; }
 
-.pdm-gcal-status { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
-.pdm-gcal-status .pdm-head-btn svg { width:14px; height:14px; }
+.pdm-gcal-status, .pdm-sync-status { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.pdm-gcal-status .pdm-head-btn svg, .pdm-sync-status .pdm-head-btn svg { width:14px; height:14px; }
 
 /* ---------- HABITS & MISSIONS ---------- */
 .pdm-section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
@@ -800,6 +800,10 @@ window.storage = {
   },
   set: function(key, value) {
     localStorage.setItem(key, value);
+    // Melhor esforço: se a sincronização em nuvem estiver configurada e
+    // conectada, envia essa chave pra nuvem também. Vira no-op silencioso
+    // se PdmSync ainda não carregou ou não está conectado (ver js/sync.js).
+    if (window.PdmSync) window.PdmSync.pushKey(key, value);
     return Promise.resolve();
   }
 };
@@ -1081,6 +1085,12 @@ if ('serviceWorker' in navigator) {
         </div>
 
         <div class="pdm-panel">
+          <div class="pdm-eyebrow">Sincronização</div>
+          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Mantenha seu progresso igual no celular e na web, usando um projeto Firebase gratuito e só seu — os dados continuam privados, só passam a viver também na sua conta Google. Não é em tempo real: envia a cada mudança e busca ao abrir o app.</p>
+          <div class="pdm-sync-status" id="pdmSyncStatus"></div>
+        </div>
+
+        <div class="pdm-panel">
           <div class="pdm-eyebrow">Conquistas</div>
           <div class="pdm-achievements-grid" id="pdmAchievementsGrid"></div>
         </div>
@@ -1214,6 +1224,40 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 
+  <!-- Sync config modal (config do projeto Firebase do próprio usuário) -->
+  <div class="pdm-modal-bg" id="pdmSyncConfigModal">
+    <div class="pdm-modal pdm-modal-lg">
+      <h3>Configurar sincronização</h3>
+      <div class="pdm-modal-scroll">
+        <p>Sincronizar entre aparelhos usa um <b>projeto Firebase</b> (gratuito, é só seu — fica salvo neste navegador).</p>
+        <p style="margin-top:-8px;">
+          1. Abra o <a href="https://console.firebase.google.com/" target="_blank" rel="noopener" style="color:var(--gold-pale);">Firebase Console</a> e crie um projeto<br>
+          2. Adicione um "App da Web" ao projeto e copie os campos de configuração abaixo<br>
+          3. Em Authentication → Sign-in method, ative o provedor <b>Google</b><br>
+          4. Em Firestore Database, crie o banco e cole estas regras em Regras:<br>
+          <code style="display:block;background:var(--void-2);padding:8px;margin-top:4px;font-size:11px;white-space:pre-wrap;">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/data/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}</code>
+        </p>
+        <div class="pdm-field"><label>API Key</label><input class="pdm-input" id="syncCfg_apiKey" placeholder="AIzaSy..."></div>
+        <div class="pdm-field"><label>Auth Domain</label><input class="pdm-input" id="syncCfg_authDomain" placeholder="seu-projeto.firebaseapp.com"></div>
+        <div class="pdm-field"><label>Project ID</label><input class="pdm-input" id="syncCfg_projectId" placeholder="seu-projeto"></div>
+        <div class="pdm-field"><label>Storage Bucket</label><input class="pdm-input" id="syncCfg_storageBucket" placeholder="seu-projeto.appspot.com"></div>
+        <div class="pdm-field"><label>Messaging Sender ID</label><input class="pdm-input" id="syncCfg_messagingSenderId" placeholder="123456789"></div>
+        <div class="pdm-field"><label>App ID</label><input class="pdm-input" id="syncCfg_appId" placeholder="1:123456789:web:abcdef"></div>
+      </div>
+      <div class="pdm-modal-row" style="margin-top:16px;">
+        <button class="pdm-btn-ghost" onclick="pdmCloseModal('pdmSyncConfigModal')">Cancelar</button>
+        <button class="pdm-btn" onclick="pdmSubmitSyncConfig()">Salvar e conectar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirm modal — sempre por último no DOM, pra ficar acima de qualquer
        outro modal já aberto (ex: confirmar exclusão em cima do detalhe). -->
   <div class="pdm-modal-bg" id="pdmConfirmModal">
@@ -1254,6 +1298,8 @@ if ('serviceWorker' in navigator) {
 <script src="./js/gamification-ui.js"></script>
 <script src="./js/home-ui.js"></script>
 <script src="./js/reminders.js"></script>
+<script src="./js/sync.js"></script>
+<script src="./js/sync-ui.js"></script>
 
 <script>
 (function() {
@@ -1675,6 +1721,7 @@ window.pdmToast = pdmToast;
 
 (async function init() {
   window.PdmTheme.init();
+  if (window.PdmSync) await window.PdmSync.init();
   await loadPhotos();
   await window.PdmGamification.init();
   await window.PdmGoals.init();
