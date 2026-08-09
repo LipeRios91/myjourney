@@ -85,6 +85,11 @@ Tudo roda 100% client-side:
   abaixo), expõe `window.PdmGoals`. Depende de `window.PdmHM` pra consultar
   hábitos/missões vinculados; `PdmHM` **não** depende de `PdmGoals` (sentido
   único, evita dependência circular entre os dois módulos).
+- `js/diet-data.js` — camada de dados de Dieta (ver seção própria abaixo),
+  expõe `window.PdmDiet`. `js/diet-foodsearch.js` (`window.PdmFoodSearch`,
+  busca por nome via Open Food Facts) e `js/diet-ai.js`
+  (`window.PdmDietAI`, reconhecimento por foto via Gemini) são independentes
+  entre si e de `PdmDiet` — só a UI (`js/diet-ui.js`) os conecta.
 - `js/habits-missions-ui.js` — render + formulários + modais de Hábitos &
   Missões, expõe várias `window.pdmXxx` (mesma convenção do script legado).
 - `js/goals-ui.js` — render + formulário + detalhe de Objetivos, mesma
@@ -424,6 +429,53 @@ de backup manual exportar/importar.
   Firebase (terceiro) sempre vão direto pra rede, nunca passam pelo
   cache-first do app shell.
 
+## Dieta (registro de calorias e macronutrientes)
+
+`js/diet-data.js` (`window.PdmDiet`), `js/diet-foodsearch.js`
+(`window.PdmFoodSearch`), `js/diet-ai.js` (`window.PdmDietAI`) e
+`js/diet-ui.js`. View própria `diet`, entre Evolução e Perfil no nav.
+Domínio **independente** de Hábitos/Missões/Objetivos/Gamificação — mesmo
+tratamento de Evolução (acompanhamento pessoal, sem XP): os módulos de dieta
+não chamam `PdmGamification` nem são chamados por ela.
+
+- **Entrada = snapshot**: cada registro (`PdmDiet.addEntry`) grava
+  `kcal`/`protein`/`carbs`/`fat` já calculados pra porção registrada, não uma
+  referência viva a um alimento — mesmo princípio de missão herdando dados
+  do hábito no momento da geração (ver "Hábitos & Missões"). Editar a busca
+  depois não reescreve o que já foi salvo.
+- **Duas fontes pra popular um registro, ambas convergindo pro mesmo passo de
+  "confirmar porção"** (valores por 100g + campo de gramas com recálculo ao
+  vivo, `pdmDietRecalcPortion`): busca por nome (Open Food Facts) e foto (IA).
+  Um terceiro modo, Manual, pula esse passo — usuário digita os totais direto
+  (é o fallback pra prato caseiro/genérico que a busca não cobre bem).
+- **Busca por nome — Open Food Facts**: API pública, **sem chave nenhuma**
+  (nem client ID restrito por domínio, como o Google Agenda — aqui é
+  totalmente anônima). Cobertura forte pra industrializados, mais fraca pra
+  pratos caseiros — daí o modo Manual sempre disponível como saída.
+- **Reconhecimento por foto — Gemini (Google AI)**: diferente do Client ID
+  do Google Agenda ou da config do Firebase, uma chave de API do Gemini
+  autoriza chamadas **cobráveis** (mesmo que dentro da faixa gratuita) — só é
+  seguro colar no app se o usuário **restringir a própria chave por
+  referenciador HTTP (HTTP referrer)** ao domínio publicado, no Google AI
+  Studio/Cloud Console. O modal de config (`#pdmGeminiConfigModal`) explica
+  esse passo explicitamente — não é opcional pular essa parte da explicação.
+  Chave guardada em `localStorage` (`mestre-gemini-api-key`, preferência de
+  dispositivo, mesmo tratamento do `mestre-gcal-client-id`), nunca em
+  `window.storage`. Sem SDK carregado sob demanda (diferente do Firebase) —
+  a API do Gemini é um REST simples, `fetch` direto. Modelo fixo numa
+  constante (`MODEL` em `js/diet-ai.js`) fácil de trocar se a Google
+  descontinuar o nome atual.
+- **Metas diárias são opcionais por nutriente** (`PdmDiet.getGoals`/
+  `setGoals`, `null` = sem meta): a barra de progresso de cada nutriente
+  (calorias usa `.pdm-xpbar`, macros usam `.pdm-skill-bar` — reaproveita os
+  mesmos componentes visuais da Gamificação/Habilidades) só aparece pros
+  nutrientes com meta definida.
+- **"Zerar todo o progresso" NÃO apaga o registro de dieta** — mesmo
+  tratamento das fotos de Evolução: é histórico pessoal, não progresso de
+  gamificação. Por isso `PdmDiet` não tem (nem precisa de) um `resetAll()`.
+- Sincroniza em nuvem como qualquer outra chave real de progresso —
+  `mestre-diet-entries`/`mestre-diet-goals` estão em `PdmSync.SYNCED_KEYS`.
+
 ## Design system
 
 Prefixo `pdm-` em todas as classes (evita colisão, já que é tudo um arquivo
@@ -498,20 +550,22 @@ de missões, navegável por dia — não é mais uma lista fixa, gera via
 `PdmHM.ensureMissionsForDate`), `habits` (lista de hábitos + CRUD), `goals`
 (lista de objetivos + CRUD), `habilidades` (grid de habilidades editável —
 tem lugar só dela, pedido explícito do usuário), `pass` (passe de batalha
-com tiers), `evolution` (foto + peso mensais), `perfil` (Perfil/Aparência/
-Conquistas — ver seção "Gamificação"; é a **última** página do menu, pedido
-explícito do usuário; o mini-perfil do header, antes um atalho redundante
-pra Home, agora aponta pra cá). "Zerar todo o progresso" vive só dentro da
-view `perfil` (não é mais global/fixo no fim da página) — se um botão
-"perigoso" novo for parecido, mesma regra: fica dentro da view dona dele,
-não solto fora de todas. Detalhe/formulário de hábito, missão, objetivo e
-habilidade são modais (`pdmHabitFormModal`, `pdmHabitDetailModal`,
-`pdmMissionModal`, `pdmGoalFormModal`, `pdmGoalDetailModal`,
-`pdmSkillFormModal`), não views próprias — segue o padrão de modal já usado
-pra foto/tier/confirmação. Uma feature nova normalmente é uma dessas
-views/modais, ou uma seção dentro de uma delas — raramente justifica uma
-view nova (Perfil e Habilidades foram exceções deliberadas, pedidas
-explicitamente pelo usuário).
+com tiers), `evolution` (foto + peso mensais), `diet` (registro diário de
+calorias/macros — ver seção "Dieta"), `perfil` (Perfil/Aparência/
+Conquistas/Sincronização — ver seções "Gamificação" e "Sincronização em
+nuvem"; é a **última** página do menu, pedido explícito do usuário; o
+mini-perfil do header, antes um atalho redundante pra Home, agora aponta pra
+cá). "Zerar todo o progresso" vive só dentro da view `perfil` (não é mais
+global/fixo no fim da página) — se um botão "perigoso" novo for parecido,
+mesma regra: fica dentro da view dona dele, não solto fora de todas.
+Detalhe/formulário de hábito, missão, objetivo e habilidade são modais
+(`pdmHabitFormModal`, `pdmHabitDetailModal`, `pdmMissionModal`,
+`pdmGoalFormModal`, `pdmGoalDetailModal`, `pdmSkillFormModal`,
+`pdmDietAddModal`, `pdmDietGoalsModal`), não views próprias — segue o padrão
+de modal já usado pra foto/tier/confirmação. Uma feature nova normalmente é
+uma dessas views/modais, ou uma seção dentro de uma delas — raramente
+justifica uma view nova (Perfil, Habilidades e Dieta foram exceções
+deliberadas, pedidas explicitamente pelo usuário).
 
 Modais empilhados: o modal de confirmação genérico (`pdmConfirmModal`,
 usado por `pdmConfirmGeneric()`) precisa ficar **por último no `<body>`**

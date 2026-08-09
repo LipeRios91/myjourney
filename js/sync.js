@@ -34,6 +34,8 @@
     'mestre-skills',
     'mestre-profile-photo',
     'mestre-monthly-photos',
+    'mestre-diet-entries',
+    'mestre-diet-goals',
   ];
 
   let app = null;
