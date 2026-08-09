@@ -96,7 +96,6 @@ html, body {
 .pdm-root[data-theme="light"] .pdm-eyebrow,
 .pdm-root[data-theme="light"] .pdm-level-name,
 .pdm-root[data-theme="light"] .pdm-levelup-name,
-.pdm-root[data-theme="light"] .pdm-secret-count,
 .pdm-root[data-theme="light"] .pdm-home-greeting {
   text-shadow: 0 1px 0 rgba(255,255,255,.6), 0 2px 6px rgba(74,47,66,.12);
 }
@@ -188,9 +187,6 @@ html, body {
   color: var(--on-accent); background: var(--gold); border-color: var(--gold);
   box-shadow: 3px 3px 0 rgba(92,127,224,.4);
 }
-.pdm-nav-btn.pdm-nav-secret { margin-left: auto; opacity: 0.5; padding: 10px 12px; background:transparent; border-color:transparent; }
-.pdm-nav-btn.pdm-nav-secret:hover { opacity: 1; }
-.pdm-nav-btn.pdm-nav-secret.active { background: var(--void-2); color: var(--gold-pale); border-color: var(--line-soft); box-shadow:none; }
 .pdm-nav-btn svg { width:14px; height:14px; flex-shrink:0; }
 
 .pdm-view { display:none; animation: pdmFade .35s ease; }
@@ -426,19 +422,19 @@ html, body {
 .pdm-pass-arrow svg { width:16px; height:16px; }
 
 .pdm-pass-scroll {
-  display:flex; gap: clamp(6px, 0.8vw, 12px); overflow-x:auto; padding: 22px 8px 16px;
+  display:flex; align-items:flex-start; gap: clamp(10px, 1.4vw, 16px); overflow-x:auto; padding: 22px 8px 16px;
   -webkit-overflow-scrolling: touch; scroll-behavior: smooth;
-  scroll-snap-type: x proximity; cursor: grab;
+  scroll-snap-type: x mandatory; cursor: grab;
 }
 .pdm-pass-scroll.dragging { cursor: grabbing; scroll-snap-type: none; user-select:none; }
 .pdm-pass-scroll::-webkit-scrollbar { height: 7px; }
 .pdm-pass-scroll::-webkit-scrollbar-thumb { background: var(--gold-dim); }
 .pdm-pass-scroll::-webkit-scrollbar-track { background: var(--void-2); }
 .pdm-pass-col {
-  flex: 0 0 clamp(150px, 15vw, 220px); width: clamp(150px, 15vw, 220px);
+  flex: 0 0 clamp(240px, 72vw, 300px); width: clamp(240px, 72vw, 300px);
   background: var(--void-2); border:1px solid var(--line-soft);
   cursor:pointer; position:relative; transition: transform .18s, box-shadow .18s;
-  scroll-snap-align: start;
+  scroll-snap-align: center;
 }
 .pdm-pass-col:hover { transform: translateY(-5px) scale(1.015); box-shadow: 0 8px 22px rgba(0,0,0,.35); z-index:1; }
 .pdm-pass-col:active { transform: translateY(-2px) scale(0.99); }
@@ -451,32 +447,32 @@ html, body {
 }
 .pdm-pass-col.current:hover { transform: translateY(-11px) scale(1.02); }
 .pdm-pass-col-head {
-  background: var(--panel-2); text-align:center; padding: clamp(9px,1vw,13px) 6px 8px;
+  background: var(--panel-2); text-align:center; padding: clamp(12px,1.6vw,16px) 8px 10px;
   border-bottom: 1px solid var(--line-soft); position:relative;
 }
 .pdm-pass-col.reached .pdm-pass-col-head { background: linear-gradient(180deg, var(--gold-dim), var(--panel-2)); }
-.pdm-pass-col-lv { font-family:'Anton',sans-serif; font-size: clamp(16px, 1.6vw, 21px); color: var(--fog); line-height:1; }
-.pdm-pass-col-name { font-family:'Space Mono',monospace; font-size: clamp(8px, 0.8vw, 10px); color: var(--gold-pale); text-transform:uppercase; letter-spacing:0.03em; margin-top:4px; min-height:11px; }
+.pdm-pass-col-lv { font-family:'Anton',sans-serif; font-size: clamp(20px, 2.4vw, 26px); color: var(--fog); line-height:1; }
+.pdm-pass-col-name { font-family:'Space Mono',monospace; font-size: clamp(9.5px, 1vw, 11.5px); color: var(--gold-pale); text-transform:uppercase; letter-spacing:0.03em; margin-top:5px; min-height:13px; }
 .pdm-pass-col-lock {
-  position:absolute; top:5px; right:5px; width:15px; height:15px; color: var(--dim);
+  position:absolute; top:7px; right:7px; width:16px; height:16px; color: var(--dim);
 }
-.pdm-pass-col-body { padding: clamp(5px,0.7vw,8px); display:flex; flex-direction:column; gap: clamp(3px,0.5vw,5px); }
+.pdm-pass-col-body { padding: clamp(8px,1vw,12px); display:flex; flex-direction:column; gap: clamp(5px,0.7vw,7px); }
 .pdm-pass-cell {
-  background: var(--void); border:1px solid var(--line-soft); padding: 5px 7px;
-  display:flex; align-items:center; gap:6px; min-height: clamp(32px,3.2vw,40px); overflow:hidden;
+  background: var(--void); border:1px solid var(--line-soft); padding: 7px 10px;
+  display:flex; align-items:center; gap:8px; min-height: clamp(38px,4vw,46px); overflow:hidden;
   transition: border-color .15s;
 }
 .pdm-pass-col:hover .pdm-pass-cell { border-color: var(--line); }
 .pdm-pass-col.reached .pdm-pass-cell { border-color: rgba(212,175,55,.25); }
-.pdm-pass-cell-icon { font-size: clamp(14px,1.4vw,18px); flex-shrink:0; line-height:1; }
+.pdm-pass-cell-icon { font-size: clamp(17px,1.8vw,21px); flex-shrink:0; line-height:1; }
 .pdm-pass-cell-text {
-  font-size: clamp(9px,0.85vw,11px); line-height:1.2; color: var(--dim); overflow:hidden; text-overflow:ellipsis;
+  font-size: clamp(10.5px,1.1vw,12.5px); line-height:1.25; color: var(--dim); overflow:hidden; text-overflow:ellipsis;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
 }
 .pdm-pass-col.reached .pdm-pass-cell-text { color: var(--fog); }
 .pdm-pass-col-xp {
-  text-align:center; font-family:'Space Mono',monospace; font-size: clamp(9px,0.9vw,11px); color: var(--dim);
-  padding: 6px 4px 9px; border-top: 1px dashed var(--line-soft);
+  text-align:center; font-family:'Space Mono',monospace; font-size: clamp(10px,1vw,12px); color: var(--dim);
+  padding: 8px 4px 11px; border-top: 1px dashed var(--line-soft);
 }
 .pdm-pass-ribbon {
   position:absolute; top:-11px; left:50%; transform:translateX(-50%); background: var(--gold);
@@ -485,9 +481,10 @@ html, body {
   clip-path: polygon(6% 0,94% 0,100% 100%,50% 80%,0% 100%);
 }
 .pdm-pass-season-col {
-  flex: 0 0 clamp(40px,4vw,54px); width: clamp(40px,4vw,54px); display:flex; align-items:center; justify-content:center;
+  flex: 0 0 clamp(48px,5vw,64px); width: clamp(48px,5vw,64px); align-self:stretch; min-height:220px;
+  display:flex; align-items:center; justify-content:center;
   background: linear-gradient(180deg, var(--blue-pop), var(--gold-dim)); opacity:.55; position:relative;
-  scroll-snap-align: start;
+  scroll-snap-align: center;
 }
 .pdm-pass-season-col span {
   writing-mode: vertical-rl; transform: rotate(180deg); font-family:'Anton',sans-serif;
@@ -517,14 +514,6 @@ html, body {
 .pdm-photo-slot.empty { color: var(--dim); font-size: 26px; }
 .pdm-photo-slot.empty span.pdm-plus-label { font-size:10px; margin-top:4px; font-family:'Space Mono',monospace; }
 
-/* ---------- PROJETO ZERO ---------- */
-.pdm-secret-panel { text-align:center; padding: 44px 20px; }
-.pdm-secret-count {
-  font-family:'Anton',sans-serif; font-size:64px; color: var(--fog); line-height:1;
-  text-shadow: 3px 0 0 rgba(212,175,55,.55), -3px 0 0 rgba(92,127,224,.4);
-}
-.pdm-secret-label { font-family:'Oswald',sans-serif; font-size:11px; color: var(--dim); letter-spacing:0.2em; text-transform:uppercase; margin-top:2px;}
-.pdm-secret-best { font-family:'Space Mono',monospace; font-size:11px; color: var(--dim); margin-top:12px; }
 .pdm-btn {
   font-family:'Oswald',sans-serif; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; font-size:12px;
   background: var(--gold); color: var(--on-accent); border:none; padding: 12px 24px;
@@ -860,10 +849,6 @@ if ('serviceWorker' in navigator) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l2.6 6.6L21 9l-5 4.5L17.5 21 12 17.3 6.5 21 8 13.5 3 9l6.4-.4z"/></svg>
           Passe
         </button>
-        <button class="pdm-nav-btn" data-view="perfil" onclick="pdmGoto('perfil')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/></svg>
-          Perfil
-        </button>
         <button class="pdm-nav-btn" data-view="habilidades" onclick="pdmGoto('habilidades')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20V14M10 20V8M16 20V12M22 20V4"/></svg>
           Habilidades
@@ -872,8 +857,9 @@ if ('serviceWorker' in navigator) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="1"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
           Evolução
         </button>
-        <button class="pdm-nav-btn pdm-nav-secret" data-view="secret" onclick="pdmGoto('secret')" title="Privado">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+        <button class="pdm-nav-btn" data-view="perfil" onclick="pdmGoto('perfil')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/></svg>
+          Perfil
         </button>
       </div>
 
@@ -951,6 +937,14 @@ if ('serviceWorker' in navigator) {
           <div class="pdm-panel">
             <div class="pdm-eyebrow">Sequência</div>
             <div class="pdm-stat-grid" id="pdmHomeStreak" style="grid-template-columns:repeat(2,1fr); margin-top:6px;"></div>
+          </div>
+
+          <div class="pdm-panel">
+            <div class="pdm-eyebrow">Frase do dia</div>
+            <div class="pdm-quote">
+              <p id="pdmQuoteText">—</p>
+              <span id="pdmQuoteAuthor">—</span>
+            </div>
           </div>
 
         </div>
@@ -1037,17 +1031,28 @@ if ('serviceWorker' in navigator) {
             </button>
           </div>
         </div>
+      </div>
 
+      <!-- ===== HABILIDADES ===== -->
+      <div class="pdm-view" data-view="habilidades">
         <div class="pdm-panel">
-          <div class="pdm-eyebrow">Frase do dia</div>
-          <div class="pdm-quote">
-            <p id="pdmQuoteText">—</p>
-            <span id="pdmQuoteAuthor">—</span>
-          </div>
+          <div class="pdm-eyebrow">Habilidades</div>
+          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Toque numa habilidade pra editar, ou em "Nova habilidade" pra criar a sua.</p>
+          <div class="pdm-skills-grid" id="pdmSkillsGrid"></div>
         </div>
       </div>
 
-      <!-- ===== PERFIL ===== -->
+      <!-- ===== EVOLUTION ===== -->
+      <div class="pdm-view" data-view="evolution">
+        <div class="pdm-panel">
+          <div class="pdm-eyebrow">Registro mensal</div>
+          <p style="font-size:12.5px;color:var(--dim);margin:-4px 0 14px;">Uma foto e um peso por mês. Só você vê esses dados.</p>
+          <div class="pdm-stat-grid" id="pdmWeightSummary" style="display:none;margin-bottom:16px;"></div>
+          <div class="pdm-photo-grid" id="pdmPhotoGrid"></div>
+        </div>
+      </div>
+
+      <!-- ===== PERFIL (última página) ===== -->
       <div class="pdm-view" data-view="perfil">
         <div class="pdm-panel">
           <div class="pdm-eyebrow">Perfil</div>
@@ -1078,41 +1083,6 @@ if ('serviceWorker' in navigator) {
         <div class="pdm-panel">
           <div class="pdm-eyebrow">Conquistas</div>
           <div class="pdm-achievements-grid" id="pdmAchievementsGrid"></div>
-        </div>
-      </div>
-
-      <!-- ===== HABILIDADES ===== -->
-      <div class="pdm-view" data-view="habilidades">
-        <div class="pdm-panel">
-          <div class="pdm-eyebrow">Habilidades</div>
-          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Toque numa habilidade pra editar, ou em "Nova habilidade" pra criar a sua.</p>
-          <div class="pdm-skills-grid" id="pdmSkillsGrid"></div>
-        </div>
-      </div>
-
-      <!-- ===== EVOLUTION ===== -->
-      <div class="pdm-view" data-view="evolution">
-        <div class="pdm-panel">
-          <div class="pdm-eyebrow">Registro mensal</div>
-          <p style="font-size:12.5px;color:var(--dim);margin:-4px 0 14px;">Uma foto e um peso por mês. Só você vê esses dados.</p>
-          <div class="pdm-stat-grid" id="pdmWeightSummary" style="display:none;margin-bottom:16px;"></div>
-          <div class="pdm-photo-grid" id="pdmPhotoGrid"></div>
-        </div>
-      </div>
-
-      <!-- ===== SECRET / PROJETO ZERO ===== -->
-      <div class="pdm-view" data-view="secret">
-        <div class="pdm-panel pdm-secret-panel">
-          <div class="pdm-eyebrow" style="justify-content:center;">Projeto Zero</div>
-          <div class="pdm-secret-count" id="pdmSecretCount">0</div>
-          <div class="pdm-secret-label">dias em sequência</div>
-          <div class="pdm-secret-best" id="pdmSecretBest">recorde: 0</div>
-          <div>
-            <button class="pdm-btn" id="pdmSecretBtn" onclick="pdmMarkClean()">Marcar hoje</button>
-          </div>
-          <div>
-            <button class="pdm-btn-ghost" onclick="pdmConfirmReset()">Reiniciar sequência</button>
-          </div>
         </div>
       </div>
 
@@ -1323,29 +1293,13 @@ const QUOTES = [
 // GOAL_CATEGORIES em js/goals-data.js.
 
 // ---------------------------------------------------------------
-// STATE
+// FOTOS (perfil + registro mensal)
 // ---------------------------------------------------------------
-let STATE = null;
 let PROFILE_PHOTO = null;
 let MONTHLY_PHOTOS = {};
 let pendingPhotoTarget = null;
 
-function defaultState() {
-  return {
-    projetoZero: {streak:0, lastDate:null, best:0},
-  };
-}
-
-// XP/skills/streak moraram pra js/gamification-data.js (window.PdmGamification).
-// STATE aqui só guarda o Projeto Zero (feature separada, não é gamificação) —
-// versões antigas do app ainda têm totalXP/skills/streak salvos neste mesmo
-// storage; eles são migrados uma vez pra PdmGamification e depois ignorados.
-async function loadState() {
-  try {
-    const r = await window.storage.get('mestre-state');
-    STATE = r ? JSON.parse(r.value) : defaultState();
-  } catch(e) { STATE = defaultState(); }
-  if (!STATE.projetoZero) STATE.projetoZero = {streak:0, lastDate:null, best:0};
+async function loadPhotos() {
   try {
     const p = await window.storage.get('mestre-profile-photo');
     PROFILE_PHOTO = p ? JSON.parse(p.value).dataUrl : null;
@@ -1361,10 +1315,6 @@ async function loadState() {
   } catch(e) { MONTHLY_PHOTOS = {}; }
 }
 
-async function saveState() {
-  try { await window.storage.set('mestre-state', JSON.stringify(STATE)); }
-  catch(e) { pdmToast('Erro ao salvar. Tente novamente.'); }
-}
 async function saveProfilePhoto() {
   try { await window.storage.set('mestre-profile-photo', JSON.stringify({dataUrl: PROFILE_PHOTO})); }
   catch(e) { pdmToast('Erro ao salvar a foto.'); }
@@ -1549,30 +1499,6 @@ function renderEvolution() {
   });
 }
 
-function renderSecret() {
-  document.getElementById('pdmSecretCount').textContent = STATE.projetoZero.streak;
-  document.getElementById('pdmSecretBest').textContent = 'recorde: ' + STATE.projetoZero.best;
-  const btn = document.getElementById('pdmSecretBtn');
-  const doneToday = STATE.projetoZero.lastDate === todayISO();
-  btn.textContent = doneToday ? 'Hoje já marcado' : 'Marcar hoje';
-  btn.disabled = doneToday;
-  btn.style.opacity = doneToday ? '0.5' : '1';
-  btn.style.cursor = doneToday ? 'default' : 'pointer';
-}
-
-async function pdmMarkClean() {
-  const t = todayISO();
-  const pz = STATE.projetoZero;
-  if (pz.lastDate === t) return;
-  if (pz.lastDate && daysBetween(pz.lastDate, t) === 1) { pz.streak += 1; }
-  else { pz.streak = 1; }
-  pz.lastDate = t;
-  pz.best = Math.max(pz.best, pz.streak);
-  await saveState();
-  renderSecret();
-  pdmToast('Registrado.');
-}
-
 function renderAll() {
   renderHeader();
   renderQuote();
@@ -1584,7 +1510,6 @@ function renderAll() {
   if (window.pdmRenderPerfil) window.pdmRenderPerfil();
   if (window.pdmRenderSkills) window.pdmRenderSkills();
   renderEvolution();
-  renderSecret();
 }
 
 // ---------------------------------------------------------------
@@ -1680,29 +1605,12 @@ function pdmCloseModal(id) { document.getElementById(id).classList.remove('open'
 // ---------------------------------------------------------------
 // CONFIRM MODALS
 // ---------------------------------------------------------------
-function pdmConfirmReset() {
-  const modal = document.getElementById('pdmConfirmModal');
-  document.getElementById('pdmConfirmTitle').textContent = 'Reiniciar sequência';
-  document.getElementById('pdmConfirmText').textContent = 'Isso zera a sequência atual do Projeto Zero. O recorde continua salvo.';
-  const btn = document.getElementById('pdmConfirmBtn');
-  btn.onclick = async () => {
-    STATE.projetoZero.streak = 0;
-    STATE.projetoZero.lastDate = null;
-    await saveState();
-    renderSecret();
-    pdmCloseModal('pdmConfirmModal');
-  };
-  modal.classList.add('open');
-}
-
 function pdmConfirmFullReset() {
   const modal = document.getElementById('pdmConfirmModal');
   document.getElementById('pdmConfirmTitle').textContent = 'Zerar todo o progresso';
-  document.getElementById('pdmConfirmText').textContent = 'Isso apaga XP, streaks, objetivos, hábitos, missões e o Projeto Zero, e recomeça com os hábitos padrão. As fotos não são apagadas. Essa ação não pode ser desfeita.';
+  document.getElementById('pdmConfirmText').textContent = 'Isso apaga XP, streaks, objetivos, hábitos e missões, e recomeça com os hábitos padrão. As fotos não são apagadas. Essa ação não pode ser desfeita.';
   const btn = document.getElementById('pdmConfirmBtn');
   btn.onclick = async () => {
-    STATE = defaultState();
-    await saveState();
     if (window.PdmGamification) await window.PdmGamification.resetAll();
     if (window.PdmGoals) window.PdmGoals.resetAll();
     if (window.PdmHM) window.PdmHM.resetAll();
@@ -1760,8 +1668,6 @@ window.pdmOpenPhotoPicker = pdmOpenPhotoPicker;
 window.pdmHandleFile = pdmHandleFile;
 window.pdmSaveMonthWeight = pdmSaveMonthWeight;
 window.pdmCloseModal = pdmCloseModal;
-window.pdmMarkClean = pdmMarkClean;
-window.pdmConfirmReset = pdmConfirmReset;
 window.pdmConfirmFullReset = pdmConfirmFullReset;
 window.pdmScrollPass = pdmScrollPass;
 window.pdmRenderAll = renderAll;
@@ -1769,7 +1675,7 @@ window.pdmToast = pdmToast;
 
 (async function init() {
   window.PdmTheme.init();
-  await loadState();
+  await loadPhotos();
   await window.PdmGamification.init();
   await window.PdmGoals.init();
   await window.PdmHM.init();

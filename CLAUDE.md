@@ -42,7 +42,7 @@ Isso é importante: a aplicação **não tem backend nem banco de dados hoje**.
 Tudo roda 100% client-side:
 
 - `index.html` — shell da aplicação (HTML + CSS + o script legado original:
-  dashboard/XP/passe de batalha/evolução/Projeto Zero, tudo numa IIFE só).
+  dashboard/XP/passe de batalha/evolução, tudo numa IIFE só).
   Views trocadas via `data-view` + classe `.active` (`pdmGoto()`), sem router.
   `MONTHLY_PHOTOS[mês]` guarda `{ photo, weight }` (uma foto + um peso por
   mês, ambos opcionais) — formato antigo salvava só a dataURL da foto direto
@@ -259,10 +259,10 @@ pelo chamador como parâmetro, nunca buscado de volta nos outros módulos.
   decide o que virou toast, o que virou conquista, etc.
 - **Migração**: na primeira execução desta camada, `mestre-gamification` não
   existe ainda — `PdmGamification.init()` migra `totalXP`/`skills`/`streak`
-  do antigo `STATE` do script legado (`mestre-state`) uma única vez, pra
-  quem já usava o app antes desta camada existir não perder progresso.
-  `STATE` (script legado) hoje só guarda o Projeto Zero — feature separada,
-  não é gamificação.
+  do antigo `STATE` do script legado (chave `mestre-state`, hoje removida do
+  script legado — Projeto Zero, a única coisa que ainda vivia lá, foi
+  descontinuado) uma única vez, pra quem já usava o app antes desta camada
+  existir não perder progresso.
 
 ## Home (tela principal)
 
@@ -301,6 +301,10 @@ delega pros handlers que já existem nos outros módulos.
   há objetivo ativo **e** nenhum hábito **e** nenhuma missão hoje — na prática
   raro, já que hábitos padrão são semeados automaticamente no primeiro uso
   (ver `PdmHM.init`), mas a lógica cobre o caso de tudo ter sido arquivado.
+- O painel "Frase do dia" (`#pdmQuoteText`/`#pdmQuoteAuthor`, renderizado por
+  `renderQuote()` no script legado) mora no fim da Home — saiu do Passe pra
+  cá, pedido explícito do usuário. Continua sendo os mesmos IDs/função de
+  sempre, só mudou de view.
 
 ## Google Agenda (integração unidirecional)
 
@@ -386,7 +390,7 @@ Paleta (custom properties em `.pdm-root`):
   fora do fluxo de `window.storage`/`STATE`, e "Zerar todo o progresso" não
   mexe nisso (mesmo tratamento da foto de perfil). `PdmTheme.init()` roda
   logo no início do boot (`init()` no script legado, antes até de
-  `loadState()`), pra o tema já estar aplicado quando a tela carrega.
+  `loadPhotos()`), pra o tema já estar aplicado quando a tela carrega.
 
 Tipografia: `Anton`/`Oswald` para títulos e números grandes (tudo uppercase),
 `Inter` para corpo, `Space Mono` para metadados/labels técnicos.
@@ -402,22 +406,23 @@ uma feature de UI pronta (ver seção de testes abaixo).
 
 ## Views existentes (não duplicar)
 
-`home` (tela principal — ponto de entrada diário, ver seção própria abaixo),
-`quests` (agenda diária de missões, navegável por dia — não é mais uma lista
-fixa, gera via `PdmHM.ensureMissionsForDate`), `habits` (lista de hábitos +
-CRUD), `goals` (lista de objetivos + CRUD), `pass` (passe de batalha com
-tiers + Frase do dia), `perfil` (Perfil/Aparência/Conquistas — ver seção
-"Gamificação"; o mini-perfil do header, antes um atalho redundante pra Home,
-agora aponta pra cá), `habilidades` (grid de habilidades editável — saiu de
-`perfil` pra ficar num lugar só dela, pedido explícito do usuário),
-`evolution` (foto + peso mensais), `secret` (Projeto Zero).
-Detalhe/formulário de hábito, missão, objetivo e habilidade são modais
-(`pdmHabitFormModal`, `pdmHabitDetailModal`, `pdmMissionModal`,
-`pdmGoalFormModal`, `pdmGoalDetailModal`, `pdmSkillFormModal`), não views
-próprias — segue o padrão de modal já usado pra foto/tier/confirmação. Uma
-feature nova normalmente é uma dessas views/modais, ou uma seção dentro de
-uma delas — raramente justifica uma view nova (Perfil e Habilidades foram
-exceções deliberadas, pedidas explicitamente pelo usuário).
+`home` (tela principal — ponto de entrada diário, ver seção própria abaixo;
+também hospeda a Frase do dia, que saiu do Passe), `quests` (agenda diária
+de missões, navegável por dia — não é mais uma lista fixa, gera via
+`PdmHM.ensureMissionsForDate`), `habits` (lista de hábitos + CRUD), `goals`
+(lista de objetivos + CRUD), `pass` (passe de batalha com tiers),
+`habilidades` (grid de habilidades editável — tem lugar só dela, pedido
+explícito do usuário), `evolution` (foto + peso mensais), `perfil`
+(Perfil/Aparência/Conquistas — ver seção "Gamificação"; é a **última** página
+do menu, pedido explícito do usuário; o mini-perfil do header, antes um
+atalho redundante pra Home, agora aponta pra cá). Detalhe/formulário de
+hábito, missão, objetivo e habilidade são modais (`pdmHabitFormModal`,
+`pdmHabitDetailModal`, `pdmMissionModal`, `pdmGoalFormModal`,
+`pdmGoalDetailModal`, `pdmSkillFormModal`), não views próprias — segue o
+padrão de modal já usado pra foto/tier/confirmação. Uma feature nova
+normalmente é uma dessas views/modais, ou uma seção dentro de uma delas —
+raramente justifica uma view nova (Perfil e Habilidades foram exceções
+deliberadas, pedidas explicitamente pelo usuário).
 
 Modais empilhados: o modal de confirmação genérico (`pdmConfirmModal`,
 usado por `pdmConfirmGeneric()`) precisa ficar **por último no `<body>`**
