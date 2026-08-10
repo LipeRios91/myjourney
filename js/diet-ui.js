@@ -122,8 +122,8 @@
       mode: 'search',
       query: '', results: [], searching: false, searched: false, searchError: false,
       picked: null, pickedSource: null, grams: 100,
-      cameraPreview: null, cameraLoading: false, cameraError: false,
-      aiTextLoading: false, aiTextError: false,
+      cameraPreview: null, cameraLoading: false, cameraError: false, cameraErrorDetail: '',
+      aiTextLoading: false, aiTextError: false, aiTextErrorDetail: '',
     };
   }
 
@@ -211,7 +211,8 @@
     } else {
       html += '<p style="font-size:12.5px;color:var(--dim);margin-bottom:8px;">' +
         (dietAdd.results.length ? 'Não achou o que queria?' : 'Não achou nada? Peça uma estimativa pra IA.') + '</p>';
-      if (dietAdd.aiTextError) html += '<p style="font-size:12.5px;color:var(--rose-pale);">Não consegui estimar esse alimento — confira se a chave da IA está certa. Tente outro nome ou use o modo Manual.</p>';
+      if (dietAdd.aiTextError) html += '<p style="font-size:12.5px;color:var(--rose-pale);">Não consegui estimar esse alimento. Tente outro nome ou use o modo Manual.</p>' +
+        (dietAdd.aiTextErrorDetail ? '<p style="font-size:11px;color:var(--dim);font-family:\'Space Mono\',monospace;word-break:break-all;">' + escapeHtml(dietAdd.aiTextErrorDetail) + '</p>' : '');
       html += '<button type="button" class="pdm-btn-ghost" onclick="pdmDietAskAI()">Perguntar à IA</button>';
       if (window.PdmDietAI && PdmDietAI.isConfigured()) {
         html += '<button type="button" class="pdm-btn-ghost" style="margin-left:8px;" onclick="pdmOpenGeminiConfigModal()">Trocar chave da IA</button>';
@@ -257,6 +258,7 @@
       dietAdd.grams = result.estimatedGrams || 100;
     } catch (e) {
       dietAdd.aiTextError = true;
+      dietAdd.aiTextErrorDetail = String((e && e.message) || e);
     }
     dietAdd.aiTextLoading = false;
     renderDietAddBody();
@@ -270,7 +272,8 @@
     let html = '<input type="file" accept="image/*" capture="environment" class="pdm-file-input" id="pdmDietCameraInput" onchange="pdmDietCameraCapture(event)">';
     if (dietAdd.cameraPreview) html += '<img src="' + dietAdd.cameraPreview + '" style="width:100%;max-height:220px;object-fit:cover;margin-bottom:12px;background:var(--void);">';
     if (dietAdd.cameraLoading) html += '<p style="font-size:12.5px;color:var(--dim);">Analisando a foto...</p>';
-    else if (dietAdd.cameraError) html += '<p style="font-size:12.5px;color:var(--rose-pale);">Não consegui analisar essa foto — confira se a chave da IA está certa. Tente outra ou use o modo Manual.</p>';
+    else if (dietAdd.cameraError) html += '<p style="font-size:12.5px;color:var(--rose-pale);">Não consegui analisar essa foto. Tente outra ou use o modo Manual.</p>' +
+      (dietAdd.cameraErrorDetail ? '<p style="font-size:11px;color:var(--dim);font-family:\'Space Mono\',monospace;word-break:break-all;">' + escapeHtml(dietAdd.cameraErrorDetail) + '</p>' : '');
     html += '<button type="button" class="pdm-btn-ghost" onclick="document.getElementById(\'pdmDietCameraInput\').click()">' + (dietAdd.cameraPreview ? 'Tirar outra foto' : 'Tirar foto') + '</button>' +
       '<button type="button" class="pdm-btn-ghost" style="margin-left:8px;" onclick="pdmOpenGeminiConfigModal()">Trocar chave da IA</button>';
     return html;
@@ -291,6 +294,7 @@
         dietAdd.grams = result.estimatedGrams || 100;
       } catch (e) {
         dietAdd.cameraError = true;
+        dietAdd.cameraErrorDetail = String((e && e.message) || e);
       }
       dietAdd.cameraLoading = false;
       renderDietAddBody();
