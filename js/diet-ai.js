@@ -21,7 +21,11 @@
   const KEY = 'mestre-gemini-api-key';
   // Modelo com suporte a visão + texto + saída em JSON. Se a Google
   // descontinuar este nome de modelo no futuro, troque só esta constante.
-  const MODEL = 'gemini-2.0-flash';
+  // (era 'gemini-2.0-flash' — trocado pra 'gemini-2.5-flash' porque aquele
+  // vinha devolvendo 429/quota-exceeded persistente na conta de um usuário,
+  // mesmo com chave recém-criada; sem cota gratuita disponível pra esse
+  // modelo específico naquela chave.)
+  const MODEL = 'gemini-2.5-flash';
 
   function getApiKey() { return (localStorage.getItem(KEY) || '').trim(); }
   function setApiKey(key) { localStorage.setItem(KEY, (key || '').trim()); }
