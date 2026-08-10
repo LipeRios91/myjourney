@@ -21,11 +21,12 @@
   const KEY = 'mestre-gemini-api-key';
   // Modelo com suporte a visão + texto + saída em JSON. Se a Google
   // descontinuar este nome de modelo no futuro, troque só esta constante.
-  // (era 'gemini-2.0-flash' — trocado pra 'gemini-2.5-flash' porque aquele
-  // vinha devolvendo 429/quota-exceeded persistente na conta de um usuário,
-  // mesmo com chave recém-criada; sem cota gratuita disponível pra esse
-  // modelo específico naquela chave.)
-  const MODEL = 'gemini-2.5-flash';
+  // Histórico: 'gemini-2.0-flash' devolvia 429 (sem cota gratuita pra chave
+  // nova); 'gemini-2.5-flash' devolvia 404 ("no longer available to new
+  // users" — a família 2.5 inteira será desligada em out/2026). Confirmado
+  // via docs oficiais (ai.google.dev, agosto/2026): gemini-3.6-flash é o
+  // modelo GA atual, elegível pro nível gratuito, com suporte a imagem.
+  const MODEL = 'gemini-3.6-flash';
 
   function getApiKey() { return (localStorage.getItem(KEY) || '').trim(); }
   function setApiKey(key) { localStorage.setItem(KEY, (key || '').trim()); }
