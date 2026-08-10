@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jornada-do-heroi-v26';
+const CACHE_NAME = 'jornada-do-heroi-v27';
 const APP_SHELL = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const APP_SHELL = [
   './js/gamification-data.js',
   './js/habits-missions-data.js',
   './js/goals-data.js',
+  './js/stats-data.js',
   './js/diet-data.js',
   './js/diet-foodsearch.js',
   './js/diet-ai.js',
@@ -22,6 +23,7 @@ const APP_SHELL = [
   './js/diet-ui.js',
   './js/gcal-ui.js',
   './js/gamification-ui.js',
+  './js/stats-ui.js',
   './js/home-ui.js',
   './js/reminders.js',
   './js/sync.js',

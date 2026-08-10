@@ -365,6 +365,20 @@
   // ---------------------------------------------------------------
   // CRUD — MISSÕES
   // ---------------------------------------------------------------
+  // Missões cuja data ORIGINAL de recorrência (scheduledDate — imutável, ver
+  // topo do arquivo) cai dentro do intervalo — "o que estava previsto pra
+  // esse período", independente de reagendamento posterior. Usado por
+  // js/stats-data.js; não existia antes porque nenhuma outra feature
+  // precisava olhar pra um intervalo de datas de uma vez, só um dia
+  // (listMissionsForDate) ou um Objetivo (listMissionsByGoal).
+  function listMissionsInRange(startISO, endISO) {
+    return MISSIONS.filter((m) => m.scheduledDate >= startISO && m.scheduledDate <= endISO).slice();
+  }
+  // Todas as missões, sem filtro — usado só pelas Estatísticas pra recordes
+  // vitalícios (ex: "maior número de missões concluídas em uma semana"),
+  // que precisam olhar o histórico inteiro, não um período fixo.
+  function listAllMissions() { return MISSIONS.slice(); }
+
   function listMissionsForDate(dateISO) {
     return MISSIONS.filter((m) => m.date === dateISO).slice().sort((a, b) => {
       const at = a.time || '99:99', bt = b.time || '99:99';
@@ -553,6 +567,8 @@
     unlinkGoal,
     computeHabitGoalProgress,
     listMissionsForDate,
+    listMissionsInRange,
+    listAllMissions,
     getMission,
     createManualMission,
     updateMission,

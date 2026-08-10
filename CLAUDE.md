@@ -85,6 +85,12 @@ Tudo roda 100% client-side:
   abaixo), expõe `window.PdmGoals`. Depende de `window.PdmHM` pra consultar
   hábitos/missões vinculados; `PdmHM` **não** depende de `PdmGoals` (sentido
   único, evita dependência circular entre os dois módulos).
+- `js/stats-data.js` — camada de Estatísticas e Evolução (ver seção própria
+  abaixo), expõe `window.PdmStats`. **Único módulo do app com permissão de
+  depender simultaneamente de `PdmHM`/`PdmGoals`/`PdmGamification`** — todo o
+  resto do app mantém esses três desacoplados entre si de propósito, mas
+  análise cross-domain é a própria razão desse módulo existir. `js/stats-ui.js`
+  — view `estatisticas`, mesma convenção `window.pdmXxx`.
 - `js/diet-data.js` — camada de dados de Dieta (ver seção própria abaixo),
   expõe `window.PdmDiet`. `js/diet-foodsearch.js` (`window.PdmFoodSearch`,
   busca por nome via Open Food Facts) e `js/diet-ai.js`
@@ -512,6 +518,88 @@ não chamam `PdmGamification` nem são chamados por ela.
 - Sincroniza em nuvem como qualquer outra chave real de progresso —
   `mestre-diet-entries`/`mestre-diet-goals` estão em `PdmSync.SYNCED_KEYS`.
 
+## Estatísticas e Evolução
+
+`js/stats-data.js` (`window.PdmStats`) + `js/stats-ui.js`. View própria
+`estatisticas`, entre Dieta e Configurações no nav. Consolida/analisa dados
+que já existem — **não é dono de nenhum dado próprio, não persiste nada**
+(sem chave em `window.storage`, portanto nada a sincronizar ou zerar).
+
+- **Único módulo do app com permissão de depender simultaneamente de
+  `PdmHM`/`PdmGoals`/`PdmGamification`** — todo o resto mantém esses três
+  desacoplados entre si de propósito (ver "Estado real da arquitetura"), mas
+  análise cross-domain é a própria razão desse módulo existir. Só **lê**
+  (via as APIs públicas já existentes de cada módulo), nunca escreve de
+  volta e nunca duplica regra: XP, nível, streak, Battle Pass, progresso de
+  objetivo e estatística de hábito continuam sendo calculados só pelos
+  módulos donos — este arquivo só agrega/deriva o resultado já calculado
+  por período/filtro.
+- **Princípio inegociável, refletido em código**: toda métrica sem
+  denominador/dado suficiente devolve `null` (nunca um `0` disfarçado de
+  resultado real) — quem decide como exibir "dados insuficientes" é a UI
+  (`overviewTile()` em `js/stats-ui.js`), nunca a camada de dados. Um `0`
+  legítimo (ex: "0 missões canceladas", "0 sequência atual") continua
+  aparecendo normalmente — a regra é só sobre taxas/médias sem base real
+  pra calcular, não sobre contagens genuinamente zero.
+- **Duas pequenas adições aditivas ao schema existente**, os únicos gaps
+  reais que impediam calcular a spec com honestidade (nada foi inventado):
+  `Goal.completedAt` (`js/goals-data.js`, seta/limpa em `updateGoal()` toda
+  vez que cruza a fronteira de status "concluído", simétrico à lógica já
+  existente de `xpAwarded` mas rastreado à parte) e
+  `PdmHM.listMissionsInRange(startISO, endISO)` + `listAllMissions()`
+  (`js/habits-missions-data.js` — antes só existia
+  `listMissionsForDate` de um dia só; filtra por `scheduledDate`, a data
+  original imutável, não `date`, mesmo raciocínio de "nunca gerar missão
+  olhando `date`" já documentado em Hábitos & Missões).
+- **XP por período reaproveita o ledger que já existia**
+  (`PdmGamification.getHistory()`, já loga todo evento com XP desde antes
+  desta feature) em vez de recalcular do zero. Esse histórico é limitado
+  aos últimos 200 eventos (ver "Gamificação") — `sumHistoryXp()` sinaliza
+  `possiblyTruncated` quando o período pedido pode ultrapassar essa janela,
+  e a UI mostra um aviso em vez de fingir precisão que não tem.
+  **XP por habilidade dentro de um período**, por outro lado, não tem
+  ledger próprio (`STATE.skills[categoria]` só guarda o total corrente) —
+  `computeSkillStatsSection()` reconstrói isso somando
+  `mission.xpAwarded`/`xpPenaltyApplied` das missões da categoria resolvidas
+  no período (o bônus de `skillLevelUp` não entra nessa soma porque ele
+  nunca foi somado em `STATE.skills[categoria]`, só no XP geral).
+- **Heatmap de consistência**: intensidade é **relativa à própria
+  distribuição do usuário no ano** (quartis dos dias com atividade,
+  `computeHeatmapYear`), não um limiar fixo tipo "5+ = melhor" — pedido
+  explícito da spec pra não incentivar excesso, só mostrar consistência.
+- **Recordes são vitalícios, não escopados por período** (`computeRecords`,
+  varre `listAllMissions()` uma vez) — diferente de todo o resto do módulo,
+  de propósito: "maior sequência", "mais missões numa semana" etc. são
+  marcas pessoais de sempre, não do período selecionado na tela.
+- **Insights são 100% regra + dado real, zero IA** — a "IA Coach" citada na
+  spec original é feature futura que vai **consumir** essas estatísticas,
+  não faz parte desta entrega. Cada insight só aparece com dado real
+  suficiente pra sustentá-lo (ex: sequência precisa de 3+ dias; "melhor
+  consistência" precisa de 2 períodos anteriores completos pra comparar;
+  "taxa por horário do dia" precisa de 5+ missões com horário definido).
+- **Renderização não entra no `renderAll()` global** — `pdmRenderStats()` só
+  roda quando o usuário navega pra `estatisticas` (`pdmGoto`), de propósito
+  (spec pede performance: não recalcular agregações grandes à toa em toda
+  mutação do app). Trocar período/filtro/ano do heatmap ou expandir/colapsar
+  uma seção redesenha só a raiz `#pdmStatsRoot`, mas re-renderiza tudo do
+  zero — por isso o estado de aberto/fechado de cada `<details>` reseta ao
+  trocar período ou filtro (aceitável: o usuário troca período com pouca
+  frequência comparado a navegar dentro da tela já aberta).
+- **Sem gráfico de terceiros** — barras (`.pdm-stats-bars`) e heatmap
+  (`.pdm-heatmap-grid`) são CSS puro, mesma filosofia zero-dependência do
+  resto do app. Períodos com mais de 60 dias agrupam a série diária por
+  semana (`chartSeriesForRange`, usa `PdmStats.groupByWeek`) pra não
+  desenhar 90+ barras ilegíveis no mobile.
+- **Disciplina Score**: a spec pede preparar a estrutura mas avisa
+  explicitamente pra não inventar métrica falsa se ainda não existir —
+  `PdmStats.getDisciplineScore()` devolve `null` de propósito hoje; a seção
+  "Evolução da Disciplina" já mostra tudo que é real (médias, melhor/pior
+  dia) e só sinaliza que o score composto ainda não foi implementado.
+- **Sem persistência própria**: preferências de período/filtro/ano do
+  heatmap vivem só em memória (`statsState` no closure de `stats-ui.js`) —
+  resetam ao sair da view/recarregar a página, propositalmente (não é
+  progresso nem preferência de longo prazo que justifique `localStorage`).
+
 ## Design system
 
 Prefixo `pdm-` em todas as classes (evita colisão, já que é tudo um arquivo
@@ -587,23 +675,28 @@ de missões, navegável por dia — não é mais uma lista fixa, gera via
 (lista de objetivos + CRUD), `habilidades` (grid de habilidades editável —
 tem lugar só dela, pedido explícito do usuário), `pass` (passe de batalha
 com tiers), `evolution` (foto + peso mensais), `diet` (registro diário de
-calorias/macros — ver seção "Dieta"), `config` (Configurações — Aparência,
-Sincronização em nuvem, Google Agenda, IA/Gemini; ver "Configurações
-(gestão de chaves de API)" abaixo — pedido explícito do usuário depois de
-notar que essas configurações estavam espalhadas e sem jeito fácil de
-refazer), `perfil` (Perfil/Conquistas — ver seção "Gamificação"; é a
-**última** página do menu, pedido explícito do usuário; o mini-perfil do
-header, antes um atalho redundante pra Home, agora aponta pra cá). "Zerar
-todo o progresso" vive só dentro da view `perfil` (não é mais global/fixo no
-fim da página) — se um botão "perigoso" novo for parecido, mesma regra: fica
-dentro da view dona dele, não solto fora de todas. Detalhe/formulário de
-hábito, missão, objetivo e habilidade são modais (`pdmHabitFormModal`,
-`pdmHabitDetailModal`, `pdmMissionModal`, `pdmGoalFormModal`,
-`pdmGoalDetailModal`, `pdmSkillFormModal`, `pdmDietAddModal`,
-`pdmDietGoalsModal`), não views próprias — segue o padrão de modal já usado
-pra foto/tier/confirmação. Uma feature nova normalmente é uma dessas
-views/modais, ou uma seção dentro de uma delas — raramente justifica uma
-view nova (Perfil, Habilidades, Dieta e Configurações foram exceções
+calorias/macros — ver seção "Dieta"), `estatisticas` (Estatísticas e
+Evolução — resumo, consistência/heatmap, missões, hábitos, objetivos,
+habilidades, gamificação, recordes, insights; ver seção própria acima),
+`config` (Configurações — Aparência, Sincronização em nuvem, Google Agenda,
+IA/Gemini; ver "Configurações (gestão de chaves de API)" abaixo — pedido
+explícito do usuário depois de notar que essas configurações estavam
+espalhadas e sem jeito fácil de refazer), `perfil` (Perfil/Conquistas — ver
+seção "Gamificação"; é a **última** página do menu, pedido explícito do
+usuário; o mini-perfil do header, antes um atalho redundante pra Home,
+agora aponta pra cá). "Zerar todo o progresso" vive só dentro da view
+`perfil` (não é mais global/fixo no fim da página) — se um botão "perigoso"
+novo for parecido, mesma regra: fica dentro da view dona dele, não solto
+fora de todas. Detalhe/formulário de hábito, missão, objetivo e habilidade
+são modais (`pdmHabitFormModal`, `pdmHabitDetailModal`, `pdmMissionModal`,
+`pdmGoalFormModal`, `pdmGoalDetailModal`, `pdmSkillFormModal`,
+`pdmDietAddModal`, `pdmDietGoalsModal`, `pdmSkillDetailModal` — detalhe de
+habilidade individual dentro de Estatísticas, não confundir com
+`pdmSkillFormModal`, que é o formulário de criar/editar habilidade em si),
+não views próprias — segue o padrão de modal já usado pra foto/tier/
+confirmação. Uma feature nova normalmente é uma dessas views/modais, ou uma
+seção dentro de uma delas — raramente justifica uma view nova (Perfil,
+Habilidades, Dieta, Configurações e Estatísticas foram exceções
 deliberadas, pedidas explicitamente pelo usuário).
 
 ### Configurações (gestão de chaves de API)

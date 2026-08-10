@@ -104,6 +104,7 @@
       createdAt: now,
       archivedAt: null,
       xpAwarded: false, // garante um único evento de XP por conclusão (evita ganho duplicado)
+      completedAt: null, // quando cruzou pra status "concluido" — usado pelas Estatísticas
     };
     GOALS.push(goal);
     saveGoals();
@@ -126,12 +127,18 @@
 
     let gamification = null;
     const nowCompleted = g.status === 'concluido';
-    if (!wasCompleted && nowCompleted && !g.xpAwarded) {
-      g.xpAwarded = true;
-      gamification = window.PdmGamification ? window.PdmGamification.recordGoalCompleted() : null;
-    } else if (wasCompleted && !nowCompleted && g.xpAwarded) {
-      g.xpAwarded = false;
-      if (window.PdmGamification) window.PdmGamification.revertGoalCompletion();
+    if (!wasCompleted && nowCompleted) {
+      g.completedAt = new Date().toISOString();
+      if (!g.xpAwarded) {
+        g.xpAwarded = true;
+        gamification = window.PdmGamification ? window.PdmGamification.recordGoalCompleted() : null;
+      }
+    } else if (wasCompleted && !nowCompleted) {
+      g.completedAt = null;
+      if (g.xpAwarded) {
+        g.xpAwarded = false;
+        if (window.PdmGamification) window.PdmGamification.revertGoalCompletion();
+      }
     }
 
     saveGoals();
