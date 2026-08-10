@@ -446,10 +446,16 @@ não chamam `PdmGamification` nem são chamados por ela.
   referência viva a um alimento — mesmo princípio de missão herdando dados
   do hábito no momento da geração (ver "Hábitos & Missões"). Editar a busca
   depois não reescreve o que já foi salvo.
-- **Duas fontes pra popular um registro, ambas convergindo pro mesmo passo de
+- **Três fontes pra popular um registro, todas convergindo pro mesmo passo de
   "confirmar porção"** (valores por 100g + campo de gramas com recálculo ao
-  vivo, `pdmDietRecalcPortion`): busca por nome (Open Food Facts) e foto (IA).
-  Um terceiro modo, Manual, pula esse passo — usuário digita os totais direto
+  vivo, `pdmDietRecalcPortion`): busca por nome (base BR + Open Food Facts),
+  foto (IA) e estimativa por nome via IA (ver abaixo). Os 4 totais nessa
+  tela (`pdmDietTotalKcal`/`Protein`/`Carbs`/`Fat`) são campos **editáveis**,
+  não só texto — toda fonte aqui é estimativa (base genérica, IA), então se o
+  usuário tiver o valor exato à mão (rótulo, por exemplo) corrige direto ali
+  antes de salvar; `pdmDietConfirmPortion` lê o que estiver nos campos na
+  hora de salvar, não recalcula por conta própria. Um quarto modo, Manual,
+  pula esse passo — usuário digita os totais direto
   (é o fallback pra prato caseiro/genérico que a busca não cobre bem).
 - **Busca por nome — duas fontes combinadas** (`js/diet-foodsearch.js`):
   uma base própria de ~70 pratos/alimentos brasileiros comuns (`BR_FOODS`,

@@ -3,7 +3,7 @@
 // window.PdmDiet (dados), window.PdmFoodSearch (busca por nome) e
 // window.PdmDietAI (reconhecimento por foto via Gemini), além dos helpers
 // globais (pdmToast, pdmCloseModal, pdmConfirmGeneric, field, buildSegmented,
-// statTile, escapeHtml, clampPct).
+// escapeHtml, clampPct).
 
 (function () {
   let dietDate = null;
@@ -142,11 +142,21 @@
       fat: Math.round(picked.fat100 * factor * 10) / 10,
     };
   }
-  function portionStatTiles(t) {
-    return statTile(Math.round(t.kcal) + ' kcal', 'Calorias') +
-      statTile(t.protein.toFixed(1) + 'g', 'Proteína') +
-      statTile(t.carbs.toFixed(1) + 'g', 'Carboidratos') +
-      statTile(t.fat.toFixed(1) + 'g', 'Gordura');
+  // Cada total vem como campo editável, não só texto — busca e IA são
+  // estimativas (por 100g de uma base genérica), então se o usuário tiver o
+  // valor exato à mão (rótulo, por exemplo) pode corrigir direto aqui antes
+  // de salvar, sem precisar recomeçar no modo Manual.
+  function editableTotalTile(id, value, unit, label) {
+    return '<div class="pdm-diet-totaltile">' +
+        '<label>' + label + '</label>' +
+        '<div class="pdm-diet-totaltile-row"><input type="number" step="any" id="' + id + '" value="' + value + '"><span>' + unit + '</span></div>' +
+      '</div>';
+  }
+  function portionEditableFields(t) {
+    return editableTotalTile('pdmDietTotalKcal', Math.round(t.kcal), 'kcal', 'Calorias') +
+      editableTotalTile('pdmDietTotalProtein', t.protein.toFixed(1), 'g', 'Proteína') +
+      editableTotalTile('pdmDietTotalCarbs', t.carbs.toFixed(1), 'g', 'Carboidratos') +
+      editableTotalTile('pdmDietTotalFat', t.fat.toFixed(1), 'g', 'Gordura');
   }
 
   function renderPortionStep() {
@@ -155,7 +165,8 @@
     return '<button type="button" class="pdm-modal-back" onclick="pdmDietBackToPick()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Voltar</button>' +
       field('Alimento', '<div class="pdm-diet-picked-name">' + escapeHtml(p.name) + (p.brand ? ' <span>' + escapeHtml(p.brand) + '</span>' : '') + '</div>') +
       field('Porção (gramas)', '<input class="pdm-input" type="number" min="1" id="pdmDietGramsInput" value="' + dietAdd.grams + '" oninput="pdmDietRecalcPortion()">') +
-      '<div class="pdm-stat-grid" id="pdmDietPortionTotals">' + portionStatTiles(totals) + '</div>';
+      '<p style="font-size:11.5px;color:var(--dim);margin:10px 0 6px;">Estimativa — ajuste os valores se souber o número exato (ex: rótulo).</p>' +
+      '<div class="pdm-stat-grid" id="pdmDietPortionTotals">' + portionEditableFields(totals) + '</div>';
   }
   function pdmDietRecalcPortion() {
     const input = document.getElementById('pdmDietGramsInput');
@@ -163,14 +174,17 @@
     dietAdd.grams = Number(input.value) || 0;
     const totals = computePortionTotals(dietAdd.picked, dietAdd.grams);
     const totalsEl = document.getElementById('pdmDietPortionTotals');
-    if (totalsEl) totalsEl.innerHTML = portionStatTiles(totals);
+    if (totalsEl) totalsEl.innerHTML = portionEditableFields(totals);
   }
   function pdmDietBackToPick() { dietAdd.picked = null; renderDietAddBody(); }
   function pdmDietConfirmPortion() {
-    const totals = computePortionTotals(dietAdd.picked, dietAdd.grams);
+    const kcal = Number(document.getElementById('pdmDietTotalKcal').value) || 0;
+    const protein = Number(document.getElementById('pdmDietTotalProtein').value) || 0;
+    const carbs = Number(document.getElementById('pdmDietTotalCarbs').value) || 0;
+    const fat = Number(document.getElementById('pdmDietTotalFat').value) || 0;
     PdmDiet.addEntry({
       date: dietAdd.date, mealType: dietAdd.mealType, name: dietAdd.picked.name, grams: dietAdd.grams,
-      kcal: totals.kcal, protein: totals.protein, carbs: totals.carbs, fat: totals.fat,
+      kcal, protein, carbs, fat,
       source: dietAdd.pickedSource || 'search',
     });
     pdmCloseModal('pdmDietAddModal');
