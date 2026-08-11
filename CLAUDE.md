@@ -600,6 +600,39 @@ que já existem — **não é dono de nenhum dado próprio, não persiste nada**
   resetam ao sair da view/recarregar a página, propositalmente (não é
   progresso nem preferência de longo prazo que justifique `localStorage`).
 
+## Uso Digital (Android) — pendente de decisão arquitetural, NÃO implementado
+
+Feature pedida (agosto/2026): tela "Uso Digital" mostrando tempo de tela,
+apps mais usados, categorização de apps, distribuição por categoria, linha
+do tempo do dia, heatmap de uso, evolução, e correlação (nunca causalidade)
+com Missões/Hábitos/Objetivos — tudo via `UsageStatsManager` do Android.
+
+**Por que está pausada**: `UsageStatsManager` é API nativa Android
+(`android.app.usage`), acessível só por código Kotlin/Java rodando dentro
+de um app instalado com a permissão especial `PACKAGE_USAGE_STATS`. Não
+existe equivalente Web — nenhum navegador expõe uso por app pra uma página,
+nem pra PWA instalada. Diferente do caso "backend" (onde o app já é capaz
+tecnicamente, só falta decidir infra), aqui a barreira é de **plataforma**:
+a Jornada do Herói é 100% web (HTML/CSS/JS puro, deploy `git push` →
+GitHub Pages, zero build nativo) — pra essa feature funcionar de verdade
+(API real, permissão real, sem dado fictício), o app precisaria ganhar uma
+casca Android nativa via algo como Capacitor + um plugin Kotlin próprio
+fazendo a ponte com `UsageStatsManager`, e passaria a exigir Android
+Studio/Gradle pra compilar/assinar um APK/AAB — modelo de distribuição
+totalmente separado do deploy atual.
+
+**Decisão do usuário (perguntado explicitamente via AskUserQuestion)**: não
+implementar agora — só documentar como feature futura, mesmo tratamento já
+dado a "IA Coach" e sincronização bidirecional do Google Agenda (ver
+"Rebrand" acima). Se pedirem essa feature de novo no futuro, a pergunta já
+está respondida: **não fingir com dado fictício, não construir a casca
+nativa silenciosamente** — confirmar de novo se o usuário quer investir
+nesse escopo antes de tocar código. A spec completa (permissão/consentimento,
+telas, categorias, heatmap, integrações com Missões/Hábitos/Objetivos,
+insights sem culpabilização, sem XP por reduzir tela) está preservada no
+histórico da conversa que gerou esta nota, pra não precisar ser re-pedida
+do zero quando essa decisão for tomada.
+
 ## Design system
 
 Prefixo `pdm-` em todas as classes (evita colisão, já que é tudo um arquivo
