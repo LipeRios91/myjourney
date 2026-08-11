@@ -36,6 +36,7 @@
     'mestre-monthly-photos',
     'mestre-diet-entries',
     'mestre-diet-goals',
+    'mestre-onboarding',
   ];
 
   let app = null;

@@ -71,7 +71,15 @@
   async function init() {
     await loadHabits();
     await loadMissions();
-    if (HABITS.length === 0 && MISSIONS.length === 0) {
+    // Pula a semeadura legada numa instalação genuinamente nova (onboarding
+    // ainda não resolvido — ver js/onboarding-data.js, cujo init() já rodou
+    // e decidiu isso antes deste, no boot de index.html): o Onboarding Inicial
+    // é quem guia a criação do primeiro hábito real nesse caso, não esta
+    // semeadura. Pra quem já tinha o app antes desta feature existir
+    // (onboarding.isResolved() true, migrado silenciosamente) ou já
+    // completou/pulou o onboarding, o comportamento de sempre continua.
+    const skipSeed = window.PdmOnboarding && !window.PdmOnboarding.isResolved();
+    if (HABITS.length === 0 && MISSIONS.length === 0 && !skipSeed) {
       seedDefaultHabits();
     }
     ensureMissionsForDate(todayISO());

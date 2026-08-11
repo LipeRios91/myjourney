@@ -85,6 +85,13 @@ Tudo roda 100% client-side:
   abaixo), expõe `window.PdmGoals`. Depende de `window.PdmHM` pra consultar
   hábitos/missões vinculados; `PdmHM` **não** depende de `PdmGoals` (sentido
   único, evita dependência circular entre os dois módulos).
+- `js/onboarding-data.js` — camada de dados do Onboarding Inicial (ver seção
+  própria abaixo), expõe `window.PdmOnboarding`. Roda cedo no boot (antes de
+  `PdmHM.init()`), mas só decide QUANDO mostrar o onboarding e sugere
+  conteúdo — toda criação real de dado passa por `PdmGoals`/
+  `PdmGamification`/`PdmHM`, nunca duplicada aqui. `js/onboarding-ui.js` —
+  overlay full-screen próprio (não é uma view `data-view`), mesma convenção
+  `window.pdmXxx`.
 - `js/stats-data.js` — camada de Estatísticas e Evolução (ver seção própria
   abaixo), expõe `window.PdmStats`. **Único módulo do app com permissão de
   depender simultaneamente de `PdmHM`/`PdmGoals`/`PdmGamification`** — todo o
@@ -330,13 +337,116 @@ delega pros handlers que já existem nos outros módulos.
   dado; hábitos individuais já tinham `stats.bestStreak` próprio, não confundir
   os dois.
 - Estado vazio (`#pdmHomeEmptyState` vs `#pdmHomeContent`) dispara quando não
-  há objetivo ativo **e** nenhum hábito **e** nenhuma missão hoje — na prática
-  raro, já que hábitos padrão são semeados automaticamente no primeiro uso
-  (ver `PdmHM.init`), mas a lógica cobre o caso de tudo ter sido arquivado.
+  há objetivo ativo **e** nenhum hábito **e** nenhuma missão hoje. Cobre tanto
+  "tudo foi arquivado" quanto o instante entre o boot e o Onboarding Inicial
+  criar o primeiro dado real (ver seção própria abaixo) — numa instalação
+  nova, a Home já renderiza esse estado vazio por baixo do overlay do
+  onboarding, então se o usuário pular ele encontra uma Home coerente, não
+  quebrada. Usuários que já resolveram o onboarding (concluído/pulado) ou
+  foram migrados silenciosamente continuam recebendo os hábitos padrão
+  semeados automaticamente no primeiro uso (ver `PdmHM.init`), então esse
+  estado vazio continua raro pra eles.
 - O painel "Frase do dia" (`#pdmQuoteText`/`#pdmQuoteAuthor`, renderizado por
   `renderQuote()` no script legado) mora no fim da Home — saiu do Passe pra
   cá, pedido explícito do usuário. Continua sendo os mesmos IDs/função de
   sempre, só mudou de view.
+
+## Onboarding Inicial
+
+`js/onboarding-data.js` (`window.PdmOnboarding`) + `js/onboarding-ui.js`.
+Overlay full-screen próprio (`#pdmOnboardingOverlay`, z-index abaixo dos
+modais), não uma view `data-view` — bloqueia toda a navegação enquanto
+ativo. Camada de **ativação e orientação só**, nunca dona de regra: cada
+criação real (Objetivo/Habilidade/Hábito) chama exatamente a mesma função
+que os formulários normais usam (`PdmGoals.createGoal`,
+`PdmGamification.createSkill`, `PdmHM.createHabit`) — não existe um segundo
+sistema de XP/Battle Pass/Habilidades/Objetivos/Hábitos/Missões pro
+onboarding, só um passo a passo guiado sobre os já existentes.
+
+- **Ensina fazendo**: 7 passos (Boas-vindas → Como o sistema funciona →
+  Objetivo → Habilidades → Hábito → Home/Gamificação/Habilidades/
+  Estatísticas → Resumo e finalização), cada criação é dado real persistido
+  na hora — não há um modo "preview"/rascunho que precise ser confirmado no
+  fim. O passo de Resumo reabre os modais REAIS de edição
+  (`pdmOpenGoalForm`/`pdmOpenHabitForm`) por cima do overlay pra "permitir
+  editar antes de finalizar" sem duplicar esses formulários — é por isso que
+  o overlay usa `z-index` abaixo de `.pdm-modal-bg`.
+- **Campos do objetivo divergem de propósito do formulário completo de
+  Objetivos**: a spec do onboarding pede descrição opcional e não pede
+  categoria explícita (deriva de qual sugestão foi tocada,
+  `GOAL_CATEGORY_APPEARANCE`), enquanto o formulário normal de Objetivos
+  exige descrição. Por isso o onboarding NÃO reabre `pdmOpenGoalForm` nesse
+  passo — chama `PdmGoals.createGoal()` direto com um formulário próprio,
+  mais enxuto, mesma função de criação, validação diferente porque o
+  contexto (primeira experiência, fricção mínima) é genuinamente diferente
+  do formulário de "gerenciar objetivos" do dia a dia.
+- **Sugestões nunca travam o usuário numa habilidade duplicada**:
+  `suggestSkillsForCategory()` casa o nome sugerido (ex: "Trabalho",
+  "Liderança") contra as habilidades já ativas por nome (case-insensitive)
+  antes de sugerir criar uma nova — clicar em "Trabalho" na sugestão aponta
+  pra habilidade padrão já existente, nunca cria uma segunda com o mesmo
+  nome. Toda sugestão (objetivo/habilidade/hábito) é só um ponto de partida
+  editável, nunca prescritiva.
+- **Primeira missão é sempre real ou honestamente ausente**: `PdmHM.
+  createHabit()` já chama `ensureMissionsForDate(hoje)` internamente (mesmo
+  comportamento de sempre) — se o hábito criado ocorre hoje pela frequência
+  escolhida, a missão de hoje aparece de verdade no passo de Resumo
+  (reaproveitando `window.pdmMissionRowHtml`, mesma linha da Agenda/Home);
+  se não ocorre hoje (ex: hábito de "dias de semana" criado num sábado), o
+  Resumo explica que a missão será gerada no próximo dia certo — nunca
+  inventa uma missão fictícia só pra preencher a tela.
+- **Onboarding pausa a semeadura legada, não a substitui**: `PdmHM.init()`
+  sempre semeava 5 hábitos fixos (`seedDefaultHabits`, migração antiga do
+  sistema fixo de missões pra hábitos reais — ver "Hábitos & Missões") toda
+  vez que via `HABITS.length === 0`. Isso duplicaria/confundiria a proposta
+  do onboarding pra uma instalação genuinamente nova (usuário criaria o
+  PRÓPRIO primeiro hábito, mas já teria 5 hábitos de exemplo lá). Agora
+  `init()` só semeia quando `PdmOnboarding.isResolved()` já é `true`
+  (usuário migrado/concluiu/pulou) — instalação nova e onboarding ainda
+  pendente pula a semeadura e deixa o onboarding (ou o estado vazio da Home,
+  se o usuário pular) cuidar disso. `PdmHM.resetAll()` ("Zerar todo o
+  progresso") **não muda** — continua sempre semeando os hábitos padrão,
+  comportamento explícito já prometido no texto do botão, sem relação com
+  onboarding.
+- **Migração silenciosa, uma única vez, nunca reavaliada depois**: no
+  primeiro boot em que a chave `mestre-onboarding` ainda não existe,
+  `PdmOnboarding.init()` olha `mestre-habits`/`mestre-goals`/
+  `mestre-gamification` direto no `localStorage` (antes de qualquer módulo
+  rodar `init()`) — se algum já tiver dado real, marca `completed: true` sem
+  nunca exibir nada, preservando a experiência de quem já usava o app antes
+  desta feature existir. **Crítico**: essa checagem só roda quando a chave
+  `mestre-onboarding` está totalmente ausente — depois da primeira vez, o
+  estado salvo é sempre a fonte da verdade. Sem essa trava, um onboarding
+  em andamento que já criou um Objetivo de verdade seria confundido com
+  "usuário antigo" no próximo recarregamento (o próprio objetivo criado
+  pelo onboarding faria a checagem devolver `true`) e perderia o progresso
+  do wizard — bug real encontrado e corrigido durante o teste desta feature.
+- **Retomar = estado persistido, sair = de graça**: cada transição de passo
+  chama `PdmOnboarding.setStep()` (grava no `window.storage`, sincroniza
+  como qualquer outra chave real). Fechar a aba/recarregar no meio do
+  processo não perde nada — o próximo boot reabre o overlay exatamente no
+  passo salvo, com os dados já criados intactos (não recriados). Não existe
+  um botão de "pausar" — sair é só não interagir mais; "Pular onboarding"
+  (presente do passo 1 ao 6) é a única ação que marca `skipped: true` e
+  encerra em definitivo.
+- **Pular nunca cria dado fictício**: `pdmOnbSkip()` só marca `skipped` e
+  fecha o overlay — o que já tinha sido criado de verdade nos passos
+  anteriores permanece (é dado real do usuário, não algo a desfazer), e
+  nada é inventado pra "completar" o que faltou.
+- **Painel "Ajuda" em Configurações** (`#pdmOnboardingHelpStatus`,
+  `pdmRenderOnboardingHelp()`, chamado em `pdmRenderConfig()`): mostra
+  "Continuar onboarding" (ainda em andamento) ou "Refazer onboarding"
+  (já concluído/pulado). Refazer chama `PdmOnboarding.restart()`, que só
+  reseta o estado do WIZARD — nunca apaga o objetivo/habilidades/hábitos já
+  criados de verdade — permitindo tanto retomar quanto usar o mesmo fluxo
+  guiado pra criar um novo Objetivo→Habilidade→Hábito mais tarde.
+- **Sem XP/recompensa por completar o onboarding em si** — cada ação real
+  (criar hábito, concluir a missão gerada) já concede o XP normal de sempre
+  via `PdmGamification` pelas mesmas regras de qualquer outro dia; o
+  onboarding não soma nada por cima disso.
+- **Uso Digital não aparece** no passo de Gamificação/Estatísticas do
+  onboarding — a spec pede mostrar isso só "caso a funcionalidade esteja
+  disponível", e ela não está (ver seção "Uso Digital (Android)" acima).
 
 ## Google Agenda (integração unidirecional)
 
@@ -406,10 +516,11 @@ de backup manual exportar/importar.
 - **O que sincroniza**: toda chave que já passa por `window.storage.get`/
   `set` (`mestre-habits`, `mestre-missions`, `mestre-goals`,
   `mestre-goal-categories`, `mestre-gamification`, `mestre-skills`,
-  `mestre-profile-photo`, `mestre-monthly-photos`) — lista em
-  `PdmSync.SYNCED_KEYS`. **O que fica de fora, de propósito** (preferência
-  de dispositivo, não progresso — mesmo raciocínio do tema): `mestre-theme`,
-  `mestre-gcal-client-id`, `mestre-sync-config`.
+  `mestre-profile-photo`, `mestre-monthly-photos`, `mestre-diet-entries`,
+  `mestre-diet-goals`, `mestre-onboarding`) — lista em `PdmSync.SYNCED_KEYS`.
+  **O que fica de fora, de propósito** (preferência de dispositivo, não
+  progresso — mesmo raciocínio do tema): `mestre-theme`,
+  `mestre-gcal-client-id`, `mestre-sync-config`, `mestre-gemini-api-key`.
 - **Modelo no Firestore**: um documento por chave, em
   `users/{uid}/data/{key}`, com `{ value: <a mesma string que já ia pro
   localStorage>, updatedAt: serverTimestamp() }` — passthrough direto, sem
@@ -730,7 +841,11 @@ não views próprias — segue o padrão de modal já usado pra foto/tier/
 confirmação. Uma feature nova normalmente é uma dessas views/modais, ou uma
 seção dentro de uma delas — raramente justifica uma view nova (Perfil,
 Habilidades, Dieta, Configurações e Estatísticas foram exceções
-deliberadas, pedidas explicitamente pelo usuário).
+deliberadas, pedidas explicitamente pelo usuário). O **Onboarding Inicial**
+(ver seção própria acima) é uma categoria à parte: nem view `data-view` nem
+modal — um overlay full-screen próprio (`#pdmOnboardingOverlay`) que
+aparece por cima de tudo só na primeira vez (ou quando reaberto via
+Configurações → Ajuda).
 
 ### Configurações (gestão de chaves de API)
 
