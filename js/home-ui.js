@@ -26,6 +26,20 @@
     dateEl.textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
   }
 
+  // Variante de statTile() com ícone — só usada no snapshot da Home (o
+  // statTile "puro" de js/utils.js continua servindo os outros lugares que
+  // não querem ícone, ex: detalhe de hábito/objetivo).
+  const SNAPSHOT_ICONS = {
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>',
+    target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>',
+  };
+  function homeStatTile(iconKey, value, label) {
+    return '<div class="pdm-stat-tile"><div class="pdm-stat-tile-icon">' + SNAPSHOT_ICONS[iconKey] + '</div>' +
+      '<div class="pdm-stat-tile-text"><b>' + value + '</b><span>' + label + '</span></div></div>';
+  }
+
   function renderHomeSummary(missions) {
     const grid = document.getElementById('pdmHomeSummary');
     if (!grid) return;
@@ -35,8 +49,8 @@
     const late = pendingList.filter((m) => m.time && m.time < nowHM).length;
     const consideredTotal = missions.filter((m) => m.status !== 'cancelada').length;
     const pct = consideredTotal ? Math.round((completed / consideredTotal) * 100) : 0;
-    grid.innerHTML = statTile(completed, 'Concluídas') + statTile(pendingList.length, 'Pendentes') +
-      statTile(late, 'Atrasadas') + statTile(pct + '%', 'Do dia');
+    grid.innerHTML = homeStatTile('check', completed, 'Concluídas') + homeStatTile('clock', pendingList.length, 'Pendentes') +
+      homeStatTile('alert', late, 'Atrasadas') + homeStatTile('target', pct + '%', 'Do dia');
   }
 
   function nextMissionId(missions) {

@@ -179,6 +179,19 @@ real numa data, gerada de um hábito OU criada manualmente — só ela é conclu
   sozinha, de forma preguiçosa, da próxima vez que uma missão for concluída
   depois do intervalo) nem em conquistas/contadores vitalícios já
   desbloqueados.
+- **Navegação da Agenda por faixa de 7 dias** (`.pdm-week-strip`,
+  `pdmRenderAgenda()` em `habits-missions-ui.js`): substituiu o nav de
+  seta-anterior/seta-próxima em torno de um único dia — mostra a semana
+  (segunda a domingo, `weekStartMonday()`) inteira, toque num dia salta
+  direto pra ele, as setas agora deslocam a SEMANA inteira
+  (`pdmAgendaShiftWeek`, não mais dia a dia). Cada célula mostra um ponto
+  (`.pdm-week-day-dot`) se aquele dia já tem alguma missão gerada. Um botão
+  "Hoje" (`#pdmAgendaTodayBtn`) aparece só quando o dia selecionado não é
+  hoje. Reorganização pedida com uma referência visual externa (Behance) —
+  a estrutura foi adaptada, não o visual: continua cantos cortados
+  (`clip-path`), paleta e tipografia do app, nunca cantos arredondados/tema
+  claro-pastel como padrão da referência. `.pdm-agenda-nav`/`.pdm-agenda-date`
+  (seta única + data) continuam existindo, usados pela Dieta — não remover.
 
 ## Objetivos (camada estratégica)
 
@@ -350,6 +363,21 @@ delega pros handlers que já existem nos outros módulos.
   `renderQuote()` no script legado) mora no fim da Home — saiu do Passe pra
   cá, pedido explícito do usuário. Continua sendo os mesmos IDs/função de
   sempre, só mudou de view.
+- **Ações rápidas (Missão/Hábito/Objetivo) viraram um FAB** (`.pdm-fab`,
+  mesmo padrão já usado em Agenda/Dieta) que abre `#pdmHomeQuickCreateModal`
+  — pedido de reorganizar o mobile inspirado num app de referência (Behance),
+  mas mantendo a identidade visual do app (cantos cortados via `clip-path`,
+  paleta escura/dourado-roxo, Anton/Oswald/Space Mono — **não** foi adotado o
+  visual arredondado/claro da referência, só a estrutura). A antiga fileira
+  de 3 botões fixos no topo saiu; as mesmas 3 ações continuam existindo, só
+  que atrás do FAB, reduzindo o que aparece "sempre visível" na tela.
+- **"Resumo do dia" ganhou ícone por tile** (`homeStatTile()` em
+  `home-ui.js`, wrapper visual só — mesma marcação de `statTile()` por
+  baixo) — inspirado no "snapshot" com ícones da referência. `statTile()`
+  genérico de `js/utils.js` continua sem ícone, usado por todo o resto do
+  app (detalhe de hábito/objetivo etc.); a variante com ícone é específica
+  da Home, não virou padrão global pra não forçar ícone em lugares que não
+  pediram.
 
 ## Onboarding Inicial
 

@@ -603,15 +603,29 @@ html, body {
   text-shadow: 2px 0 0 rgba(212,175,55,.5), -2px 0 0 rgba(92,127,224,.35);
 }
 .pdm-home-date { font-family:'Space Mono',monospace; font-size:11px; color:var(--dim); margin-top:5px; }
-.pdm-home-quick-actions { display:flex; gap:10px; margin-bottom:18px; }
-.pdm-home-quick-actions button {
-  flex:1; background: var(--void-2); border:1px solid var(--line-soft); color:var(--fog);
-  font-family:'Oswald',sans-serif; font-weight:600; font-size:11px; letter-spacing:0.03em; text-transform:uppercase;
-  padding: 12px 6px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px;
+
+/* Ações rápidas da Home saíram pro FAB (mesmo padrão de Agenda/Dieta) — o
+   modal #pdmHomeQuickCreateModal reaproveita esta lista de linhas. */
+.pdm-quick-create-list { display:flex; flex-direction:column; gap:8px; margin-bottom:6px; }
+.pdm-quick-create-row {
+  display:flex; align-items:center; gap:12px; width:100%; background: var(--void); border:1px solid var(--line-soft);
+  color:var(--fog); font-family:'Oswald',sans-serif; font-weight:600; font-size:13.5px; letter-spacing:0.02em;
+  text-transform:uppercase; padding:13px 14px; cursor:pointer; text-align:left; touch-action: manipulation;
   clip-path: polygon(8px 0,100% 0,100% 100%,0 100%,0 8px); transition: border-color .15s, color .15s;
 }
-.pdm-home-quick-actions button:hover { border-color: var(--gold); color: var(--gold-pale); }
-.pdm-home-quick-actions svg { width:18px; height:18px; }
+.pdm-quick-create-row svg { width:18px; height:18px; flex-shrink:0; color: var(--gold-pale); }
+.pdm-quick-create-row:hover { border-color: var(--gold); color: var(--gold-pale); }
+
+/* Tiles "Resumo do dia" com ícone, no estilo snapshot da referência */
+.pdm-home-snapshot .pdm-stat-tile { display:flex; align-items:center; gap:11px; }
+.pdm-home-snapshot .pdm-stat-tile-icon {
+  width:32px; height:32px; flex-shrink:0; border-radius:50%; background: var(--void-2); color: var(--gold-pale);
+  display:flex; align-items:center; justify-content:center;
+}
+.pdm-home-snapshot .pdm-stat-tile-icon svg { width:16px; height:16px; }
+.pdm-home-snapshot .pdm-stat-tile-text { min-width:0; }
+.pdm-home-snapshot .pdm-stat-tile-text b { display:block; font-family:'Anton',sans-serif; font-size:20px; color:var(--gold-pale); line-height:1; }
+.pdm-home-snapshot .pdm-stat-tile-text span { font-size:9.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.04em; font-family:'Space Mono',monospace; }
 
 .pdm-gcal-status, .pdm-sync-status { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
 .pdm-gcal-status .pdm-head-btn svg, .pdm-sync-status .pdm-head-btn svg { width:14px; height:14px; }
@@ -639,6 +653,30 @@ html, body {
 .pdm-agenda-date { flex:1; text-align:center; font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:0.05em; text-transform:uppercase; color:var(--fog); cursor:pointer; }
 .pdm-agenda-date span { display:block; font-family:'Space Mono',monospace; font-size:10px; color:var(--dim); text-transform:none; letter-spacing:0.03em; margin-top:2px; }
 .pdm-agenda-date.is-today { color: var(--gold-pale); }
+
+/* Faixa de 7 dias da semana (Agenda de missões) — navegação por semana com
+   toque direto no dia, no lugar de só avançar/voltar um dia por vez. */
+.pdm-week-strip-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+.pdm-agenda-date-label { font-family:'Oswald',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.04em; text-transform:uppercase; color:var(--fog); }
+.pdm-agenda-date-label span { display:block; font-family:'Space Mono',monospace; font-size:10px; color:var(--dim); text-transform:none; letter-spacing:0.02em; margin-top:2px; }
+.pdm-week-strip-row { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.pdm-week-strip { flex:1; display:flex; gap:5px; min-width:0; }
+.pdm-week-day {
+  flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  background: var(--void); border:1px solid var(--line-soft); color:var(--fog); cursor:pointer;
+  padding: 9px 2px 8px; touch-action: manipulation; transition: border-color .15s, background .15s;
+  clip-path: polygon(6px 0,100% 0,100% 100%,0 100%,0 6px);
+}
+.pdm-week-day:hover { border-color: var(--line); }
+.pdm-week-day b { font-family:'Anton',sans-serif; font-size:15px; line-height:1; color:inherit; }
+.pdm-week-day span { font-family:'Space Mono',monospace; font-size:8.5px; text-transform:uppercase; color:var(--dim); letter-spacing:0.02em; }
+.pdm-week-day.today { border-color: var(--gold); }
+.pdm-week-day.today b { color: var(--gold-pale); }
+.pdm-week-day.active { background: var(--gold); border-color:var(--gold); }
+.pdm-week-day.active b, .pdm-week-day.active span { color: var(--on-accent); }
+.pdm-week-day-dot { display:block; width:4px; height:4px; border-radius:50%; background: var(--gold-pale); margin-top:3px; }
+.pdm-week-day-dot.hidden { visibility:hidden; }
+.pdm-week-day.active .pdm-week-day-dot { background: var(--on-accent); }
 
 .pdm-fab {
   position:fixed; right:calc(20px + env(safe-area-inset-right)); bottom:calc(24px + env(safe-area-inset-bottom));
@@ -1125,24 +1163,9 @@ if ('serviceWorker' in navigator) {
             </div>
           </div>
 
-          <div class="pdm-home-quick-actions">
-            <button onclick="pdmOpenMissionForm()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-              Missão
-            </button>
-            <button onclick="pdmOpenHabitForm()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
-              Hábito
-            </button>
-            <button onclick="pdmOpenGoalForm()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
-              Objetivo
-            </button>
-          </div>
-
           <div class="pdm-panel">
             <div class="pdm-eyebrow">Resumo do dia</div>
-            <div class="pdm-stat-grid" id="pdmHomeSummary" style="margin-top:6px;"></div>
+            <div class="pdm-stat-grid pdm-home-snapshot" id="pdmHomeSummary" style="margin-top:6px;"></div>
           </div>
 
           <div class="pdm-panel">
@@ -1172,7 +1195,7 @@ if ('serviceWorker' in navigator) {
             <div class="pdm-stat-grid" id="pdmHomeStreak" style="grid-template-columns:repeat(2,1fr); margin-top:6px;"></div>
           </div>
 
-          <div class="pdm-panel">
+          <div class="pdm-panel" style="margin-bottom:86px;">
             <div class="pdm-eyebrow">Frase do dia</div>
             <div class="pdm-quote">
               <p id="pdmQuoteText">—</p>
@@ -1181,18 +1204,25 @@ if ('serviceWorker' in navigator) {
           </div>
 
         </div>
+        <button class="pdm-fab" onclick="pdmOpenModal('pdmHomeQuickCreateModal')" aria-label="Criar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
       </div>
 
       <!-- ===== AGENDA DE MISSÕES ===== -->
       <div class="pdm-view" data-view="quests">
         <div class="pdm-panel" style="padding-bottom:86px;">
           <div class="pdm-eyebrow">Agenda de missões</div>
-          <div class="pdm-agenda-nav">
-            <button class="pdm-agenda-nav-btn" onclick="pdmAgendaShift(-1)" aria-label="Dia anterior">
+          <div class="pdm-week-strip-head">
+            <div class="pdm-agenda-date-label" id="pdmAgendaDateLabel">—</div>
+            <button class="pdm-head-btn" id="pdmAgendaTodayBtn" onclick="pdmAgendaGoToday()" style="display:none;">Hoje</button>
+          </div>
+          <div class="pdm-week-strip-row">
+            <button class="pdm-agenda-nav-btn" onclick="pdmAgendaShiftWeek(-1)" aria-label="Semana anterior">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
-            <div class="pdm-agenda-date" id="pdmAgendaDate" onclick="pdmAgendaGoToday()"></div>
-            <button class="pdm-agenda-nav-btn" onclick="pdmAgendaShift(1)" aria-label="Próximo dia">
+            <div class="pdm-week-strip" id="pdmAgendaWeekStrip"></div>
+            <button class="pdm-agenda-nav-btn" onclick="pdmAgendaShiftWeek(1)" aria-label="Próxima semana">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>
             </button>
           </div>
@@ -1374,6 +1404,30 @@ if ('serviceWorker' in navigator) {
         <div style="text-align:center; margin-top: 10px;">
           <button class="pdm-btn-ghost" onclick="pdmConfirmFullReset()">Zerar todo o progresso</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Home quick-create modal (atalho do FAB) -->
+  <div class="pdm-modal-bg" id="pdmHomeQuickCreateModal">
+    <div class="pdm-modal">
+      <h3>Criar</h3>
+      <div class="pdm-quick-create-list">
+        <button type="button" class="pdm-quick-create-row" onclick="pdmCloseModal('pdmHomeQuickCreateModal'); pdmOpenMissionForm();">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Missão
+        </button>
+        <button type="button" class="pdm-quick-create-row" onclick="pdmCloseModal('pdmHomeQuickCreateModal'); pdmOpenHabitForm();">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+          Hábito
+        </button>
+        <button type="button" class="pdm-quick-create-row" onclick="pdmCloseModal('pdmHomeQuickCreateModal'); pdmOpenGoalForm();">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+          Objetivo
+        </button>
+      </div>
+      <div class="pdm-modal-row">
+        <button class="pdm-btn-ghost" onclick="pdmCloseModal('pdmHomeQuickCreateModal')">Cancelar</button>
       </div>
     </div>
   </div>
@@ -2019,6 +2073,7 @@ async function pdmHandleFile(evt) {
 }
 
 function pdmCloseModal(id) { document.getElementById(id).classList.remove('open'); }
+function pdmOpenModal(id) { document.getElementById(id).classList.add('open'); }
 
 // ---------------------------------------------------------------
 // CONFIRM MODALS
@@ -2086,6 +2141,7 @@ window.pdmOpenPhotoPicker = pdmOpenPhotoPicker;
 window.pdmHandleFile = pdmHandleFile;
 window.pdmSaveMonthWeight = pdmSaveMonthWeight;
 window.pdmCloseModal = pdmCloseModal;
+window.pdmOpenModal = pdmOpenModal;
 window.pdmConfirmFullReset = pdmConfirmFullReset;
 window.pdmRenderConfig = pdmRenderConfig;
 window.pdmScrollPass = pdmScrollPass;

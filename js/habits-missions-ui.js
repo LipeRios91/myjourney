@@ -87,16 +87,49 @@
     );
   }
 
+  // Segunda a domingo, mesma convenção de weekStartOf() em js/stats-data.js
+  // (não reaproveitado direto pra não acoplar esta UI ao módulo de
+  // Estatísticas por uma função tão pequena).
+  function weekStartMonday(dateISO) {
+    const dow = weekdayOf(dateISO); // 0=domingo
+    const offset = (dow + 6) % 7; // dias desde a última segunda
+    return addDaysISO(dateISO, -offset);
+  }
+
   function pdmRenderAgenda() {
     if (!agendaDate) agendaDate = todayISO();
     PdmHM.ensureMissionsForDate(agendaDate);
     if (window.pdmRenderGCalStatus) window.pdmRenderGCalStatus();
-    const dateEl = document.getElementById('pdmAgendaDate');
-    if (!dateEl) return;
-    const isToday = agendaDate === todayISO();
-    dateEl.className = 'pdm-agenda-date' + (isToday ? ' is-today' : '');
-    const fullDate = isoToDate(agendaDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    dateEl.innerHTML = escapeHtml(formatDateLabel(agendaDate)) + '<span>' + escapeHtml(fullDate) + (isToday ? '' : ' · toque para voltar a hoje') + '</span>';
+
+    const today = todayISO();
+    const isToday = agendaDate === today;
+    const labelEl = document.getElementById('pdmAgendaDateLabel');
+    if (labelEl) {
+      const fullDate = isoToDate(agendaDate).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+      labelEl.innerHTML = escapeHtml(formatDateLabel(agendaDate)) + '<span>' + escapeHtml(fullDate) + '</span>';
+    }
+    const todayBtn = document.getElementById('pdmAgendaTodayBtn');
+    if (todayBtn) todayBtn.style.display = isToday ? 'none' : '';
+
+    // Faixa de 7 dias (semana de agendaDate) — cada dia mostra número +
+    // abreviação, um ponto indica se há alguma missão programada nele.
+    // Toque num dia seleciona direto; as setas deslocam a semana inteira.
+    const stripEl = document.getElementById('pdmAgendaWeekStrip');
+    if (stripEl) {
+      const start = weekStartMonday(agendaDate);
+      let html = '';
+      for (let i = 0; i < 7; i++) {
+        const day = addDaysISO(start, i);
+        const hasMissions = PdmHM.listMissionsForDate(day).length > 0;
+        const isSel = day === agendaDate;
+        const isTod = day === today;
+        html += '<button type="button" class="pdm-week-day' + (isSel ? ' active' : '') + (isTod ? ' today' : '') + '" onclick="pdmAgendaSelectDay(\'' + day + '\')">' +
+          '<b>' + isoToDate(day).getDate() + '</b><span>' + WEEKDAY_SHORT[weekdayOf(day)] + '</span>' +
+          '<i class="pdm-week-day-dot' + (hasMissions ? '' : ' hidden') + '"></i>' +
+        '</button>';
+      }
+      stripEl.innerHTML = html;
+    }
 
     const missions = PdmHM.listMissionsForDate(agendaDate);
     const list = document.getElementById('pdmQuestList');
@@ -108,7 +141,8 @@
     const done = missions.filter((m) => m.status === 'concluida').length;
     document.getElementById('pdmQuestProgress').innerHTML = '<b>' + done + '/' + missions.length + '</b> missões concluídas';
   }
-  function pdmAgendaShift(delta) { agendaDate = addDaysISO(agendaDate || todayISO(), delta); pdmRenderAgenda(); }
+  function pdmAgendaShiftWeek(delta) { agendaDate = addDaysISO(agendaDate || todayISO(), delta * 7); pdmRenderAgenda(); }
+  function pdmAgendaSelectDay(day) { agendaDate = day; pdmRenderAgenda(); }
   function pdmAgendaGoToday() { agendaDate = todayISO(); pdmRenderAgenda(); }
 
   // Toque no checkbox da agenda: se já está concluída, desmarca (pra corrigir
@@ -741,7 +775,7 @@
   // EXPORTS
   // ---------------------------------------------------------------
   Object.assign(window, {
-    pdmRenderAgenda, pdmAgendaShift, pdmAgendaGoToday, pdmQuickToggleMission,
+    pdmRenderAgenda, pdmAgendaShiftWeek, pdmAgendaSelectDay, pdmAgendaGoToday, pdmQuickToggleMission,
     pdmRenderHabitsList, pdmToggleArchivedHabits,
     pdmOpenHabitForm, pdmSubmitHabitForm,
     pdmHabitFormPick, pdmHabitFormSetFreqType, pdmHabitFormToggleWeekday, pdmHabitFormSetWeeklyDay,

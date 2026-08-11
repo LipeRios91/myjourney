@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jornada-do-heroi-v28';
+const CACHE_NAME = 'jornada-do-heroi-v29';
 const APP_SHELL = [
   './',
   './index.html',
