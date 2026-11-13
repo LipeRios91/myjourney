@@ -84,13 +84,40 @@
     return window.PdmBackup ? window.PdmBackup.weightOfLocal() : 0;
   }
 
+  function isCompleteConfig(cfg) {
+    return !!cfg && CONFIG_FIELDS.every((f) => String(cfg[f] || '').trim());
+  }
+
+  // Config embutida no app (js/sync-defaults.js) — existe pra que limpar os
+  // dados do navegador NÃO deixe o app sem saber onde está a nuvem. Ver o
+  // comentário longo naquele arquivo.
+  function getDefaultConfig() {
+    const d = window.PdmSyncDefaults;
+    return isCompleteConfig(d) ? d : null;
+  }
+  function hasDefaultConfig() { return !!getDefaultConfig(); }
+
+  // O que o usuário salvou neste aparelho tem prioridade sobre a embutida
+  // (permite apontar pro projeto Firebase dele), mas a embutida é o que
+  // garante que sempre exista um caminho de volta pros dados.
   function getConfig() {
+    try {
+      const raw = localStorage.getItem(CONFIG_KEY);
+      if (raw) {
+        const cfg = JSON.parse(raw);
+        if (isCompleteConfig(cfg)) return cfg;
+      }
+    } catch (e) { /* cai pro padrão */ }
+    return getDefaultConfig();
+  }
+  // Só o que foi digitado neste aparelho — usado pela tela de config, que
+  // não deve mostrar a embutida como se o usuário a tivesse preenchido.
+  function getStoredConfig() {
     try {
       const raw = localStorage.getItem(CONFIG_KEY);
       if (!raw) return null;
       const cfg = JSON.parse(raw);
-      if (!CONFIG_FIELDS.every((f) => cfg && String(cfg[f] || '').trim())) return null;
-      return cfg;
+      return isCompleteConfig(cfg) ? cfg : null;
     } catch (e) { return null; }
   }
 
@@ -311,6 +338,15 @@
   function getPendingConflict() { return pendingConflict; }
   function getLastBlocked() { return lastBlocked; }
 
+  // "Este aparelho sabe onde está a nuvem, não está autenticado, e não tem
+  // dado nenhum" — exatamente o estado depois de limpar os dados do
+  // navegador. Nesse caso a tela certa é a de recuperação, NÃO o onboarding
+  // (que levaria o usuário a criar um objetivo novo enquanto o progresso
+  // real dele espera na nuvem). Ver o boot em index.html.
+  function shouldOfferRecovery() {
+    return !!getConfig() && !currentUser && localWeight() === 0;
+  }
+
   // Chamado pela UI depois que o usuário escolhe qual lado manter.
   async function resolveConflict(choice) {
     if (!pendingConflict) return { ok: false, error: 'sem-conflito' };
@@ -391,6 +427,7 @@
   window.PdmSync = {
     SYNCED_KEYS,
     isConfigured, setConfig, getConfig, clearConfig,
+    getStoredConfig, hasDefaultConfig, shouldOfferRecovery,
     isSignedIn, getUserEmail, isFirstDoneOnDevice,
     init, connect, disconnect, pushKey,
     // Proteção de dados (ver comentário no topo):

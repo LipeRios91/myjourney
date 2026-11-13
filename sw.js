@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jornada-do-heroi-v30';
+const CACHE_NAME = 'jornada-do-heroi-v31';
 const APP_SHELL = [
   './',
   './index.html',
@@ -29,6 +29,7 @@ const APP_SHELL = [
   './js/onboarding-ui.js',
   './js/reminders.js',
   './js/backup.js',
+  './js/sync-defaults.js',
   './js/sync.js',
   './js/sync-ui.js',
   './js/backup-ui.js',

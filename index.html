@@ -1402,7 +1402,7 @@ if ('serviceWorker' in navigator) {
 
         <div class="pdm-panel">
           <div class="pdm-eyebrow">Seus dados</div>
-          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Seu progresso fica salvo neste navegador. <b>Limpar o histórico/dados do navegador apaga tudo</b> — por isso vale baixar um backup de vez em quando e guardar (Drive, e-mail, computador). O arquivo restaura tudo em qualquer aparelho.</p>
+          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Com a sincronização ligada, seu progresso é salvo na nuvem <b>sozinho, a cada mudança</b> — e volta sozinho se você limpar o navegador ou trocar de aparelho (basta entrar com o Google). O backup em arquivo abaixo é opcional: serve pra guardar uma cópia fora da nuvem, se você quiser.</p>
           <div class="pdm-sync-status" id="pdmBackupStatus"></div>
           <div id="pdmStorageStatus"></div>
           <input type="file" accept="application/json,.json" class="pdm-file-input" id="pdmBackupFileInput" onchange="pdmHandleBackupFile(event)">
@@ -1660,6 +1660,21 @@ service cloud.firestore {
   <!-- Skill detail modal (Estatísticas — detalhe de habilidade individual) -->
   <div class="pdm-modal-bg" id="pdmSkillDetailModal"></div>
 
+  <!-- Recuperação: aparelho sem dado nenhum, mas o app sabe onde está a
+       nuvem (config embutida). Estado típico depois de limpar os dados do
+       navegador — tem prioridade sobre o Onboarding. -->
+  <div class="pdm-modal-bg" id="pdmRecoveryModal">
+    <div class="pdm-modal">
+      <h3>Recuperar seus dados</h3>
+      <p>Este aparelho está sem nada salvo — mas seu progresso pode estar guardado na sua conta Google. Entre pra trazer tudo de volta.</p>
+      <div class="pdm-conflict-hint" style="margin-bottom:16px;">Se você acabou de limpar os dados do navegador, é isso mesmo que aconteceu: o navegador apagou a cópia local, <b>não a da nuvem</b>.</div>
+      <button class="pdm-btn" id="pdmRecoveryBtn" style="width:100%;display:block;text-align:center;" onclick="pdmRecoverFromCloud()">Entrar com Google</button>
+      <div class="pdm-modal-row" style="margin-top:12px;">
+        <button class="pdm-btn-ghost" onclick="pdmSkipRecovery()">Começar do zero</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Conflito de sincronização: dado dos dois lados, usuário escolhe qual
        manter (o app não adivinha — ver js/sync.js). -->
   <div class="pdm-modal-bg" id="pdmSyncConflictModal">
@@ -1726,6 +1741,7 @@ service cloud.firestore {
 <script src="./js/onboarding-ui.js"></script>
 <script src="./js/reminders.js"></script>
 <script src="./js/backup.js"></script>
+<script src="./js/sync-defaults.js"></script>
 <script src="./js/sync.js"></script>
 <script src="./js/sync-ui.js"></script>
 <script src="./js/backup-ui.js"></script>
@@ -2228,8 +2244,17 @@ window.pdmToast = pdmToast;
   // Conflito de sincronização tem prioridade sobre o onboarding: significa
   // que há dado real dos dois lados e o app está esperando o usuário decidir
   // (nada foi sobrescrito ainda — ver js/sync.js).
+  // Ordem de prioridade das telas que podem "tomar" o boot:
+  // 1. conflito  — há dado real dos dois lados, nada foi sobrescrito ainda
+  // 2. recuperação — aparelho vazio mas existe nuvem configurada (o caso de
+  //    quem limpou os dados do navegador); precisa vir ANTES do onboarding,
+  //    senão o usuário cria um objetivo novo com o progresso dele parado na
+  //    nuvem
+  // 3. onboarding — instalação genuinamente nova
   if (syncResult && syncResult.sync && syncResult.sync.action === 'conflict' && window.pdmOpenSyncConflictModal) {
     window.pdmOpenSyncConflictModal();
+  } else if (window.PdmSync && window.PdmSync.shouldOfferRecovery() && window.pdmOpenRecoveryScreen) {
+    window.pdmOpenRecoveryScreen();
   } else if (window.PdmOnboarding && !window.PdmOnboarding.isResolved() && window.pdmStartOnboarding) {
     window.pdmStartOnboarding();
   }

@@ -593,6 +593,29 @@ perda é obrigatório antes de mexer em qualquer coisa de persistência:
 > Perda total nos dois. Ou seja: **perder o dado local promovia o aparelho a
 > fonte da verdade.**
 
+**Segunda rodada do mesmo problema**: a primeira correção salvou a nuvem,
+mas o usuário apontou o buraco que sobrou — *a chave pra alcançar a nuvem
+(os 6 campos de config do Firebase) também morava no `localStorage`*, ou
+seja, era apagada junto. Depois de limpar, o app abria em branco e **nem
+sabia onde procurar** os dados que continuavam salvos; o usuário teria que
+redigitar 6 campos que provavelmente não tem guardados. Pior: o Onboarding
+disparava e o levava a criar um objetivo novo com o progresso real parado na
+nuvem. Por isso:
+
+- **Config embutida no app** (`js/sync-defaults.js`). A config web do
+  Firebase **não é segredo** — ela identifica o projeto, não autoriza nada;
+  quem protege é a Regra de Segurança do Firestore (`request.auth.uid ==
+  userId`), documentada naquele arquivo. O que o usuário salvar no aparelho
+  tem prioridade (`getStoredConfig`), mas a embutida garante que sempre
+  exista caminho de volta. Depois de limpar tudo: abrir → **um toque em
+  "Entrar com Google"** → restaura sozinho. Um toque é o mínimo inevitável,
+  porque a sessão do Google também é apagada na limpeza.
+- **Tela de recuperação com prioridade sobre o Onboarding**
+  (`#pdmRecoveryModal`, `PdmSync.shouldOfferRecovery()`): dispara quando o
+  app tem config e o aparelho está sem dado nenhum. A ordem no boot é
+  **conflito → recuperação → onboarding**, e essa ordem importa: inverter
+  faz o usuário recém-limpo criar dado novo em vez de recuperar o antigo.
+
 Três defesas, em camadas:
 
 - **1. Decisão por DADO, não por flag** (`decideAndApply()` em `js/sync.js`).

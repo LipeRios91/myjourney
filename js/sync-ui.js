@@ -13,8 +13,11 @@
           'Configurar sincronização' +
         '</button>';
     } else if (!PdmSync.isSignedIn()) {
+      // Com a config embutida (js/sync-defaults.js) este é o estado normal de
+      // um aparelho novo ou recém-limpo: já sabe onde está a nuvem, só falta
+      // provar quem é.
       el.innerHTML =
-        '<span class="pdm-mission-badge" style="border-color:var(--line);color:var(--dim);">Configurado, desconectado</span>' +
+        '<span class="pdm-mission-badge" style="border-color:var(--line);color:var(--dim);">Pronto — falta entrar</span>' +
         '<button class="pdm-head-btn" onclick="pdmSyncConnectFlow()">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>' +
           'Entrar com Google' +
@@ -27,7 +30,9 @@
   }
 
   function pdmOpenSyncConfigModal() {
-    const cfg = PdmSync.getConfig() || {};
+    // getStoredConfig (não getConfig): a config embutida no app não deve
+    // aparecer aqui como se o usuário a tivesse digitado.
+    const cfg = PdmSync.getStoredConfig() || {};
     ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach((f) => {
       const input = document.getElementById('syncCfg_' + f);
       if (input) input.value = cfg[f] || '';

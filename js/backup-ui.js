@@ -17,16 +17,22 @@
     const parts = PdmBackup.describeLocal();
     const days = PdmBackup.daysSinceLastExport();
 
+    // O indicador principal é a NUVEM (salva sozinha a cada mudança), não o
+    // arquivo. O backup manual é rede de segurança extra, então não deve
+    // cobrar o usuário como se fosse tarefa obrigatória — só avisa quando a
+    // nuvem não está protegendo nada.
+    const cloudOn = !!(window.PdmSync && PdmSync.isSignedIn());
     let badge;
-    if (days === null) {
-      badge = '<span class="pdm-mission-badge" style="border-color:var(--rose);color:var(--rose-pale);">Nunca exportado</span>';
-    } else if (days >= 14) {
-      badge = '<span class="pdm-mission-badge" style="border-color:var(--rose);color:var(--rose-pale);">Último backup há ' + days + ' dias</span>';
-    } else if (days === 0) {
-      badge = '<span class="pdm-mission-badge" style="border-color:var(--gold);color:var(--gold-pale);">Backup feito hoje</span>';
+    if (cloudOn) {
+      badge = '<span class="pdm-mission-badge" style="border-color:var(--gold);color:var(--gold-pale);">✓ Salvando na nuvem automaticamente</span>';
+    } else if (weight === 0) {
+      badge = '<span class="pdm-mission-badge" style="border-color:var(--line);color:var(--dim);">Nada salvo neste aparelho</span>';
     } else {
-      badge = '<span class="pdm-mission-badge" style="border-color:var(--gold);color:var(--gold-pale);">Último backup há ' + days + (days === 1 ? ' dia' : ' dias') + '</span>';
+      badge = '<span class="pdm-mission-badge" style="border-color:var(--rose);color:var(--rose-pale);">Só neste aparelho — sem cópia na nuvem</span>';
     }
+    const backupLine = days === null
+      ? 'Nenhum backup em arquivo ainda.'
+      : (days === 0 ? 'Último backup em arquivo: hoje.' : 'Último backup em arquivo: há ' + days + (days === 1 ? ' dia' : ' dias') + '.');
 
     el.innerHTML =
       badge +
@@ -40,8 +46,9 @@
       '</button>' +
       '<div class="pdm-backup-detail">' +
         (weight > 0
-          ? 'Neste aparelho agora: ' + escapeHtml(parts.join(' · ') || weight + ' itens') + '.'
-          : 'Nenhum dado neste aparelho ainda.') +
+          ? 'Neste aparelho agora: ' + escapeHtml(parts.join(' · ') || weight + ' itens') + '. '
+          : 'Nenhum dado neste aparelho ainda. ') +
+        escapeHtml(backupLine) +
       '</div>';
 
     renderStorageLine();
@@ -185,6 +192,58 @@
     pdmOpenModal('pdmSyncConflictModal');
   }
 
+  // ---------------------------------------------------------------
+  // RECUPERAÇÃO — estado "aparelho sem dado nenhum, mas o app sabe onde
+  // está a nuvem". É exatamente o que sobra depois de limpar os dados do
+  // navegador. Tem prioridade sobre o Onboarding: sem isso, o usuário seria
+  // levado a criar um objetivo novo enquanto o progresso real dele espera
+  // na nuvem.
+  // ---------------------------------------------------------------
+  function pdmOpenRecoveryScreen() {
+    pdmOpenModal('pdmRecoveryModal');
+  }
+
+  function pdmRecoverFromCloud() {
+    if (!window.PdmSync) return;
+    const btn = document.getElementById('pdmRecoveryBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; }
+    PdmSync.connect().then((res) => {
+      const action = res && res.sync ? res.sync.action : null;
+      if (action === 'conflict') {
+        pdmCloseModal('pdmRecoveryModal');
+        pdmOpenSyncConflictModal();
+        return;
+      }
+      if (action === 'pull' && res.sync.restored) {
+        pdmCloseModal('pdmRecoveryModal');
+        pdmToast('Dados restaurados. Recarregando...');
+        // Os módulos já rodaram init() com o estado vazio em memória —
+        // recarregar é a única forma honesta de aplicar o que veio da nuvem.
+        setTimeout(() => window.location.reload(), 900);
+        return;
+      }
+      // Entrou, mas não havia nada na nuvem pra essa conta.
+      pdmCloseModal('pdmRecoveryModal');
+      if (window.pdmRenderSyncStatus) window.pdmRenderSyncStatus();
+      pdmToast('Conta conectada, mas não há dados salvos nela.');
+      if (window.PdmOnboarding && !window.PdmOnboarding.isResolved() && window.pdmStartOnboarding) {
+        window.pdmStartOnboarding();
+      }
+    }).catch(() => {
+      if (btn) { btn.disabled = false; btn.textContent = 'Entrar com Google'; }
+      pdmToast('Não deu pra entrar agora. Tente de novo.');
+    });
+  }
+
+  // "Começar do zero" na tela de recuperação: não é destrutivo (não há o que
+  // destruir — o aparelho está vazio), só segue pro onboarding normal.
+  function pdmSkipRecovery() {
+    pdmCloseModal('pdmRecoveryModal');
+    if (window.PdmOnboarding && !window.PdmOnboarding.isResolved() && window.pdmStartOnboarding) {
+      window.pdmStartOnboarding();
+    }
+  }
+
   // Sair sem escolher é seguro: nada foi sobrescrito e a sincronização fica
   // pausada (PdmSync.ready continua false) até a próxima abertura do app, em
   // vez de deixar uma escrita qualquer decidir por você.
@@ -211,5 +270,6 @@
   Object.assign(window, {
     pdmRenderBackupStatus, pdmExportBackup, pdmOpenImportBackup, pdmHandleBackupFile,
     pdmOpenSyncConflictModal, pdmResolveSyncConflict, pdmPostponeSyncConflict,
+    pdmOpenRecoveryScreen, pdmRecoverFromCloud, pdmSkipRecovery,
   });
 })();
