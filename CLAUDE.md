@@ -548,7 +548,9 @@ de backup manual exportar/importar.
   `mestre-diet-goals`, `mestre-onboarding`) — lista em `PdmSync.SYNCED_KEYS`.
   **O que fica de fora, de propósito** (preferência de dispositivo, não
   progresso — mesmo raciocínio do tema): `mestre-theme`,
-  `mestre-gcal-client-id`, `mestre-sync-config`, `mestre-gemini-api-key`.
+  `mestre-gcal-client-id`, `mestre-sync-config`, `mestre-gemini-api-key`,
+  `mestre-last-export`. Ao adicionar uma chave aqui, atualize também
+  `DATA_KEYS` e `dataWeight()` em `js/backup.js` (ver "Proteção de dados").
 - **Modelo no Firestore**: um documento por chave, em
   `users/{uid}/data/{key}`, com `{ value: <a mesma string que já ia pro
   localStorage>, updatedAt: serverTimestamp() }` — passthrough direto, sem
@@ -562,20 +564,88 @@ de backup manual exportar/importar.
   `PdmGoals.init()`/`PdmHM.init()` pra esses módulos já lerem dado fresco).
   Editar em dois aparelhos abertos ao mesmo tempo não converge na hora, só
   no próximo carregamento de cada um.
-- **Resolução de conflito: "primeiro aparelho manda"**, não é por timestamp
-  por campo. Flag local `mestre-sync-first-done` (por aparelho, fora do
-  `window.storage`): se ausente, é a primeira vez que ESTE aparelho conecta
-  essa conta — ele **empurra tudo que já tinha pra nuvem** (vira a fonte da
-  verdade) e marca a flag. Se já presente, esse aparelho **sempre baixa da
-  nuvem** no connect/boot (nuvem manda a partir daí). **Risco conhecido e
-  documentado na UI** (`pdmSyncConnectFlow` mostra um confirm antes do
-  primeiro connect): conectar um SEGUNDO aparelho que já tinha progresso
-  próprio nunca sincronizado faz esse progresso local ser **substituído**
-  pelo que já está na nuvem — por isso conecte primeiro o aparelho com o
-  progresso que você quer manter.
+- **Resolução de conflito — reescrita depois de uma perda de dados real.**
+  A v1 decidia push-vs-pull pela flag local `mestre-sync-first-done`, que
+  mora no mesmo `localStorage` que some quando o usuário limpa os dados do
+  navegador — e perder o dado local acabava promovendo o aparelho a fonte da
+  verdade, destruindo a nuvem. **Hoje a decisão compara o dado em si**
+  (`PdmBackup.dataWeight`), nunca deixa vazio sobrescrever cheio, e pergunta
+  ao usuário quando há dado real dos dois lados. A flag virou só uma dica
+  (distingue "aparelho estabelecido" de "aparelho novo"), não a decisão.
+  Ver a seção **"Proteção de dados"** acima — é lá que mora a explicação
+  completa, o guard de escrita e o backup em arquivo. **Não volte a decidir
+  sincronização por flag.**
 - `sw.js` tem a mesma guarda de mesma origem do Google Agenda — pedidos pro
   Firebase (terceiro) sempre vão direto pra rede, nunca passam pelo
   cache-first do app shell.
+
+## Proteção de dados (backup + blindagem da sincronização)
+
+`js/backup.js` (`window.PdmBackup`) + `js/backup-ui.js`. Painel "Seus dados"
+na view `config`. **Nasceu de uma perda de dados real**, e entender essa
+perda é obrigatório antes de mexer em qualquer coisa de persistência:
+
+> O usuário limpou o histórico do navegador. Isso apagou o `localStorage`
+> inteiro — inclusive a flag `mestre-sync-first-done`. No boot seguinte, a
+> v1 da sincronização viu "sem flag" e concluiu "sou o primeiro aparelho
+> dessa conta", então rodou `pushAll()` e **empurrou o estado vazio por cima
+> da nuvem boa**. O outro aparelho abriu depois, fez pull, e baixou o vazio.
+> Perda total nos dois. Ou seja: **perder o dado local promovia o aparelho a
+> fonte da verdade.**
+
+Três defesas, em camadas:
+
+- **1. Decisão por DADO, não por flag** (`decideAndApply()` em `js/sync.js`).
+  A flag mora no mesmo storage que some, então não pode decidir nada
+  sozinha. Agora compara o peso real dos dois lados
+  (`PdmBackup.dataWeight`): local vazio + nuvem cheia → **pull** (restaura o
+  aparelho); local cheio + nuvem vazia → **push** (restaura a nuvem); nuvem
+  com menos da metade do local, ou aparelho que nunca sincronizou com dado
+  dos dois lados → **conflito**, e aí **o app pergunta em vez de adivinhar**
+  (`#pdmSyncConflictModal`). Enquanto o conflito está pendente, `ready` fica
+  `false` de propósito — sem isso, qualquer escrita local durante a
+  indecisão já sobrescreveria o lado que o usuário talvez quisesse manter.
+- **2. Guard na escrita** (`pushKey`): se a escrita zeraria na nuvem algo que
+  tem conteúdo, ela é **bloqueada** (e avisada por toast), não silenciada. Se
+  apenas encolhe, a versão anterior da nuvem é copiada pra
+  `users/{uid}/history/` antes de sobrescrever. Exclusão legítima do usuário
+  passa por `allowDestructive()` — janela curta aberta só por "Zerar todo o
+  progresso" e por restaurar backup, e **fechada com `endDestructive()`
+  assim que a ação termina** (deixar aberta "por garantia" anula o guard
+  inteiro; isso foi pego no teste).
+- **3. Backup em arquivo** — a única cópia que sobrevive a tudo (limpar
+  navegador, trocar de aparelho, nuvem corrompida), porque sai do navegador.
+  `exportToFile()` baixa um `.json`; `validateBackup()` recusa arquivo de
+  outro app/corrompido antes de encostar no estado; `applyBackup()` escreve
+  **direto no `localStorage`** (não via `window.storage`) pra não disparar um
+  push por chave no meio da restauração — quem reenvia pra nuvem depois é a
+  UI, de uma vez e explicitamente. Depois de restaurar o app **recarrega**:
+  todos os módulos já rodaram `init()` com o estado antigo em memória, então
+  reiniciar é a única forma honesta de aplicar o novo.
+
+Regras que qualquer feature de persistência nova precisa respeitar:
+
+- **`dataWeight()` é a fonte da verdade de "isso é dado real"**, e o estado
+  de fábrica precisa pesar **zero**. Um aparelho recém-aberto já grava
+  categorias padrão, habilidades padrão, gamificação zerada e estado do
+  onboarding — se qualquer um desses pesasse > 0, um aparelho vazio
+  pareceria cheio e sobrescreveria a nuvem de novo. Ao adicionar uma chave
+  nova em `SYNCED_KEYS`, **adicione também o caso dela em `dataWeight()`** e
+  em `DATA_KEYS` de `backup.js`; sem isso ela não entra no backup e não conta
+  na decisão de sincronização.
+- `navigator.storage.persist()` é pedido no boot (`requestPersistentStorage`)
+  pra o navegador não descartar os dados sozinho (pressão de armazenamento,
+  inatividade — a regra dos ~7 dias do iOS). Não protege contra o usuário
+  limpar os dados do site de propósito: pra isso só o backup em arquivo
+  resolve, e o painel diz isso na cara em vez de dar falsa segurança.
+- Fotos (`mestre-profile-photo`, `mestre-monthly-photos`) ficam **fora do
+  histórico de versões** da nuvem (`NO_HISTORY_KEYS`): são base64 e chegam
+  perto do limite de 1 MiB por documento do Firestore. Sincronizam normal, só
+  não ganham cópia anterior.
+- O texto do painel e do modal de conflito é deliberadamente honesto sobre o
+  risco ("limpar o histórico apaga tudo", "armazenamento não é permanente").
+  Não suavize isso: foi justamente a falsa sensação de segurança — "tenho
+  sincronização, então estou protegido" — que fez a perda doer.
 
 ## Dieta (registro de calorias e macronutrientes)
 

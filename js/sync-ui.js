@@ -55,23 +55,27 @@
     if (!PdmSync.isConfigured()) { pdmOpenSyncConfigModal(); return; }
     const doConnect = () => {
       pdmToast('Conectando...');
-      PdmSync.connect().then(() => {
+      PdmSync.connect().then((res) => {
         pdmRenderSyncStatus();
         window.pdmRenderAll();
-        pdmToast('Sincronização conectada.');
+        const action = res && res.sync ? res.sync.action : null;
+        if (action === 'conflict') {
+          // Dado dos dois lados: quem decide é o usuário, não o app.
+          if (window.pdmOpenSyncConflictModal) window.pdmOpenSyncConflictModal();
+          return;
+        }
+        if (action === 'pull' && res.sync.restored) pdmToast('Dados restaurados da nuvem.');
+        else if (action === 'push' && res.sync.restoredCloud) pdmToast('Seus dados foram enviados pra nuvem.');
+        else pdmToast('Sincronização conectada.');
       }).catch(() => {
         pdmToast('Não deu pra conectar a sincronização agora.');
       });
     };
-    if (!PdmSync.isFirstDoneOnDevice()) {
-      pdmConfirmGeneric(
-        'Conectar sincronização',
-        'Este é o primeiro aparelho conectando essa conta: o progresso que já está aqui vai pra nuvem. Se outro aparelho já tem progresso próprio nunca sincronizado, conecte-o depois — ao conectar, ele vai baixar (e substituir) o que tiver localmente pelo que estiver na nuvem.',
-        doConnect
-      );
-    } else {
-      doConnect();
-    }
+    pdmConfirmGeneric(
+      'Conectar sincronização',
+      'Seu progresso passa a ter uma cópia na sua conta Google. Se já houver dados dos dois lados (aqui e na nuvem), o app pergunta qual manter antes de substituir qualquer coisa — nada é apagado sem você escolher.',
+      doConnect
+    );
   }
 
   function pdmSyncDisconnect() {

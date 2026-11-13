@@ -8,14 +8,27 @@
 // - Não é tempo real: escreve na nuvem a cada mudança local (push) e só lê
 //   da nuvem no boot do app (pull). Editar em dois aparelhos abertos ao
 //   mesmo tempo não converge na hora — só no próximo carregamento.
-// - Resolução de conflito é simples, não por timestamp por campo: o
-//   PRIMEIRO aparelho a conectar a sincronização vira a "fonte da verdade"
-//   e envia tudo que já tinha pra nuvem. TODO aparelho conectado depois
-//   disso (ou reaberto depois) passa a BAIXAR da nuvem no boot, sobrescrevendo
-//   o que tinha localmente. Ou seja: se você já tem progresso em dois
-//   aparelhos diferentes e nunca sincronizou nenhum, conecte primeiro o
-//   aparelho com o progresso que você quer manter — o segundo aparelho vai
-//   perder o que tinha de local (a UI avisa isso antes de conectar).
+//
+// DECISÃO DE SINCRONIZAÇÃO (reescrita depois de uma perda de dados real):
+// a v1 decidia push-vs-pull pela flag local `mestre-sync-first-done`. Isso
+// tinha um defeito fatal: a flag mora no MESMO localStorage que some quando
+// o usuário limpa os dados do navegador. Resultado real: o aparelho zerado
+// perdeu a flag, se considerou "primeiro aparelho" de novo, empurrou o
+// estado VAZIO por cima da nuvem boa, e o outro aparelho então baixou esse
+// vazio — perda total nos dois. Ou seja: perder o dado local promovia o
+// aparelho a fonte da verdade.
+//
+// Agora a decisão olha o DADO em si (PdmBackup.dataWeight), não uma flag
+// que some, e nunca deixa "nada" sobrescrever "alguma coisa":
+//   1. os dois vazios            -> não faz nada
+//   2. local vazio, nuvem cheia  -> PULL (restaura este aparelho)
+//   3. local cheio, nuvem vazia  -> PUSH (restaura a nuvem)
+//   4. nuvem com bem menos que o local -> CONFLITO, pergunta ao usuário
+//   5. os dois com dado parecido -> PULL (nuvem manda, como antes)
+//   6. aparelho que nunca sincronizou, com dado dos dois lados -> CONFLITO
+// Enquanto um conflito está pendente, `ready` fica false de propósito: sem
+// isso, qualquer escrita local durante a indecisão iria pra nuvem e
+// sobrescreveria o lado que o usuário talvez quisesse manter.
 (function () {
   const CONFIG_KEY = 'mestre-sync-config';
   const FIRST_DONE_KEY = 'mestre-sync-first-done';
@@ -39,11 +52,37 @@
     'mestre-onboarding',
   ];
 
+  // Chaves grandes demais pra manter histórico de versões na nuvem (fotos em
+  // base64 chegam perto do limite de 1 MiB por documento do Firestore) — elas
+  // são sincronizadas normalmente, só não ganham cópia de versão anterior.
+  const NO_HISTORY_KEYS = ['mestre-profile-photo', 'mestre-monthly-photos'];
+
   let app = null;
   let db = null;
   let currentUser = null;
   let ready = false; // true depois que init() resolve (configurado e SDK carregado)
   let sdkLoadPromise = null;
+
+  // Último peso conhecido de cada chave na nuvem, preenchido no boot e
+  // atualizado a cada push — deixa o guard de escrita destrutiva ser síncrono
+  // e barato, sem precisar ler a nuvem antes de cada gravação.
+  let cloudWeightCache = {};
+  // Conflito aguardando decisão do usuário (ver decideAndApply()).
+  let pendingConflict = null;
+  // Janela em que escritas destrutivas são permitidas de propósito ("Zerar
+  // todo o progresso", importar backup) — fora dela, apagar tudo localmente
+  // NÃO apaga a nuvem.
+  let destructiveUntil = 0;
+  // Última escrita bloqueada pelo guard, pra UI poder avisar em vez de
+  // falhar em silêncio.
+  let lastBlocked = null;
+
+  function weightOf(key, value) {
+    return window.PdmBackup ? window.PdmBackup.dataWeight(key, value) : (value ? 1 : 0);
+  }
+  function localWeight() {
+    return window.PdmBackup ? window.PdmBackup.weightOfLocal() : 0;
+  }
 
   function getConfig() {
     try {
@@ -103,17 +142,40 @@
     return db.collection('users').doc(uid).collection('data').doc(key);
   }
 
-  async function pullAll() {
-    if (!currentUser) return;
+  function historyDocRef(uid, key) {
+    return db.collection('users').doc(uid).collection('history')
+      .doc(key + '__' + new Date().toISOString().replace(/[:.]/g, '-'));
+  }
+
+  // Lê a nuvem inteira SEM tocar no localStorage — a decisão de aplicar ou
+  // não vem depois (ver decideAndApply). Separar leitura de aplicação é o que
+  // permite detectar conflito antes de destruir qualquer lado.
+  async function readCloudSnapshot() {
+    const map = {};
+    if (!currentUser) return { map, weight: 0 };
     const snaps = await Promise.all(
       SYNCED_KEYS.map((key) => userDocRef(currentUser.uid, key).get().catch(() => null))
     );
     snaps.forEach((snap, i) => {
       if (snap && snap.exists) {
         const data = snap.data();
-        if (data && typeof data.value === 'string') localStorage.setItem(SYNCED_KEYS[i], data.value);
+        if (data && typeof data.value === 'string') map[SYNCED_KEYS[i]] = data.value;
       }
     });
+    const weight = window.PdmBackup ? window.PdmBackup.weightOfMap(map) : Object.keys(map).length;
+    return { map, weight };
+  }
+
+  function refreshCloudWeightCache(map) {
+    cloudWeightCache = {};
+    SYNCED_KEYS.forEach((key) => { cloudWeightCache[key] = weightOf(key, map ? map[key] : null); });
+  }
+
+  function applyCloudSnapshot(map) {
+    SYNCED_KEYS.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(map, key)) localStorage.setItem(key, map[key]);
+    });
+    refreshCloudWeightCache(map);
   }
 
   async function pushAll() {
@@ -124,21 +186,151 @@
       const value = localStorage.getItem(key);
       if (value !== null) {
         batch.set(userDocRef(currentUser.uid, key), { value, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        cloudWeightCache[key] = weightOf(key, value);
         any = true;
       }
     });
     if (any) await batch.commit();
   }
 
+  // Guarda a versão que está na nuvem AGORA antes de sobrescrevê-la por uma
+  // menor — é o que permite recuperar depois de uma exclusão acidental.
+  async function snapshotToHistory(key) {
+    if (NO_HISTORY_KEYS.indexOf(key) !== -1) return;
+    try {
+      const snap = await userDocRef(currentUser.uid, key).get();
+      if (!snap.exists) return;
+      const data = snap.data();
+      if (!data || typeof data.value !== 'string') return;
+      await historyDocRef(currentUser.uid, key).set({
+        key, value: data.value,
+        savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        reason: 'overwrite-menor',
+      });
+    } catch (e) { /* histórico é best-effort, nunca bloqueia a escrita real */ }
+  }
+
+  // Permite, por uma janela curta, que uma escrita que esvazia/encolhe dado
+  // chegue na nuvem. Usado só por ações explicitamente destrutivas do
+  // usuário ("Zerar todo o progresso", importar backup por cima).
+  //
+  // A janela é curta e deve ser FECHADA (endDestructive) assim que a ação
+  // termina: enquanto ela está aberta a nuvem fica sem proteção, então
+  // deixá-la aberta "por garantia" anula o guard inteiro.
+  function allowDestructive(ms) {
+    destructiveUntil = Date.now() + (ms || 10000);
+  }
+  function endDestructive() { destructiveUntil = 0; }
+  function destructiveAllowed() { return Date.now() < destructiveUntil; }
+
   // Chamado pelo window.storage.set() depois de toda escrita local — best
   // effort, silencioso (mesma filosofia de js/reminders.js): se falhar (sem
   // rede, sem sync configurado, etc.) o app continua funcionando 100% local.
+  //
+  // O guard aqui é a segunda linha de defesa contra a perda que já
+  // aconteceu: se o app, por qualquer motivo, passar a achar que não tem
+  // dado nenhum, essa escrita NÃO apaga o que está na nuvem.
   function pushKey(key, value) {
     if (!ready || !currentUser || !db) return;
     if (SYNCED_KEYS.indexOf(key) === -1) return;
+
+    const newW = weightOf(key, value);
+    const oldW = cloudWeightCache[key];
+
+    if (!destructiveAllowed() && typeof oldW === 'number' && oldW > 0) {
+      // Catastrófico: zerar na nuvem algo que tinha conteúdo, sem o usuário
+      // ter pedido uma ação destrutiva. Bloqueia e registra.
+      if (newW === 0) {
+        lastBlocked = { key, at: new Date().toISOString(), cloudWeight: oldW };
+        if (window.PdmCore) window.PdmCore.toast('Sincronização pausada: evitei apagar seus dados da nuvem.');
+        return;
+      }
+      // Encolheu: provavelmente é exclusão legítima, mas guarda a versão
+      // anterior na nuvem antes de sobrescrever.
+      if (newW < oldW) {
+        snapshotToHistory(key).then(() => writeKey(key, value, newW));
+        return;
+      }
+    }
+    writeKey(key, value, newW);
+  }
+
+  function writeKey(key, value, newW) {
     userDocRef(currentUser.uid, key)
       .set({ value, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
+      .then(() => { cloudWeightCache[key] = newW; })
       .catch(() => { /* melhor esforço — próxima escrita tenta de novo */ });
+  }
+
+  // ---------------------------------------------------------------
+  // DECISÃO — ver o comentário no topo do arquivo pras 6 regras.
+  // ---------------------------------------------------------------
+  async function decideAndApply() {
+    const cloud = await readCloudSnapshot();
+    const localW = localWeight();
+    refreshCloudWeightCache(cloud.map);
+    pendingConflict = null;
+
+    if (cloud.weight === 0 && localW === 0) {
+      markFirstDone();
+      return { action: 'none', reason: 'tudo-vazio' };
+    }
+    if (localW === 0 && cloud.weight > 0) {
+      applyCloudSnapshot(cloud.map);
+      markFirstDone();
+      return { action: 'pull', restored: true, cloudWeight: cloud.weight, localWeight: localW };
+    }
+    if (localW > 0 && cloud.weight === 0) {
+      await pushAll();
+      markFirstDone();
+      return { action: 'push', restoredCloud: true, localWeight: localW };
+    }
+    // Os dois têm dado. Se a nuvem tem MUITO menos, isso cheira a nuvem
+    // sobrescrita por um aparelho zerado — não aplica em cima do local sem
+    // perguntar (foi exatamente assim que o segundo aparelho foi perdido).
+    const cloudMuchSmaller = cloud.weight < localW * 0.5;
+    if (cloudMuchSmaller || !isFirstDoneOnDevice()) {
+      pendingConflict = {
+        cloudMap: cloud.map,
+        cloudWeight: cloud.weight,
+        localWeight: localW,
+        cloudDescribe: window.PdmBackup ? window.PdmBackup.describeMap(cloud.map) : [],
+        localDescribe: window.PdmBackup ? window.PdmBackup.describeLocal() : [],
+        reason: cloudMuchSmaller ? 'nuvem-menor' : 'aparelho-novo',
+      };
+      return Object.assign({ action: 'conflict' }, pendingConflict);
+    }
+    applyCloudSnapshot(cloud.map);
+    return { action: 'pull', cloudWeight: cloud.weight, localWeight: localW };
+  }
+
+  function markFirstDone() {
+    try { localStorage.setItem(FIRST_DONE_KEY, '1'); } catch (e) { /* ignora */ }
+  }
+
+  function getPendingConflict() { return pendingConflict; }
+  function getLastBlocked() { return lastBlocked; }
+
+  // Chamado pela UI depois que o usuário escolhe qual lado manter.
+  async function resolveConflict(choice) {
+    if (!pendingConflict) return { ok: false, error: 'sem-conflito' };
+    const conflict = pendingConflict;
+    if (choice === 'cloud') {
+      applyCloudSnapshot(conflict.cloudMap);
+      markFirstDone();
+      pendingConflict = null;
+      ready = true;
+      return { ok: true, action: 'pull' };
+    }
+    if (choice === 'local') {
+      allowDestructive(); // sobrescrever a nuvem aqui é intencional
+      try { await pushAll(); } finally { endDestructive(); }
+      markFirstDone();
+      pendingConflict = null;
+      ready = true;
+      return { ok: true, action: 'push' };
+    }
+    return { ok: false, error: 'escolha-invalida' };
   }
 
   function waitForAuthState() {
@@ -162,16 +354,13 @@
       await loadFirebaseSdk();
       ensureApp();
       currentUser = await waitForAuthState();
-      if (currentUser) {
-        if (isFirstDoneOnDevice()) {
-          await pullAll();
-        } else {
-          await pushAll();
-          localStorage.setItem(FIRST_DONE_KEY, '1');
-        }
-      }
-      ready = true;
-      return { configured: true, signedIn: !!currentUser };
+      let decision = null;
+      if (currentUser) decision = await decideAndApply();
+      // Com conflito pendente, `ready` fica false de propósito: nenhuma
+      // escrita local vai pra nuvem antes de o usuário escolher qual lado
+      // manter (senão a indecisão já destruiria um dos lados).
+      ready = !!currentUser && (!decision || decision.action !== 'conflict');
+      return { configured: true, signedIn: !!currentUser, sync: decision };
     } catch (e) {
       ready = false;
       return { configured: true, signedIn: false, error: String(e && e.message || e) };
@@ -186,14 +375,9 @@
     const provider = new firebase.auth.GoogleAuthProvider();
     const result = await firebase.auth().signInWithPopup(provider);
     currentUser = result.user;
-    if (isFirstDoneOnDevice()) {
-      await pullAll();
-    } else {
-      await pushAll();
-      localStorage.setItem(FIRST_DONE_KEY, '1');
-    }
-    ready = true;
-    return currentUser;
+    const decision = await decideAndApply();
+    ready = decision.action !== 'conflict';
+    return { user: currentUser, sync: decision };
   }
 
   async function disconnect() {
@@ -209,5 +393,8 @@
     isConfigured, setConfig, getConfig, clearConfig,
     isSignedIn, getUserEmail, isFirstDoneOnDevice,
     init, connect, disconnect, pushKey,
+    // Proteção de dados (ver comentário no topo):
+    readCloudSnapshot, pushAll, allowDestructive, endDestructive,
+    getPendingConflict, resolveConflict, getLastBlocked,
   };
 })();

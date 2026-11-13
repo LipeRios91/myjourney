@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jornada-do-heroi-v29';
+const CACHE_NAME = 'jornada-do-heroi-v30';
 const APP_SHELL = [
   './',
   './index.html',
@@ -28,8 +28,10 @@ const APP_SHELL = [
   './js/home-ui.js',
   './js/onboarding-ui.js',
   './js/reminders.js',
+  './js/backup.js',
   './js/sync.js',
   './js/sync-ui.js',
+  './js/backup-ui.js',
 ];
 
 self.addEventListener('install', (event) => {

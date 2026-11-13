@@ -627,6 +627,24 @@ html, body {
 .pdm-home-snapshot .pdm-stat-tile-text b { display:block; font-family:'Anton',sans-serif; font-size:20px; color:var(--gold-pale); line-height:1; }
 .pdm-home-snapshot .pdm-stat-tile-text span { font-size:9.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.04em; font-family:'Space Mono',monospace; }
 
+/* ---------- PROTEÇÃO DE DADOS (painel "Seus dados" + conflito) ---------- */
+.pdm-backup-detail { font-size:11px; color:var(--dim); font-family:'Space Mono',monospace; line-height:1.5; width:100%; margin-top:4px; }
+.pdm-conflict-grid { display:grid; grid-template-columns:1fr; gap:10px; margin:14px 0; }
+.pdm-conflict-side {
+  background: var(--void); border:1px solid var(--line-soft); padding:14px;
+  clip-path: polygon(8px 0,100% 0,100% 100%,0 100%,0 8px);
+}
+.pdm-conflict-side b { font-family:'Anton',sans-serif; font-size:26px; color:var(--gold-pale); line-height:1; }
+.pdm-conflict-side > span { font-size:10px; color:var(--dim); font-family:'Space Mono',monospace; text-transform:uppercase; letter-spacing:0.05em; margin-left:6px; }
+.pdm-conflict-title { font-family:'Oswald',sans-serif; font-weight:600; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--fog); margin-bottom:8px; }
+.pdm-conflict-hint { font-size:12.5px; color:var(--fog); line-height:1.55; background:var(--void-2); border-left:2px solid var(--gold); padding:10px 12px; margin-bottom:4px; }
+.pdm-conflict-hint b { color:var(--gold-pale); }
+.pdm-conflict-side .pdm-btn, .pdm-conflict-side .pdm-btn-ghost { width:100%; text-align:center; display:block; margin-top:12px; }
+@media (min-width: 560px) { .pdm-conflict-grid { grid-template-columns:1fr 1fr; } }
+/* Confirmações com mais de um parágrafo (ex: restaurar backup) precisam
+   respeitar as quebras de linha do texto passado pra pdmConfirmGeneric. */
+#pdmConfirmText { white-space: pre-line; }
+
 .pdm-gcal-status, .pdm-sync-status { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
 .pdm-gcal-status .pdm-head-btn svg, .pdm-sync-status .pdm-head-btn svg { width:14px; height:14px; }
 
@@ -1383,6 +1401,14 @@ if ('serviceWorker' in navigator) {
         </div>
 
         <div class="pdm-panel">
+          <div class="pdm-eyebrow">Seus dados</div>
+          <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">Seu progresso fica salvo neste navegador. <b>Limpar o histórico/dados do navegador apaga tudo</b> — por isso vale baixar um backup de vez em quando e guardar (Drive, e-mail, computador). O arquivo restaura tudo em qualquer aparelho.</p>
+          <div class="pdm-sync-status" id="pdmBackupStatus"></div>
+          <div id="pdmStorageStatus"></div>
+          <input type="file" accept="application/json,.json" class="pdm-file-input" id="pdmBackupFileInput" onchange="pdmHandleBackupFile(event)">
+        </div>
+
+        <div class="pdm-panel">
           <div class="pdm-eyebrow">Ajuda</div>
           <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 16px;">O passo a passo inicial explica Objetivos, Habilidades, Hábitos, Missões, Gamificação e Estatísticas, criando dados reais junto com você.</p>
           <div class="pdm-sync-status" id="pdmOnboardingHelpStatus"></div>
@@ -1634,6 +1660,18 @@ service cloud.firestore {
   <!-- Skill detail modal (Estatísticas — detalhe de habilidade individual) -->
   <div class="pdm-modal-bg" id="pdmSkillDetailModal"></div>
 
+  <!-- Conflito de sincronização: dado dos dois lados, usuário escolhe qual
+       manter (o app não adivinha — ver js/sync.js). -->
+  <div class="pdm-modal-bg" id="pdmSyncConflictModal">
+    <div class="pdm-modal pdm-modal-lg">
+      <h3>Qual versão manter?</h3>
+      <div class="pdm-modal-scroll" id="pdmSyncConflictBody"></div>
+      <div class="pdm-modal-row" style="margin-top:14px;">
+        <button class="pdm-btn-ghost" onclick="pdmPostponeSyncConflict()">Decidir depois</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirm modal — sempre por último no DOM, pra ficar acima de qualquer
        outro modal já aberto (ex: confirmar exclusão em cima do detalhe). -->
   <div class="pdm-modal-bg" id="pdmConfirmModal">
@@ -1687,8 +1725,10 @@ service cloud.firestore {
 <script src="./js/home-ui.js"></script>
 <script src="./js/onboarding-ui.js"></script>
 <script src="./js/reminders.js"></script>
+<script src="./js/backup.js"></script>
 <script src="./js/sync.js"></script>
 <script src="./js/sync-ui.js"></script>
+<script src="./js/backup-ui.js"></script>
 
 <script>
 (function() {
@@ -1946,6 +1986,7 @@ function pdmRenderConfig() {
   if (window.pdmRenderSyncStatus) window.pdmRenderSyncStatus();
   if (window.pdmRenderGCalConfigStatus) window.pdmRenderGCalConfigStatus();
   if (window.pdmRenderGeminiConfigStatus) window.pdmRenderGeminiConfigStatus();
+  if (window.pdmRenderBackupStatus) window.pdmRenderBackupStatus();
   pdmRenderOnboardingHelp();
 }
 
@@ -2084,9 +2125,16 @@ function pdmConfirmFullReset() {
   document.getElementById('pdmConfirmText').textContent = 'Isso apaga XP, streaks, objetivos, hábitos e missões, e recomeça com os hábitos padrão. As fotos e o registro de dieta não são apagados. Essa ação não pode ser desfeita.';
   const btn = document.getElementById('pdmConfirmBtn');
   btn.onclick = async () => {
+    // Zerar é destrutivo DE PROPÓSITO — sem isso o guard de sincronização
+    // (js/sync.js) bloquearia o esvaziamento de chegar na nuvem, e o
+    // progresso voltaria no próximo boot.
+    if (window.PdmSync) window.PdmSync.allowDestructive();
     if (window.PdmGamification) await window.PdmGamification.resetAll();
     if (window.PdmGoals) window.PdmGoals.resetAll();
     if (window.PdmHM) window.PdmHM.resetAll();
+    // Fecha a janela assim que o reset acaba — deixar aberta deixaria a
+    // nuvem desprotegida contra uma escrita acidental logo em seguida.
+    if (window.PdmSync) window.PdmSync.endDestructive();
     renderAll();
     pdmCloseModal('pdmConfirmModal');
     pdmToast('Progresso reiniciado.');
@@ -2150,7 +2198,11 @@ window.pdmToast = pdmToast;
 
 (async function init() {
   window.PdmTheme.init();
-  if (window.PdmSync) await window.PdmSync.init();
+  // Pede ao navegador pra não descartar os dados sozinho (pressão de
+  // armazenamento, inatividade). Não protege contra o usuário limpar os
+  // dados do site de propósito — pra isso existe o backup em arquivo.
+  if (window.PdmBackup) window.PdmBackup.requestPersistentStorage();
+  const syncResult = window.PdmSync ? await window.PdmSync.init() : null;
   // Roda ANTES de PdmHM.init() de propósito: decide (olhando localStorage
   // direto) se este é usuário pré-existente (migração silenciosa) ou
   // instalação genuinamente nova — PdmHM.init() consulta isResolved() logo
@@ -2172,8 +2224,18 @@ window.pdmToast = pdmToast;
     pdmToast(missed.count + (missed.count === 1 ? ' missão perdida' : ' missões perdidas') + ' — -' + missed.xpLost + ' XP');
   }
   if (window.PdmReminders) window.PdmReminders.scheduleTodayReminders();
-  if (window.PdmOnboarding && !window.PdmOnboarding.isResolved() && window.pdmStartOnboarding) {
+
+  // Conflito de sincronização tem prioridade sobre o onboarding: significa
+  // que há dado real dos dois lados e o app está esperando o usuário decidir
+  // (nada foi sobrescrito ainda — ver js/sync.js).
+  if (syncResult && syncResult.sync && syncResult.sync.action === 'conflict' && window.pdmOpenSyncConflictModal) {
+    window.pdmOpenSyncConflictModal();
+  } else if (window.PdmOnboarding && !window.PdmOnboarding.isResolved() && window.pdmStartOnboarding) {
     window.pdmStartOnboarding();
+  }
+  if (syncResult && syncResult.sync) {
+    if (syncResult.sync.restored) pdmToast('Dados restaurados da nuvem.');
+    else if (syncResult.sync.restoredCloud) pdmToast('Nuvem estava vazia — reenviei seus dados.');
   }
 })();
 
