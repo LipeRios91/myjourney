@@ -389,6 +389,10 @@
     try {
       await loadFirebaseSdk();
       ensureApp();
+      // Completa um login que saiu por redirecionamento (PWA instalado, ver
+      // prefersRedirect() abaixo): sem isso a volta do Google não viraria
+      // sessão e o usuário acharia que o login simplesmente não funcionou.
+      try { await firebase.auth().getRedirectResult(); } catch (e) { /* ignora */ }
       currentUser = await waitForAuthState();
       let decision = null;
       if (currentUser) decision = await decideAndApply();
@@ -403,13 +407,50 @@
     }
   }
 
-  // Fluxo explícito de "Entrar com Google", disparado pelo usuário na tela
-  // de Perfil — precisa vir depois de setConfig() ter sido chamado.
+  // Num PWA instalado (display-mode: standalone) o popup de login abre FORA
+  // do app, numa janela do navegador que ele não consegue acompanhar — o
+  // resultado nunca volta e o usuário fica preso num "Entrando..." eterno.
+  // Nesse caso o caminho certo é redirecionar a própria janela e completar o
+  // login na volta (getRedirectResult() no init()). No navegador normal o
+  // popup continua sendo melhor, porque não descarta o estado da página.
+  function prefersRedirect() {
+    try {
+      if (window.navigator && window.navigator.standalone === true) return true;
+      return !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    } catch (e) { return false; }
+  }
+
+  // Erros em que o popup não tem como funcionar nesse ambiente — aí vale
+  // insistir por redirecionamento. "Fechado pelo usuário"/"cancelado" NÃO
+  // entram: se a pessoa fechou de propósito, jogá-la pro Google de novo
+  // seria passar por cima da decisão dela.
+  const POPUP_FALLBACK_CODES = [
+    'auth/popup-blocked',
+    'auth/operation-not-supported-in-this-environment',
+    'auth/web-storage-unsupported',
+  ];
+
+  // Fluxo explícito de "Entrar com Google", disparado pelo usuário em
+  // Configurações ou na tela de recuperação — precisa vir depois de a config
+  // estar resolvida (salva no aparelho ou a embutida).
   async function connect() {
     await loadFirebaseSdk();
     ensureApp();
     const provider = new firebase.auth.GoogleAuthProvider();
-    const result = await firebase.auth().signInWithPopup(provider);
+    if (prefersRedirect()) {
+      await firebase.auth().signInWithRedirect(provider);
+      return { redirecting: true };
+    }
+    let result;
+    try {
+      result = await firebase.auth().signInWithPopup(provider);
+    } catch (e) {
+      if (POPUP_FALLBACK_CODES.indexOf(e && e.code) !== -1) {
+        await firebase.auth().signInWithRedirect(provider);
+        return { redirecting: true };
+      }
+      throw e;
+    }
     currentUser = result.user;
     const decision = await decideAndApply();
     ready = decision.action !== 'conflict';

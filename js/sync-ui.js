@@ -61,6 +61,9 @@
     const doConnect = () => {
       pdmToast('Conectando...');
       PdmSync.connect().then((res) => {
+        // PWA instalado: o login saiu por redirecionamento e esta página vai
+        // embora agora — o resto acontece na volta, no boot.
+        if (res && res.redirecting) { pdmToast('Abrindo o login do Google...'); return; }
         pdmRenderSyncStatus();
         window.pdmRenderAll();
         const action = res && res.sync ? res.sync.action : null;

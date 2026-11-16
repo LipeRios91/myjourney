@@ -208,6 +208,12 @@
     const btn = document.getElementById('pdmRecoveryBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; }
     PdmSync.connect().then((res) => {
+      // PWA instalado: saiu por redirecionamento. A página vai embora; na
+      // volta o boot completa o login e já restaura (PdmSync.init()).
+      if (res && res.redirecting) {
+        if (btn) btn.textContent = 'Abrindo o Google...';
+        return;
+      }
       const action = res && res.sync ? res.sync.action : null;
       if (action === 'conflict') {
         pdmCloseModal('pdmRecoveryModal');

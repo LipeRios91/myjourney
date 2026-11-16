@@ -537,10 +537,25 @@ de backup manual exportar/importar.
   clássico (não `type="module"`) — teria que carregar depois do script
   legado (`defer` implícito de módulos), o que quebraria o `await
   window.PdmSync.init()` síncrono no boot.
-- **Autenticação via Firebase Auth + provedor Google** (`signInWithPopup`),
-  fluxo separado do Google Agenda (tokens/propósitos diferentes, sem relação
-  entre si). Sessão persiste entre recarregamentos (padrão do próprio SDK),
-  então normalmente reconecta sozinho ao abrir o app de novo.
+- **Autenticação via Firebase Auth + provedor Google**, fluxo separado do
+  Google Agenda (tokens/propósitos diferentes, sem relação entre si). Sessão
+  persiste entre recarregamentos (padrão do próprio SDK), então normalmente
+  reconecta sozinho ao abrir o app de novo.
+- **Popup OU redirecionamento, escolhido pelo ambiente** (`prefersRedirect()`
+  em `js/sync.js`): num PWA **instalado** (`display-mode: standalone`, ou
+  `navigator.standalone` no iOS) o popup do Google abre numa janela do
+  navegador FORA do app, que o app não consegue acompanhar — o resultado
+  nunca volta e o usuário fica preso num "Entrando..." eterno. Nesses casos
+  o login sai por `signInWithRedirect` e é completado na volta pelo
+  `getRedirectResult()` dentro de `PdmSync.init()`; `connect()` devolve
+  `{ redirecting: true }` e a UI só avisa que está saindo, porque a página
+  vai embora. No navegador comum o popup continua sendo o padrão (não
+  descarta o estado da página). `auth/popup-blocked` e afins caem pro
+  redirecionamento; **`auth/popup-closed-by-user` não** — se a pessoa fechou
+  de propósito, jogá-la pro Google de novo passaria por cima da decisão
+  dela. Isso importa mais do que parece: é o mesmo toque de "Entrar com
+  Google" da tela de recuperação, ou seja, o caminho de volta dos dados
+  depois de limpar o navegador.
 - **O que sincroniza**: toda chave que já passa por `window.storage.get`/
   `set` (`mestre-habits`, `mestre-missions`, `mestre-goals`,
   `mestre-goal-categories`, `mestre-gamification`, `mestre-skills`,
