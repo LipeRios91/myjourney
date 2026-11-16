@@ -1562,7 +1562,7 @@ if ('serviceWorker' in navigator) {
   <div class="pdm-modal-bg" id="pdmGCalConfigModal">
     <div class="pdm-modal">
       <h3>Conectar Google Agenda</h3>
-      <p>Pra enviar suas missões pro Google Agenda, você precisa de um <b>Client ID OAuth</b> (gratuito, é só seu — fica salvo neste navegador).</p>
+      <p>Pra enviar suas missões pro Google Agenda, você precisa de um <b>Client ID OAuth</b> (gratuito, é só seu). Com a sincronização ligada, você cola uma vez só — ele vai junto pros seus outros aparelhos.</p>
       <p style="margin-top:-8px;">
         1. Abra o <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style="color:var(--gold-pale);">Google Cloud Console → Credenciais</a><br>
         2. Crie um projeto (se não tiver) e um <b>ID do cliente OAuth</b> do tipo "Aplicativo da Web"<br>
@@ -1650,6 +1650,7 @@ service cloud.firestore {
         3. Copie a chave e cole abaixo
       </p>
       <div class="pdm-field"><label>Chave da API do Gemini</label><input class="pdm-input" id="geminiApiKeyInput" placeholder="AIzaSy..."></div>
+      <p class="pdm-backup-detail">Você cola uma vez só. Com a sincronização ligada, a chave vai junto pros seus outros aparelhos e volta sozinha se você limpar o navegador.</p>
       <div class="pdm-modal-row">
         <button class="pdm-btn-ghost" onclick="pdmGeminiDisconnect()">Remover chave</button>
         <button class="pdm-btn" onclick="pdmSubmitGeminiConfig()">Salvar</button>

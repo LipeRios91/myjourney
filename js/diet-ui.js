@@ -415,7 +415,7 @@
     const input = document.getElementById('geminiApiKeyInput');
     if (input) input.value = '';
     pdmRenderGeminiConfigStatus();
-    pdmToast('Chave da IA removida.');
+    pdmToast('Chave da IA removida (em todos os seus aparelhos).');
   }
 
   Object.assign(window, {

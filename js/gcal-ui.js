@@ -82,7 +82,7 @@
   }
 
   function pdmGCalClearConfig() {
-    pdmConfirmGeneric('Remover configuração do Google Agenda', 'Isso apaga o Client ID salvo neste aparelho e desconecta. Missões já enviadas continuam no seu Google Agenda — só o vínculo com o app aqui é removido.', () => {
+    pdmConfirmGeneric('Remover configuração do Google Agenda', 'Isso apaga o Client ID e desconecta — com a sincronização ligada, vale pros seus outros aparelhos também. Missões já enviadas continuam no seu Google Agenda; só o vínculo com o app é removido.', () => {
       PdmGCal.disconnect();
       PdmGCal.clearClientId();
       pdmRenderGCalStatus();

@@ -571,16 +571,35 @@ de backup manual exportar/importar.
   precisa estar habilitado — senão o login falha com `auth/unauthorized-domain`
   e nenhuma proteção de dado deste app funciona, porque tudo depende de
   conseguir entrar. É configuração do console do usuário, não do código.
-- **O que sincroniza**: toda chave que já passa por `window.storage.get`/
-  `set` (`mestre-habits`, `mestre-missions`, `mestre-goals`,
-  `mestre-goal-categories`, `mestre-gamification`, `mestre-skills`,
-  `mestre-profile-photo`, `mestre-monthly-photos`, `mestre-diet-entries`,
-  `mestre-diet-goals`, `mestre-onboarding`) — lista em `PdmSync.SYNCED_KEYS`.
-  **O que fica de fora, de propósito** (preferência de dispositivo, não
-  progresso — mesmo raciocínio do tema): `mestre-theme`,
-  `mestre-gcal-client-id`, `mestre-sync-config`, `mestre-gemini-api-key`,
-  `mestre-last-export`. Ao adicionar uma chave aqui, atualize também
-  `DATA_KEYS` e `dataWeight()` em `js/backup.js` (ver "Proteção de dados").
+- **O que sincroniza** (`PdmSync.SYNCED_KEYS`) são **duas listas com pesos
+  diferentes**, e misturá-las quebra a proteção de dados:
+  - `PROGRESS_KEYS` — progresso de verdade (`mestre-habits`,
+    `mestre-missions`, `mestre-goals`, `mestre-goal-categories`,
+    `mestre-gamification`, `mestre-skills`, `mestre-profile-photo`,
+    `mestre-monthly-photos`, `mestre-diet-entries`, `mestre-diet-goals`,
+    `mestre-onboarding`). É isto que `dataWeight()` pesa e o que decide
+    push/pull/conflito. Ao adicionar uma chave aqui, atualize também
+    `DATA_KEYS` e `dataWeight()` em `js/backup.js` (ver "Proteção de dados").
+  - `CREDENTIAL_KEYS` — `mestre-gemini-api-key` e `mestre-gcal-client-id`.
+    **Viajam pela nuvem, mas pesam sempre ZERO.** Viajam porque, guardadas
+    só no aparelho, tinham que ser recoladas em cada aparelho e de novo a
+    cada limpeza do navegador — reclamação real do usuário. Vão pro
+    Firestore **privado** dele (protegido por `request.auth.uid == userId`),
+    nunca pro repositório, que é público. Pesam zero porque **não são
+    progresso**: se pesassem, colar uma chave num aparelho recém-aberto o
+    faria parecer "cheio" e o app abriria um conflito — ou uma
+    sobrescrita — por causa de uma credencial. `weightOf()` em `js/sync.js`
+    força esse zero mesmo no fallback sem `PdmBackup`, e elas **não entram
+    em `DATA_KEYS`** (o backup em arquivo é mais fácil de compartilhar sem
+    querer, e a ausência delas lá não perde progresso nenhum).
+  - Por isso `PdmDietAI.setApiKey`/`PdmGCal.setClientId` gravam por
+    `window.storage` (é ele que dispara `pushKey`), e **remover grava string
+    vazia em vez de `removeItem`**: apagar só sumiria no aparelho atual e o
+    boot seguinte baixaria a credencial da nuvem de volta.
+  - **O que continua fora, de propósito**: `mestre-sync-config` (é a chave
+    pra ALCANÇAR a nuvem — guardá-la lá seria circular; hoje tem a embutida
+    de `js/sync-defaults.js` como caminho de volta), `mestre-theme` e
+    `mestre-last-export` (preferência genuína de cada aparelho).
 - **Modelo no Firestore**: um documento por chave, em
   `users/{uid}/data/{key}`, com `{ value: <a mesma string que já ia pro
   localStorage>, updatedAt: serverTimestamp() }` — passthrough direto, sem
@@ -763,9 +782,12 @@ não chamam `PdmGamification` nem são chamados por ela.
   Studio/Cloud Console. O modal de config (`#pdmGeminiConfigModal`, hoje
   compartilhado entre foto e estimativa por nome) explica esse passo
   explicitamente — não é opcional pular essa parte da explicação. Chave
-  guardada em `localStorage` (`mestre-gemini-api-key`, preferência de
-  dispositivo, mesmo tratamento do `mestre-gcal-client-id`), nunca em
-  `window.storage`. Sem SDK carregado sob demanda (diferente do Firebase) —
+  guardada em `mestre-gemini-api-key` e gravada **por `window.storage`**,
+  porque ela sincroniza como credencial (mesmo tratamento do
+  `mestre-gcal-client-id`) — ver `CREDENTIAL_KEYS` em "Sincronização em
+  nuvem": viaja pro Firestore privado do usuário pra não ter que ser
+  recolada em cada aparelho, mas pesa zero e **nunca** vai pro repositório
+  público. Sem SDK carregado sob demanda (diferente do Firebase) —
   a API do Gemini é um REST simples, `fetch` direto. Modelo fixo numa
   constante (`MODEL` em `js/diet-ai.js`) fácil de trocar se a Google
   descontinuar o nome atual.

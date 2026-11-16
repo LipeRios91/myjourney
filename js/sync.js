@@ -38,7 +38,9 @@
   // Toda chave que já passa por window.storage.get/set (progresso de verdade).
   // Preferências de dispositivo (tema, client id do Google Agenda, e a config
   // de sync abaixo) ficam de fora de propósito — não fazem sentido em nuvem.
-  const SYNCED_KEYS = [
+  // Progresso de verdade: é isto que `dataWeight()` pesa e o que decide
+  // push/pull/conflito (ver "Proteção de dados" no CLAUDE.md).
+  const PROGRESS_KEYS = [
     'mestre-habits',
     'mestre-missions',
     'mestre-goals',
@@ -51,6 +53,29 @@
     'mestre-diet-goals',
     'mestre-onboarding',
   ];
+
+  // Credenciais que o usuário cola uma vez e espera reencontrar em todo
+  // aparelho — chave da IA (Gemini) e Client ID do Google Agenda. Elas
+  // VIAJAM pela nuvem, mas **pesam sempre zero**:
+  //
+  // - Viajam porque, guardadas só no aparelho, tinham que ser recoladas em
+  //   cada aparelho e de novo a cada limpeza do navegador. Elas vão pro
+  //   Firestore PRIVADO do usuário, protegido pela regra
+  //   `request.auth.uid == userId` — não pro repositório, que é público.
+  // - Pesam zero porque não são progresso. Se pesassem, colar uma chave num
+  //   aparelho recém-aberto faria ele parecer "cheio" e o app abriria um
+  //   conflito (ou pior, uma sobrescrita) por causa de uma credencial. Ver
+  //   weightOf() abaixo, que força isso mesmo sem PdmBackup carregado.
+  //
+  // Não entram aqui: `mestre-sync-config` (é a chave pra ALCANÇAR a nuvem;
+  // guardá-la lá seria circular), `mestre-theme` e `mestre-last-export`
+  // (preferência genuína de cada aparelho).
+  const CREDENTIAL_KEYS = [
+    'mestre-gemini-api-key',
+    'mestre-gcal-client-id',
+  ];
+
+  const SYNCED_KEYS = PROGRESS_KEYS.concat(CREDENTIAL_KEYS);
 
   // Chaves grandes demais pra manter histórico de versões na nuvem (fotos em
   // base64 chegam perto do limite de 1 MiB por documento do Firestore) — elas
@@ -78,6 +103,9 @@
   let lastBlocked = null;
 
   function weightOf(key, value) {
+    // Credencial nunca é progresso — nem no fallback sem PdmBackup, senão
+    // uma chave colada viraria "peso 1" e mexeria na decisão de sincronia.
+    if (CREDENTIAL_KEYS.indexOf(key) !== -1) return 0;
     return window.PdmBackup ? window.PdmBackup.dataWeight(key, value) : (value ? 1 : 0);
   }
   function localWeight() {

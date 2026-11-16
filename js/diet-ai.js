@@ -29,8 +29,17 @@
   const MODEL = 'gemini-3.6-flash';
 
   function getApiKey() { return (localStorage.getItem(KEY) || '').trim(); }
-  function setApiKey(key) { localStorage.setItem(KEY, (key || '').trim()); }
-  function clearApiKey() { localStorage.removeItem(KEY); }
+
+  // Grava pelo window.storage (e não localStorage direto) porque é ele que
+  // dispara o envio pra nuvem — ver CREDENTIAL_KEYS em js/sync.js. É o que
+  // faz a chave aparecer sozinha no outro aparelho e voltar sozinha depois
+  // de limpar o navegador, em vez de ter que recolá-la toda vez.
+  function setApiKey(key) { window.storage.set(KEY, (key || '').trim()); }
+
+  // Remover grava VAZIO em vez de apagar a chave: apagar só sumiria daqui, e
+  // o próximo boot baixaria a chave da nuvem de volta. Gravando vazio, a
+  // remoção viaja junto e vale em todo aparelho.
+  function clearApiKey() { window.storage.set(KEY, ''); }
   function isConfigured() { return !!getApiKey(); }
 
   function dataUrlToBase64(dataUrl) {

@@ -25,8 +25,12 @@
   let tokenExpiresAt = 0;
 
   function getClientId() { return (localStorage.getItem(CLIENT_ID_KEY) || '').trim(); }
-  function setClientId(id) { localStorage.setItem(CLIENT_ID_KEY, (id || '').trim()); }
-  function clearClientId() { localStorage.removeItem(CLIENT_ID_KEY); }
+  // Grava pelo window.storage pra credencial viajar entre aparelhos e voltar
+  // depois de limpar o navegador — ver CREDENTIAL_KEYS em js/sync.js.
+  // Remover grava VAZIO (apagar só sumiria aqui, e o boot seguinte baixaria
+  // a credencial da nuvem de volta).
+  function setClientId(id) { window.storage.set(CLIENT_ID_KEY, (id || '').trim()); }
+  function clearClientId() { window.storage.set(CLIENT_ID_KEY, ''); }
   function isConfigured() { return !!getClientId(); }
   function isConnected() { return !!accessToken && Date.now() < tokenExpiresAt; }
 
