@@ -235,9 +235,11 @@
       if (window.PdmOnboarding && !window.PdmOnboarding.isResolved() && window.pdmStartOnboarding) {
         window.pdmStartOnboarding();
       }
-    }).catch(() => {
+    }).catch((e) => {
       if (btn) { btn.disabled = false; btn.textContent = 'Entrar com Google'; }
-      pdmToast('Não deu pra entrar agora. Tente de novo.');
+      pdmToast(window.pdmSyncLoginErrorMessage
+        ? window.pdmSyncLoginErrorMessage(e)
+        : 'Não deu pra entrar agora. Tente de novo.');
     });
   }
 

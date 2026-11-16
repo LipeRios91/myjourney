@@ -407,28 +407,47 @@
     }
   }
 
-  // Num PWA instalado (display-mode: standalone) o popup de login abre FORA
-  // do app, numa janela do navegador que ele não consegue acompanhar — o
-  // resultado nunca volta e o usuário fica preso num "Entrando..." eterno.
-  // Nesse caso o caminho certo é redirecionar a própria janela e completar o
-  // login na volta (getRedirectResult() no init()). No navegador normal o
-  // popup continua sendo melhor, porque não descarta o estado da página.
-  function prefersRedirect() {
+  // O popup é o caminho PRINCIPAL em todo ambiente, inclusive no PWA
+  // instalado — e isso é deliberado. Ele devolve a credencial por
+  // `postMessage` entre as duas janelas, então não depende de cookie/storage
+  // de terceiro; o redirecionamento depende (a credencial fica guardada no
+  // domínio do handler e tem que ser lida na volta), e é exatamente isso que
+  // os navegadores vêm bloqueando. Por isso o redirecionamento é só a saída
+  // de emergência, nunca o padrão.
+  //
+  // `isStandalone()` não escolhe o caminho: ele só muda a LEITURA de um
+  // popup que morreu sem resposta. No app instalado o popup às vezes abre
+  // numa janela do navegador que o app não consegue acompanhar, e o SDK
+  // reporta isso como "fechado pelo usuário" mesmo sem ninguém ter fechado —
+  // aí vale tentar o redirecionamento. No navegador comum, esse mesmo erro
+  // quer dizer o que diz, e insistir seria passar por cima da pessoa.
+  function isStandalone() {
     try {
       if (window.navigator && window.navigator.standalone === true) return true;
       return !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
     } catch (e) { return false; }
   }
 
-  // Erros em que o popup não tem como funcionar nesse ambiente — aí vale
-  // insistir por redirecionamento. "Fechado pelo usuário"/"cancelado" NÃO
-  // entram: se a pessoa fechou de propósito, jogá-la pro Google de novo
-  // seria passar por cima da decisão dela.
+  // Erros em que o popup não tinha como funcionar nesse ambiente — aí vale
+  // insistir por redirecionamento, em qualquer navegador.
   const POPUP_FALLBACK_CODES = [
     'auth/popup-blocked',
     'auth/operation-not-supported-in-this-environment',
     'auth/web-storage-unsupported',
   ];
+
+  // Só no app instalado (ver isStandalone acima): aqui esses códigos
+  // normalmente significam "a janela do popup se perdeu", não "a pessoa
+  // desistiu".
+  const STANDALONE_FALLBACK_CODES = [
+    'auth/popup-closed-by-user',
+    'auth/cancelled-popup-request',
+  ];
+
+  function shouldFallbackToRedirect(code) {
+    if (POPUP_FALLBACK_CODES.indexOf(code) !== -1) return true;
+    return isStandalone() && STANDALONE_FALLBACK_CODES.indexOf(code) !== -1;
+  }
 
   // Fluxo explícito de "Entrar com Google", disparado pelo usuário em
   // Configurações ou na tela de recuperação — precisa vir depois de a config
@@ -437,15 +456,11 @@
     await loadFirebaseSdk();
     ensureApp();
     const provider = new firebase.auth.GoogleAuthProvider();
-    if (prefersRedirect()) {
-      await firebase.auth().signInWithRedirect(provider);
-      return { redirecting: true };
-    }
     let result;
     try {
       result = await firebase.auth().signInWithPopup(provider);
     } catch (e) {
-      if (POPUP_FALLBACK_CODES.indexOf(e && e.code) !== -1) {
+      if (shouldFallbackToRedirect(e && e.code)) {
         await firebase.auth().signInWithRedirect(provider);
         return { redirecting: true };
       }

@@ -3,6 +3,28 @@
 // de pdmToast/pdmCloseModal/pdmConfirmGeneric/pdmRenderAll.
 
 (function () {
+  // Um "não deu pra conectar" genérico esconde justamente os dois erros que
+  // o usuário consegue resolver sozinho — e que travam TUDO, porque toda a
+  // proteção de dados depende de conseguir entrar. Então eles são ditos pelo
+  // nome. Exportado porque a tela de recuperação (js/backup-ui.js) mostra a
+  // mesma mensagem no mesmo login.
+  function pdmSyncLoginErrorMessage(e) {
+    const code = (e && e.code) || '';
+    if (code === 'auth/unauthorized-domain') {
+      return 'Este endereço não está autorizado no Firebase. No console: Authentication → Settings → Authorized domains.';
+    }
+    if (code === 'auth/operation-not-allowed' || code === 'auth/configuration-not-found') {
+      return 'O login com Google não está habilitado no Firebase. No console: Authentication → Sign-in method.';
+    }
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+      return 'Login cancelado.';
+    }
+    if (code === 'auth/network-request-failed') {
+      return 'Sem conexão pra entrar agora. Tente de novo.';
+    }
+    return 'Não deu pra conectar a sincronização agora.';
+  }
+
   function pdmRenderSyncStatus() {
     const el = document.getElementById('pdmSyncStatus');
     if (!el || !window.PdmSync) return;
@@ -75,8 +97,8 @@
         if (action === 'pull' && res.sync.restored) pdmToast('Dados restaurados da nuvem.');
         else if (action === 'push' && res.sync.restoredCloud) pdmToast('Seus dados foram enviados pra nuvem.');
         else pdmToast('Sincronização conectada.');
-      }).catch(() => {
-        pdmToast('Não deu pra conectar a sincronização agora.');
+      }).catch((e) => {
+        pdmToast(pdmSyncLoginErrorMessage(e));
       });
     };
     pdmConfirmGeneric(
@@ -95,6 +117,6 @@
 
   Object.assign(window, {
     pdmRenderSyncStatus, pdmOpenSyncConfigModal, pdmSubmitSyncConfig,
-    pdmSyncConnectFlow, pdmSyncDisconnect,
+    pdmSyncConnectFlow, pdmSyncDisconnect, pdmSyncLoginErrorMessage,
   });
 })();

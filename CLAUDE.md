@@ -541,21 +541,36 @@ de backup manual exportar/importar.
   Google Agenda (tokens/propósitos diferentes, sem relação entre si). Sessão
   persiste entre recarregamentos (padrão do próprio SDK), então normalmente
   reconecta sozinho ao abrir o app de novo.
-- **Popup OU redirecionamento, escolhido pelo ambiente** (`prefersRedirect()`
-  em `js/sync.js`): num PWA **instalado** (`display-mode: standalone`, ou
-  `navigator.standalone` no iOS) o popup do Google abre numa janela do
-  navegador FORA do app, que o app não consegue acompanhar — o resultado
-  nunca volta e o usuário fica preso num "Entrando..." eterno. Nesses casos
-  o login sai por `signInWithRedirect` e é completado na volta pelo
-  `getRedirectResult()` dentro de `PdmSync.init()`; `connect()` devolve
-  `{ redirecting: true }` e a UI só avisa que está saindo, porque a página
-  vai embora. No navegador comum o popup continua sendo o padrão (não
-  descarta o estado da página). `auth/popup-blocked` e afins caem pro
-  redirecionamento; **`auth/popup-closed-by-user` não** — se a pessoa fechou
-  de propósito, jogá-la pro Google de novo passaria por cima da decisão
-  dela. Isso importa mais do que parece: é o mesmo toque de "Entrar com
-  Google" da tela de recuperação, ou seja, o caminho de volta dos dados
-  depois de limpar o navegador.
+- **Popup é o caminho principal em TODO ambiente; redirecionamento é saída
+  de emergência** (`js/sync.js`). Não inverta isso: `signInWithPopup`
+  devolve a credencial por `postMessage` entre as janelas e **não** depende
+  de cookie/storage de terceiro, enquanto `signInWithRedirect` depende (a
+  credencial fica guardada no domínio do handler e precisa ser lida na
+  volta) — e é exatamente isso que os navegadores vêm bloqueando. Então
+  nem o PWA instalado vai direto de redirecionamento: tenta popup primeiro.
+  - `shouldFallbackToRedirect(code)` decide a emergência.
+    `auth/popup-blocked`, `operation-not-supported-in-this-environment` e
+    `web-storage-unsupported` caem pro redirecionamento em qualquer lugar.
+    `popup-closed-by-user`/`cancelled-popup-request` caem **só no app
+    instalado** (`isStandalone()`), onde normalmente querem dizer "a janela
+    do popup se perdeu" e não "a pessoa desistiu" — no navegador comum
+    insistir passaria por cima dela.
+  - O redirecionamento é completado por `getRedirectResult()` dentro de
+    `PdmSync.init()`. Isso funciona porque `init()` roda **antes** de
+    `PdmGamification`/`PdmGoals`/`PdmHM`/`PdmOnboarding` no boot: o pull
+    chega antes de qualquer módulo ler o `localStorage`, então ninguém vê
+    onboarding por cima de progresso real.
+  - `connect()` devolve `{ redirecting: true }` nesse caso, e as duas UIs
+    (painel de Configurações e tela de recuperação) só avisam que o app
+    está saindo — tratar como erro seria mentira, a página vai embora.
+  - Isso importa mais do que parece: é o mesmo toque de "Entrar com Google"
+    da tela de recuperação, ou seja, o caminho de volta dos dados depois de
+    limpar o navegador.
+- **O domínio publicado precisa estar autorizado no Firebase Auth**
+  (Authentication → Settings → Authorized domains) e o provedor Google
+  precisa estar habilitado — senão o login falha com `auth/unauthorized-domain`
+  e nenhuma proteção de dado deste app funciona, porque tudo depende de
+  conseguir entrar. É configuração do console do usuário, não do código.
 - **O que sincroniza**: toda chave que já passa por `window.storage.get`/
   `set` (`mestre-habits`, `mestre-missions`, `mestre-goals`,
   `mestre-goal-categories`, `mestre-gamification`, `mestre-skills`,
