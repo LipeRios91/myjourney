@@ -37,11 +37,11 @@
 
 (function () {
   window.PdmSyncDefaults = {
-    apiKey: '',
-    authDomain: '',
-    projectId: '',
-    storageBucket: '',
-    messagingSenderId: '',
-    appId: '',
+    apiKey: 'AIzaSyDisqab9qW2hLWELvUBkt-gNOD_LJTxMWs',
+    authDomain: 'myjourney-a3942.firebaseapp.com',
+    projectId: 'myjourney-a3942',
+    storageBucket: 'myjourney-a3942.firebasestorage.app',
+    messagingSenderId: '390236176052',
+    appId: '1:390236176052:web:4b17925b07d8b35c7921e1',
   };
 })();
