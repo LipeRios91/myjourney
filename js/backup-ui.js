@@ -44,6 +44,13 @@
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 21h14"/></svg>' +
         'Restaurar backup' +
       '</button>' +
+      // Mora aqui, e não no Perfil, porque esta é a ação que também apaga a
+      // cópia na NUVEM — e nuvem/backup são o domínio deste painel. O Perfil
+      // segue com "Zerar todo o progresso", que preserva dieta e fotos.
+      '<button class="pdm-head-btn" style="border-color:var(--rose);color:var(--rose-pale);" onclick="pdmOpenFreshStart()">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>' +
+        'Começar do zero' +
+      '</button>' +
       '<div class="pdm-backup-detail">' +
         (weight > 0
           ? 'Neste aparelho agora: ' + escapeHtml(parts.join(' · ') || weight + ' itens') + '. '
@@ -275,9 +282,82 @@
     });
   }
 
+  // ---------------------------------------------------------------
+  // COMEÇAR DO ZERO — apagar tudo (aparelho + nuvem) e recomeçar
+  // ---------------------------------------------------------------
+  // Diferente de "Zerar todo o progresso" (view perfil), que apaga XP/
+  // hábitos/missões/objetivos e PRESERVA dieta e fotos de propósito. Aqui é
+  // tudo: dieta, fotos, onboarding e a cópia na nuvem. São duas ações
+  // distintas porque resolvem necessidades distintas — o texto de cada uma
+  // diz exatamente o que faz, pra ninguém escolher no escuro.
+  const FRESH_START_WORD = 'APAGAR';
+
+  function pdmOpenFreshStart() {
+    const list = document.getElementById('pdmFreshStartList');
+    if (list && window.PdmBackup) {
+      const parts = PdmBackup.describeLocal();
+      const cloudOn = !!(window.PdmSync && PdmSync.isSignedIn());
+      list.innerHTML =
+        (parts.length
+          ? 'Vai embora deste aparelho: ' + escapeHtml(parts.join(' · ')) + '.'
+          : 'Não há nada salvo neste aparelho.') +
+        '<br>' +
+        (cloudOn
+          ? 'A cópia na sua conta Google também é apagada.'
+          : 'Você não está conectado à nuvem agora, então só este aparelho é limpo — se houver cópia na sua conta, ela permanece e pode voltar quando você entrar.');
+    }
+    const input = document.getElementById('pdmFreshStartInput');
+    if (input) input.value = '';
+    pdmFreshStartCheck();
+    pdmOpenModal('pdmFreshStartModal');
+  }
+
+  function pdmFreshStartCheck() {
+    const input = document.getElementById('pdmFreshStartInput');
+    const btn = document.getElementById('pdmFreshStartBtn');
+    if (!input || !btn) return;
+    btn.disabled = input.value.trim().toUpperCase() !== FRESH_START_WORD;
+  }
+
+  async function pdmFreshStartConfirm() {
+    const input = document.getElementById('pdmFreshStartInput');
+    if (!input || input.value.trim().toUpperCase() !== FRESH_START_WORD) return;
+    const btn = document.getElementById('pdmFreshStartBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Apagando...'; }
+
+    // A ORDEM IMPORTA: nuvem primeiro. Se limpasse o aparelho antes e a
+    // nuvem falhasse, o boot seguinte veria "local vazio + nuvem cheia" e
+    // baixaria tudo de volta — a pessoa pediria pra apagar e nada seria
+    // apagado. Falhando a nuvem, aborta e não toca em nada.
+    if (window.PdmSync && PdmSync.isSignedIn()) {
+      PdmSync.allowDestructive();
+      let res;
+      try { res = await PdmSync.wipeCloud(); }
+      catch (e) { res = { ok: false }; }
+      finally { PdmSync.endDestructive(); }
+      if (!res || !res.ok) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Apagar tudo'; }
+        pdmToast('Não deu pra apagar a cópia na nuvem — nada foi apagado. Tente de novo.');
+        return;
+      }
+    }
+
+    PdmBackup.wipeLocal();
+    // Sem esse marcador, o boot seguinte abriria a tela de recuperação
+    // oferecendo restaurar exatamente o que acabou de ser apagado.
+    PdmBackup.markFreshStart();
+    pdmCloseModal('pdmFreshStartModal');
+    pdmToast('Tudo apagado. Recomeçando...');
+    // Recarrega pelo mesmo motivo de restaurar backup: os módulos já rodaram
+    // init() com o estado antigo em memória. Na volta, sem
+    // `mestre-onboarding`, o Onboarding Inicial assume e guia o recomeço.
+    setTimeout(() => window.location.reload(), 900);
+  }
+
   Object.assign(window, {
     pdmRenderBackupStatus, pdmExportBackup, pdmOpenImportBackup, pdmHandleBackupFile,
     pdmOpenSyncConflictModal, pdmResolveSyncConflict, pdmPostponeSyncConflict,
     pdmOpenRecoveryScreen, pdmRecoverFromCloud, pdmSkipRecovery,
+    pdmOpenFreshStart, pdmFreshStartCheck, pdmFreshStartConfirm,
   });
 })();

@@ -500,6 +500,36 @@
     return { user: currentUser, sync: decision };
   }
 
+  // Apaga a cópia na nuvem — só do PROGRESSO. Usado por "Começar do zero".
+  //
+  // Por que precisa existir em vez de só gravar vazio: gravar vazio passa
+  // pelo guard do pushKey e, mesmo liberado, deixaria documentos vazios na
+  // nuvem. E por que precisa acontecer ANTES de limpar o aparelho: se a
+  // nuvem sobrar cheia, o próximo boot vê "local vazio + nuvem cheia" e
+  // baixa tudo de volta — o usuário teria mandado apagar e nada teria sido
+  // apagado (ver decideAndApply).
+  //
+  // As credenciais (CREDENTIAL_KEYS) ficam: o usuário quis recomeçar o
+  // progresso, não reconfigurar as integrações.
+  //
+  // O histórico de versões (users/{uid}/history/) também fica. É cópia
+  // interna de segurança, não estado visível — e é o único caminho que
+  // sobra se a pessoa se arrepender e não tiver baixado o backup.
+  async function wipeCloud() {
+    if (!currentUser || !db) return { ok: false, error: 'sem-conexao' };
+    try {
+      const batch = db.batch();
+      PROGRESS_KEYS.forEach((key) => {
+        batch.delete(userDocRef(currentUser.uid, key));
+      });
+      await batch.commit();
+      PROGRESS_KEYS.forEach((key) => { cloudWeightCache[key] = 0; });
+      return { ok: true, keys: PROGRESS_KEYS.length };
+    } catch (e) {
+      return { ok: false, error: String((e && e.message) || e) };
+    }
+  }
+
   async function disconnect() {
     if (window.firebase && firebase.auth) {
       try { await firebase.auth().signOut(); } catch (e) { /* ignora */ }
@@ -515,7 +545,7 @@
     isSignedIn, getUserEmail, isFirstDoneOnDevice,
     init, connect, disconnect, pushKey,
     // Proteção de dados (ver comentário no topo):
-    readCloudSnapshot, pushAll, allowDestructive, endDestructive,
+    readCloudSnapshot, pushAll, wipeCloud, allowDestructive, endDestructive,
     getPendingConflict, resolveConflict, getLastBlocked,
   };
 })();

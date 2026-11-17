@@ -68,13 +68,22 @@
       '</div>';
   }
 
+  // `PdmDiet.addEntry` sempre grava os 4 nutrientes, então no fluxo normal
+  // eles existem. A guarda é pra dado que entra no localStorage SEM passar
+  // por lá: um backup `.json` editado à mão e restaurado, por exemplo
+  // (`validateBackup` confere o formato do arquivo, não campo por campo de
+  // cada registro). Sem ela, um único registro torto lançava e derrubava o
+  // `renderAll()` INTEIRO — o app parava de renderizar em todo boot por
+  // causa de uma linha de dieta.
+  function dietNum(v) { const n = Number(v); return isFinite(n) ? n : 0; }
+
   function dietEntryRowHtml(e) {
     return '<div class="pdm-diet-entry">' +
         '<div class="pdm-diet-entry-body">' +
           '<div class="pdm-diet-entry-name">' + escapeHtml(e.name) + '</div>' +
-          '<div class="pdm-diet-entry-meta">' + (e.grams ? e.grams + 'g · ' : '') + 'P ' + e.protein.toFixed(1) + 'g · C ' + e.carbs.toFixed(1) + 'g · G ' + e.fat.toFixed(1) + 'g</div>' +
+          '<div class="pdm-diet-entry-meta">' + (e.grams ? e.grams + 'g · ' : '') + 'P ' + dietNum(e.protein).toFixed(1) + 'g · C ' + dietNum(e.carbs).toFixed(1) + 'g · G ' + dietNum(e.fat).toFixed(1) + 'g</div>' +
         '</div>' +
-        '<div class="pdm-diet-entry-kcal">' + Math.round(e.kcal) + ' kcal</div>' +
+        '<div class="pdm-diet-entry-kcal">' + Math.round(dietNum(e.kcal)) + ' kcal</div>' +
         '<button class="pdm-diet-entry-del" onclick="pdmDietConfirmDelete(\'' + e.id + '\')" aria-label="Excluir registro">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>' +
         '</button>' +

@@ -695,6 +695,44 @@ Três defesas, em camadas:
   todos os módulos já rodaram `init()` com o estado antigo em memória, então
   reiniciar é a única forma honesta de aplicar o novo.
 
+**"Começar do zero" (apagar tudo e recomeçar)** — `#pdmFreshStartModal`,
+`pdmOpenFreshStart`/`pdmFreshStartConfirm` em `js/backup-ui.js`,
+`PdmBackup.wipeLocal()` + `PdmSync.wipeCloud()`. Mora no painel "Seus dados"
+da view `config`, **não** no Perfil, porque é a ação que também apaga a
+cópia na nuvem — e nuvem/backup são o domínio desse painel.
+
+- **Não confundir com "Zerar todo o progresso"** (view `perfil`), que apaga
+  XP/hábitos/missões/objetivos e **preserva dieta e fotos de propósito**.
+  "Começar do zero" apaga tudo: dieta, fotos, estado do onboarding e a
+  nuvem. São duas ações distintas porque resolvem necessidades distintas; o
+  texto de cada uma diz exatamente o que faz, pra ninguém escolher no escuro.
+  Se um dia só uma sobrar, é decisão de produto — não unifique de forma
+  silenciosa.
+- **A ordem é nuvem primeiro, aparelho depois, e isso não é detalhe.** Se o
+  aparelho fosse limpo antes e a nuvem falhasse, o boot seguinte veria
+  "local vazio + nuvem cheia" e baixaria tudo de volta — o usuário teria
+  pedido pra apagar e nada seria apagado. Falhando a nuvem, o fluxo
+  **aborta sem tocar em nada** e avisa (cenário coberto por teste).
+- **`mestre-fresh-start`** é um marcador de aparelho (fora de `SYNCED_KEYS`
+  e de `DATA_KEYS`, como `mestre-last-export`), escrito depois da limpeza e
+  **consumido uma única vez** no boot seguinte (`consumeFreshStart()`,
+  chamado em `index.html`). Sem ele, o aparelho recém-limpo cairia na tela
+  de recuperação oferecendo restaurar justamente o que acabou de ser
+  apagado. Consumir uma vez só importa: o aparelho vazio tem que voltar a
+  oferecer recuperação nos boots seguintes.
+- **O que sobrevive**: tema, config da sincronização e as credenciais
+  (`CREDENTIAL_KEYS`). É recomeço de progresso, não castigo — obrigar a
+  reconfigurar as integrações não tem nada a ver com o que foi pedido.
+- Depois de apagar o app **recarrega** (mesma razão de restaurar backup) e,
+  sem `mestre-onboarding`, o Onboarding Inicial assume e guia o recomeço.
+- O histórico de versões na nuvem (`users/{uid}/history/`) **não** é
+  apagado: é cópia interna de segurança, não estado visível, e é o único
+  caminho que sobra se a pessoa se arrepender e não tiver baixado o backup.
+- Fricção proporcional: o modal lista o que vai embora com **contagens
+  reais** (`describeLocal()`), oferece "Baixar backup antes" num toque e
+  exige digitar `APAGAR`. É a ação mais destrutiva do app e a única que
+  alcança a nuvem — não reduza essa fricção sem motivo forte.
+
 Regras que qualquer feature de persistência nova precisa respeitar:
 
 - **`dataWeight()` é a fonte da verdade de "isso é dado real"**, e o estado

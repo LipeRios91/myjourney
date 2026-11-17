@@ -838,6 +838,10 @@ html, body {
 .pdm-detail-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:18px; }
 .pdm-detail-actions .pdm-btn, .pdm-detail-actions .pdm-btn-ghost { margin-top:0; flex:1; text-align:center; min-width:120px; justify-content:center; }
 .pdm-btn[disabled], .pdm-btn-ghost[disabled] { opacity:.4; cursor:default; pointer-events:none; }
+/* Ação destrutiva de verdade (apagar tudo). Usa --rose em vez de --gold, e
+   --on-accent como texto pelo mesmo motivo de qualquer preenchimento sólido:
+   --void funcionaria só no modo escuro (ver "Design system" no CLAUDE.md). */
+.pdm-btn-danger { background:var(--rose); border-color:var(--rose); color:var(--on-accent); }
 
 .pdm-history-row { display:flex; justify-content:space-between; gap:10px; padding: 8px 0; border-bottom:1px solid var(--line-soft); font-size:12px; }
 .pdm-history-row:last-child { border-bottom:none; }
@@ -1688,6 +1692,33 @@ service cloud.firestore {
     </div>
   </div>
 
+  <!-- Começar do zero: a ação mais destrutiva do app — apaga o aparelho E a
+       cópia na nuvem. Tem modal próprio (e não o pdmConfirmModal genérico)
+       porque precisa listar o que vai embora com números reais, oferecer o
+       backup antes num toque, e exigir confirmação digitada. -->
+  <div class="pdm-modal-bg" id="pdmFreshStartModal">
+    <div class="pdm-modal">
+      <h3>Começar do zero</h3>
+      <p>Isso apaga tudo e recomeça a Jornada — inclusive a cópia na nuvem, pra não voltar no próximo acesso.</p>
+      <div class="pdm-conflict-hint" style="margin-bottom:14px;">
+        <b>Não dá pra desfazer.</b> Se tem alguma chance de você querer isso de volta, baixe o backup primeiro — é um arquivo que fica com você, fora do app.
+      </div>
+      <div class="pdm-backup-detail" id="pdmFreshStartList" style="margin-bottom:14px;"></div>
+      <button class="pdm-head-btn" onclick="pdmExportBackup()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+        Baixar backup antes
+      </button>
+      <div class="pdm-field" style="margin-top:14px;">
+        <label>Pra confirmar, digite APAGAR</label>
+        <input class="pdm-input" id="pdmFreshStartInput" placeholder="APAGAR" autocomplete="off" oninput="pdmFreshStartCheck()">
+      </div>
+      <div class="pdm-modal-row" style="margin-top:4px;">
+        <button class="pdm-btn-ghost" onclick="pdmCloseModal('pdmFreshStartModal')">Cancelar</button>
+        <button class="pdm-btn pdm-btn-danger" id="pdmFreshStartBtn" disabled onclick="pdmFreshStartConfirm()">Apagar tudo</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirm modal — sempre por último no DOM, pra ficar acima de qualquer
        outro modal já aberto (ex: confirmar exclusão em cima do detalhe). -->
   <div class="pdm-modal-bg" id="pdmConfirmModal">
@@ -2252,9 +2283,15 @@ window.pdmToast = pdmToast;
   //    senão o usuário cria um objetivo novo com o progresso dele parado na
   //    nuvem
   // 3. onboarding — instalação genuinamente nova
+  //
+  // `freshStart` é consumido aqui (uma única vez) pra desligar a recuperação
+  // neste boot: o aparelho está vazio porque o usuário mandou apagar tudo em
+  // "Começar do zero", então oferecer restaurar o que ele acabou de apagar
+  // seria absurdo. O onboarding logo abaixo é justamente o "recomeçar".
+  const freshStart = window.PdmBackup ? window.PdmBackup.consumeFreshStart() : false;
   if (syncResult && syncResult.sync && syncResult.sync.action === 'conflict' && window.pdmOpenSyncConflictModal) {
     window.pdmOpenSyncConflictModal();
-  } else if (window.PdmSync && window.PdmSync.shouldOfferRecovery() && window.pdmOpenRecoveryScreen) {
+  } else if (!freshStart && window.PdmSync && window.PdmSync.shouldOfferRecovery() && window.pdmOpenRecoveryScreen) {
     window.pdmOpenRecoveryScreen();
   } else if (window.PdmOnboarding && !window.PdmOnboarding.isResolved() && window.pdmStartOnboarding) {
     window.pdmStartOnboarding();

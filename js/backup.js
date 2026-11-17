@@ -23,6 +23,7 @@
 
 (function () {
   const LAST_EXPORT_KEY = 'mestre-last-export'; // preferência de dispositivo, fora do sync
+  const FRESH_START_KEY = 'mestre-fresh-start'; // marcador de uma limpeza intencional, idem
   const FORMAT = 'jornada-do-heroi-backup';
   const FORMAT_VERSION = 1;
 
@@ -244,6 +245,47 @@
   // (sem window.storage) pra não disparar um push por chave no meio da
   // restauração — quem decide reenviar pra nuvem depois é o chamador, de uma
   // vez só e de forma explícita.
+  // ---------------------------------------------------------------
+  // COMEÇAR DO ZERO — apagar tudo e recomeçar
+  // ---------------------------------------------------------------
+  // Escreve direto no localStorage (não via window.storage) pela mesma razão
+  // de applyBackup: não disparar um push por chave no meio da limpeza. Quem
+  // apaga a cópia da nuvem é PdmSync.wipeCloud(), chamado antes pela UI —
+  // apagar só o aparelho não resolveria nada, porque o próximo boot veria
+  // "local vazio + nuvem cheia" e baixaria tudo de volta (ver decideAndApply
+  // em js/sync.js).
+  //
+  // NÃO apaga: tema, config da sincronização e as credenciais (chave da IA,
+  // Client ID do Agenda). Isso é preferência/credencial do aparelho, não
+  // progresso — fazer o usuário reconfigurar tudo de novo seria castigo, não
+  // recomeço.
+  function wipeLocal() {
+    const removed = [];
+    DATA_KEYS.forEach((key) => {
+      try {
+        if (localStorage.getItem(key) !== null) removed.push(key);
+        localStorage.removeItem(key);
+      } catch (e) { /* ignora */ }
+    });
+    return { ok: true, removed };
+  }
+
+  // Marca que o aparelho ficou vazio DE PROPÓSITO. Sem isso, o boot seguinte
+  // veria "aparelho sem dado + nuvem configurada" e abriria a tela de
+  // recuperação oferecendo restaurar justamente o que o usuário acabou de
+  // mandar apagar. É consumida uma única vez, no boot seguinte.
+  function markFreshStart() {
+    try { localStorage.setItem(FRESH_START_KEY, new Date().toISOString()); } catch (e) { /* ignora */ }
+  }
+  function consumeFreshStart() {
+    try {
+      const v = localStorage.getItem(FRESH_START_KEY);
+      if (v === null) return false;
+      localStorage.removeItem(FRESH_START_KEY);
+      return true;
+    } catch (e) { return false; }
+  }
+
   function applyBackup(obj) {
     const check = validateBackup(obj);
     if (!check.ok) return check;
@@ -294,6 +336,7 @@
     dataWeight, weightOfMap, weightOfLocal, describeMap, describeLocal,
     buildBackupObject, exportToFile, getLastExportAt, daysSinceLastExport,
     validateBackup, readBackupFile, applyBackup,
+    wipeLocal, markFreshStart, consumeFreshStart,
     requestPersistentStorage, getStorageStatus,
   };
 })();
