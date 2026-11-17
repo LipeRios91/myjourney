@@ -791,6 +791,19 @@ não chamam `PdmGamification` nem são chamados por ela.
   a API do Gemini é um REST simples, `fetch` direto. Modelo fixo numa
   constante (`MODEL` em `js/diet-ai.js`) fácil de trocar se a Google
   descontinuar o nome atual.
+- **O seletor de refeição redesenha o corpo INTEIRO do modal**
+  (`pdmDietSetMealType` → `renderDietAddBody`), então `renderDietAddBody()`
+  captura e restaura os campos em preenchimento (`DIET_ADD_LIVE_FIELDS`, via
+  os helpers `captureFormValues`/`restoreFormValues` de `js/utils.js`). Sem
+  isso, digitar o alimento e **depois** tocar em "Café da manhã" apagava o
+  texto — e o usuário lia isso como "a busca não acha esse alimento nessa
+  refeição" (bug real relatado; quem ficava na refeição padrão "Outro" nunca
+  tocava no seletor e por isso não via nada de errado). A lista cobre os três
+  modos e também os totais editáveis da porção: perder uma correção de
+  rótulo por trocar a refeição é o mesmo problema. Os ids são distintos por
+  modo/passo, então trocar de modo ou de alimento continua começando limpo —
+  é o que garante que o alimento novo não herde os totais do anterior. Se um
+  campo novo nascer nesse modal, **ele entra nessa lista**.
 - **Metas diárias são opcionais por nutriente** (`PdmDiet.getGoals`/
   `setGoals`, `null` = sem meta): a barra de progresso de cada nutriente
   (calorias usa `.pdm-xpbar`, macros usam `.pdm-skill-bar` — reaproveita os

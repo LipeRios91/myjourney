@@ -68,6 +68,8 @@
     { name: 'Queijo mussarela', kcal100: 280, protein100: 22.0, carbs100: 3.0, fat100: 20.0 },
     { name: 'Queijo minas frescal', kcal100: 264, protein100: 17.4, carbs100: 3.0, fat100: 20.2 },
     { name: 'Requeijão', kcal100: 257, protein100: 9.6, carbs100: 3.0, fat100: 23.0 },
+    { name: 'Ricota', kcal100: 174, protein100: 12.6, carbs100: 3.8, fat100: 13.0 },
+    { name: 'Creme de ricota', kcal100: 180, protein100: 8.0, carbs100: 3.0, fat100: 15.0 },
     { name: 'Iogurte natural integral', kcal100: 61, protein100: 3.5, carbs100: 4.7, fat100: 3.3 },
     { name: 'Leite integral', kcal100: 61, protein100: 3.2, carbs100: 4.7, fat100: 3.3 },
     { name: 'Vitamina de banana', kcal100: 90, protein100: 3.0, carbs100: 15.0, fat100: 2.0 },

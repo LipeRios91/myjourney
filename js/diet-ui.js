@@ -343,9 +343,28 @@
   function pdmDietSetMode(mode) { dietAdd.mode = mode; dietAdd.picked = null; renderDietAddBody(); }
   function pdmDietSetMealType(key) { dietAdd.mealType = key; renderDietAddBody(); }
 
+  // Campos que o usuário pode estar preenchendo quando o corpo do modal é
+  // re-renderizado. Isso importa porque o seletor de refeição redesenha o
+  // corpo INTEIRO: sem preservar, tocar em "Café da manhã" depois de digitar
+  // apagava o texto da busca, e o usuário lia isso como "a busca não acha
+  // esse alimento nessa refeição" (bug real relatado). Vale pros três modos
+  // e pros totais editáveis da porção — perder uma correção de rótulo por
+  // trocar a refeição é o mesmo problema.
+  const DIET_ADD_LIVE_FIELDS = [
+    'pdmDietSearchInput',
+    'pdmDietManualName', 'pdmDietManualGrams', 'pdmDietManualKcal',
+    'pdmDietManualProtein', 'pdmDietManualCarbs', 'pdmDietManualFat',
+    'pdmDietGramsInput',
+    'pdmDietTotalKcal', 'pdmDietTotalProtein', 'pdmDietTotalCarbs', 'pdmDietTotalFat',
+  ];
+
   function renderDietAddBody() {
     const el = document.getElementById('pdmDietAddBody');
     if (!el || !dietAdd) return;
+    // Captura antes de trocar o HTML; restaura depois. Os ids são distintos
+    // por modo/passo, então trocar de modo não arrasta valor de um pro outro
+    // — só volta o que ainda existe na tela nova.
+    const live = captureFormValues(DIET_ADD_LIVE_FIELDS);
     let html = field('Refeição', buildSegmented(PdmDiet.listMealTypes().map((m) => [m.key, m.name]), dietAdd.mealType, 'pdmDietSetMealType'));
     if (dietAdd.picked) {
       html += renderPortionStep();
@@ -356,6 +375,7 @@
       else html += renderManualStep();
     }
     el.innerHTML = html;
+    restoreFormValues(DIET_ADD_LIVE_FIELDS, live);
     renderDietAddFooter();
   }
   function renderDietAddFooter() {
